@@ -4,23 +4,29 @@ const mem = std.mem;
 const fs = std.fs;
 const os = std.os;
 const builtin = std.builtin;
+const proto = @import("protocol.zig");
+const init = @import("init.zig");
 
-pub fn open(allocator: *mem.Allocator, host: ?[]u8, port: ?u16) !Connection {
+pub fn open(allocator: *mem.Allocator, host: ?[]u8, port: ?u16) !Wire {
+    init.init();
+
     const file = try net.tcpConnectToHost(allocator, host orelse "127.0.0.1", port orelse 5672);
     const n = try file.write("AMQP\x00\x00\x09\x01");
 
-    var conn = Connection {
+    var conn = Wire {
         .file = file,
     };
-    // We asynchronously process incoming messages (calling callbacks ) 
-    while (true) {
-        const message = try conn.dispatch(allocator, null);
+    // We asynchronously process incoming messages (calling callbacks )
+    var received_response = false;
+    while (!received_response) {
+        const expecting: ClassMethod = .{ .class = 10, .method = 10 };
+        received_response = try conn.dispatch(allocator, expecting);
     }
 
     return conn;
 }
 
-pub const Connection = struct {
+pub const Wire = struct {
     file: fs.File,
     rx_buffer: [4096]u8 = undefined,
     tx_buffer: [4096]u8 = undefined,
@@ -31,7 +37,7 @@ pub const Connection = struct {
         self.file.close();
     }
 
-    pub fn dispatch(self: *Self, allocator: *mem.Allocator, response: ?struct{ class: u16, method: u16 }) !void {
+    pub fn dispatch(self: *Self, allocator: *mem.Allocator, expected_response: ?ClassMethod) !bool {
         const n = try os.read(self.file.handle, self.rx_buffer[0..]);
 
         if (n < @sizeOf(FrameHeader)) return error.HeaderReadFailed;
@@ -40,10 +46,34 @@ pub const Connection = struct {
 
         switch (header.@"type") {
             .Method => {
-                const method = @ptrCast(*MethodHeader, &self.rx_buffer[@sizeOf(FrameHeader)]);
-                std.debug.warn("Got method: {}.{}\n", .{ byteOrder(u16, method.class), byteOrder(u16, method.method)});
+                const method_header = @ptrCast(*MethodHeader, &self.rx_buffer[@sizeOf(FrameHeader)]);
+                const class = byteOrder(u16, method_header.class);
+                const method = byteOrder(u16, method_header.method);
+                std.debug.warn("{}.{}\n", .{ class, method });
+
+                // TODO: If we are expecting a response and it is not asynchronous, we should that it's what we expect
+                if (expected_response) |expected| {
+                    // TODO: ignore asynchronous
+                    const is_synchronous = try proto.isSynchronous(class, method);
+                    
+                    if (is_synchronous) {
+                        if (class != expected.class) return error.UnexpectedResponseClass;
+                        if (method != expected.method) return error.UnexpectedResponseClass;
+                    }
+                    try proto.dispatchCallback(class, method);
+                    return true;
+                } else {
+                    try proto.dispatchCallback(class, method);
+                    return false;
+                }
             },
-            else => {},
+            .Heartbeat => {
+                std.debug.warn("Got heartbeat\n", .{});
+                return false;
+            },
+            else => {
+                return false;
+            },
         }
     }
 };
@@ -56,12 +86,6 @@ fn byteOrder(comptime T: type, value: T) T {
         .Little => @byteSwap(T, value),
     };
 }
-
-// const Frame = packed struct {
-//     header: FrameHeader = undefined,
-//     class: u16 = 0,
-//     method: u16 = 0,
-// };
 
 const FrameHeader = packed struct {
     @"type": FrameType = .Method,
@@ -77,6 +101,11 @@ const FrameType = enum(u8) {
 };
 
 const MethodHeader = packed struct {
+    class: u16 = 0,
+    method: u16 = 0,
+};
+
+const ClassMethod = struct {
     class: u16 = 0,
     method: u16 = 0,
 };

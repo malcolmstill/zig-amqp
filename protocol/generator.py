@@ -3,13 +3,14 @@ import sys
 
 def generate(file):
     print(f'const std = @import("std");')
-    print(f'const Connection = @import("connection.zig").Connection;')
+    print(f'const Wire = @import("connection.zig").Wire;')
 
     tree = Tree.parse(file)
     amqp = tree.getroot()
     if amqp.tag == "amqp":
         print("// amqp")
         generateLookup(amqp)
+        generateIsSyncrhonous(amqp)
         for child in amqp:
             if child.tag == "constant":
                 print(f"const {nameClean(child)}: u16 = {child.attrib['value']};")
@@ -19,7 +20,7 @@ def generate(file):
                 generateClass(child)
 
 def generateLookup(amqp):
-    print(f"pub fn dispatchCallback(class: u16, method: u16) !void {{")
+    print(f"pub fn dispatchCallback(class_id: u16, method_id: u16) !void {{")
     print(f"switch (class_id) {{")
     for child in amqp:
         if child.tag == "class":
@@ -29,12 +30,12 @@ def generateLookup(amqp):
             print(f"{index} => {{")
             generateLookupMethod(klass)
             print(f"}},")
-    print(f"}}")
+    print(f"else => return error.UnknownClass}}")
     print(f"}}")
 
 def generateLookupMethod(klass):
     print(f"switch (method_id) {{")
-    class_name = klass.attrib['name']
+    class_name_upper = nameCleanUpper(klass)
     for child in klass:
         if child.tag == "method":
             method = child
@@ -42,8 +43,43 @@ def generateLookupMethod(klass):
             index = method.attrib['index']
             print(f"// {method_name}")
             print(f"{index} => {{")
-            print(f"try {class_name}_interface.{method_name}();")
+            print(f"const {method_name} = {class_name_upper}_IMPLEMENTATION.{method_name} orelse return error.MethodNotImplemented;")
+            print(f"try {method_name}();")
             print(f"}},")
+    print(f"else => return error.UnknownMethod, ")            
+    print(f"}}")
+
+def generateIsSyncrhonous(amqp):
+    print(f"pub fn isSynchronous(class_id: u16, method_id: u16) !bool {{")
+    print(f"switch (class_id) {{")
+    for child in amqp:
+        if child.tag == "class":
+            klass = child
+            index = klass.attrib['index']
+            print(f"// {klass.attrib['name']}")
+            print(f"{index} => {{")
+            generateIsSyncrhonousMethod(klass)
+            print(f"}},")
+    print(f"else => return error.UnknownClass}}")
+    print(f"}}")
+
+def generateIsSyncrhonousMethod(method):
+    print(f"switch (method_id) {{")
+    class_name_upper = nameCleanUpper(method)
+    for child in method:
+        if child.tag == "method":
+            method = child
+            method_name = nameClean(method)
+            is_synchronous = 'synchronous' in method.attrib and method.attrib['synchronous'] == '1'
+            index = method.attrib['index']
+            print(f"// {method_name}")
+            print(f"{index} => {{")
+            if is_synchronous:
+                print(f"return true;")
+            else:
+                print(f"return false;")
+            print(f"}},")
+    print(f"else => return error.UnknownMethod, ")            
     print(f"}}")
 
 def generateInterface(klass):
@@ -57,7 +93,7 @@ def generateInterface(klass):
 
 def generateInterfaceMethod(method):
     method_name = nameClean(method)
-    print(f"{method_name}: fn() !void,")
+    print(f"{method_name}: ?fn() anyerror!void,")
 
 def generateImplementation(klass):
     class_name_upper = nameCleanUpper(klass)
@@ -74,7 +110,7 @@ def generateClass(c):
     # print(f"pub const {nameClean(c)} = struct {{")
     print(f"pub const {nameCleanUpper(c)}_INDEX = {c.attrib['index']}; // CLASS")
     print(f"pub const {nameCleanCap(c)} = struct {{")
-    print(f"conn: *Connection,")
+    print(f"conn: *Wire,")
     print(f"const Self = @This();")
     for child in c:
         if child.tag == "method":

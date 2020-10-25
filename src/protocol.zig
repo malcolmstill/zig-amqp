@@ -1,59 +1,72 @@
 const std = @import("std");
-const Connection = @import("connection.zig").Connection;
+const Wire = @import("connection.zig").Wire;
 // amqp
-pub fn dispatchCallback(class: u16, method: u16) !void {
+pub fn dispatchCallback(class_id: u16, method_id: u16) !void {
     switch (class_id) {
         // connection
         10 => {
             switch (method_id) {
                 // start
                 10 => {
-                    try connection_interface.start();
+                    const start = CONNECTION_IMPLEMENTATION.start orelse return error.MethodNotImplemented;
+                    try start();
                 },
                 // start_ok
                 11 => {
-                    try connection_interface.start_ok();
+                    const start_ok = CONNECTION_IMPLEMENTATION.start_ok orelse return error.MethodNotImplemented;
+                    try start_ok();
                 },
                 // secure
                 20 => {
-                    try connection_interface.secure();
+                    const secure = CONNECTION_IMPLEMENTATION.secure orelse return error.MethodNotImplemented;
+                    try secure();
                 },
                 // secure_ok
                 21 => {
-                    try connection_interface.secure_ok();
+                    const secure_ok = CONNECTION_IMPLEMENTATION.secure_ok orelse return error.MethodNotImplemented;
+                    try secure_ok();
                 },
                 // tune
                 30 => {
-                    try connection_interface.tune();
+                    const tune = CONNECTION_IMPLEMENTATION.tune orelse return error.MethodNotImplemented;
+                    try tune();
                 },
                 // tune_ok
                 31 => {
-                    try connection_interface.tune_ok();
+                    const tune_ok = CONNECTION_IMPLEMENTATION.tune_ok orelse return error.MethodNotImplemented;
+                    try tune_ok();
                 },
                 // open
                 40 => {
-                    try connection_interface.open();
+                    const open = CONNECTION_IMPLEMENTATION.open orelse return error.MethodNotImplemented;
+                    try open();
                 },
                 // open_ok
                 41 => {
-                    try connection_interface.open_ok();
+                    const open_ok = CONNECTION_IMPLEMENTATION.open_ok orelse return error.MethodNotImplemented;
+                    try open_ok();
                 },
                 // close
                 50 => {
-                    try connection_interface.close();
+                    const close = CONNECTION_IMPLEMENTATION.close orelse return error.MethodNotImplemented;
+                    try close();
                 },
                 // close_ok
                 51 => {
-                    try connection_interface.close_ok();
+                    const close_ok = CONNECTION_IMPLEMENTATION.close_ok orelse return error.MethodNotImplemented;
+                    try close_ok();
                 },
                 // blocked
                 60 => {
-                    try connection_interface.blocked();
+                    const blocked = CONNECTION_IMPLEMENTATION.blocked orelse return error.MethodNotImplemented;
+                    try blocked();
                 },
                 // unblocked
                 61 => {
-                    try connection_interface.unblocked();
+                    const unblocked = CONNECTION_IMPLEMENTATION.unblocked orelse return error.MethodNotImplemented;
+                    try unblocked();
                 },
+                else => return error.UnknownMethod,
             }
         },
         // channel
@@ -61,28 +74,35 @@ pub fn dispatchCallback(class: u16, method: u16) !void {
             switch (method_id) {
                 // open
                 10 => {
-                    try channel_interface.open();
+                    const open = CHANNEL_IMPLEMENTATION.open orelse return error.MethodNotImplemented;
+                    try open();
                 },
                 // open_ok
                 11 => {
-                    try channel_interface.open_ok();
+                    const open_ok = CHANNEL_IMPLEMENTATION.open_ok orelse return error.MethodNotImplemented;
+                    try open_ok();
                 },
                 // flow
                 20 => {
-                    try channel_interface.flow();
+                    const flow = CHANNEL_IMPLEMENTATION.flow orelse return error.MethodNotImplemented;
+                    try flow();
                 },
                 // flow_ok
                 21 => {
-                    try channel_interface.flow_ok();
+                    const flow_ok = CHANNEL_IMPLEMENTATION.flow_ok orelse return error.MethodNotImplemented;
+                    try flow_ok();
                 },
                 // close
                 40 => {
-                    try channel_interface.close();
+                    const close = CHANNEL_IMPLEMENTATION.close orelse return error.MethodNotImplemented;
+                    try close();
                 },
                 // close_ok
                 41 => {
-                    try channel_interface.close_ok();
+                    const close_ok = CHANNEL_IMPLEMENTATION.close_ok orelse return error.MethodNotImplemented;
+                    try close_ok();
                 },
+                else => return error.UnknownMethod,
             }
         },
         // exchange
@@ -90,20 +110,25 @@ pub fn dispatchCallback(class: u16, method: u16) !void {
             switch (method_id) {
                 // declare
                 10 => {
-                    try exchange_interface.declare();
+                    const declare = EXCHANGE_IMPLEMENTATION.declare orelse return error.MethodNotImplemented;
+                    try declare();
                 },
                 // declare_ok
                 11 => {
-                    try exchange_interface.declare_ok();
+                    const declare_ok = EXCHANGE_IMPLEMENTATION.declare_ok orelse return error.MethodNotImplemented;
+                    try declare_ok();
                 },
                 // delete
                 20 => {
-                    try exchange_interface.delete();
+                    const delete = EXCHANGE_IMPLEMENTATION.delete orelse return error.MethodNotImplemented;
+                    try delete();
                 },
                 // delete_ok
                 21 => {
-                    try exchange_interface.delete_ok();
+                    const delete_ok = EXCHANGE_IMPLEMENTATION.delete_ok orelse return error.MethodNotImplemented;
+                    try delete_ok();
                 },
+                else => return error.UnknownMethod,
             }
         },
         // queue
@@ -111,44 +136,55 @@ pub fn dispatchCallback(class: u16, method: u16) !void {
             switch (method_id) {
                 // declare
                 10 => {
-                    try queue_interface.declare();
+                    const declare = QUEUE_IMPLEMENTATION.declare orelse return error.MethodNotImplemented;
+                    try declare();
                 },
                 // declare_ok
                 11 => {
-                    try queue_interface.declare_ok();
+                    const declare_ok = QUEUE_IMPLEMENTATION.declare_ok orelse return error.MethodNotImplemented;
+                    try declare_ok();
                 },
                 // bind
                 20 => {
-                    try queue_interface.bind();
+                    const bind = QUEUE_IMPLEMENTATION.bind orelse return error.MethodNotImplemented;
+                    try bind();
                 },
                 // bind_ok
                 21 => {
-                    try queue_interface.bind_ok();
+                    const bind_ok = QUEUE_IMPLEMENTATION.bind_ok orelse return error.MethodNotImplemented;
+                    try bind_ok();
                 },
                 // unbind
                 50 => {
-                    try queue_interface.unbind();
+                    const unbind = QUEUE_IMPLEMENTATION.unbind orelse return error.MethodNotImplemented;
+                    try unbind();
                 },
                 // unbind_ok
                 51 => {
-                    try queue_interface.unbind_ok();
+                    const unbind_ok = QUEUE_IMPLEMENTATION.unbind_ok orelse return error.MethodNotImplemented;
+                    try unbind_ok();
                 },
                 // purge
                 30 => {
-                    try queue_interface.purge();
+                    const purge = QUEUE_IMPLEMENTATION.purge orelse return error.MethodNotImplemented;
+                    try purge();
                 },
                 // purge_ok
                 31 => {
-                    try queue_interface.purge_ok();
+                    const purge_ok = QUEUE_IMPLEMENTATION.purge_ok orelse return error.MethodNotImplemented;
+                    try purge_ok();
                 },
                 // delete
                 40 => {
-                    try queue_interface.delete();
+                    const delete = QUEUE_IMPLEMENTATION.delete orelse return error.MethodNotImplemented;
+                    try delete();
                 },
                 // delete_ok
                 41 => {
-                    try queue_interface.delete_ok();
+                    const delete_ok = QUEUE_IMPLEMENTATION.delete_ok orelse return error.MethodNotImplemented;
+                    try delete_ok();
                 },
+                else => return error.UnknownMethod,
             }
         },
         // basic
@@ -156,72 +192,90 @@ pub fn dispatchCallback(class: u16, method: u16) !void {
             switch (method_id) {
                 // qos
                 10 => {
-                    try basic_interface.qos();
+                    const qos = BASIC_IMPLEMENTATION.qos orelse return error.MethodNotImplemented;
+                    try qos();
                 },
                 // qos_ok
                 11 => {
-                    try basic_interface.qos_ok();
+                    const qos_ok = BASIC_IMPLEMENTATION.qos_ok orelse return error.MethodNotImplemented;
+                    try qos_ok();
                 },
                 // consume
                 20 => {
-                    try basic_interface.consume();
+                    const consume = BASIC_IMPLEMENTATION.consume orelse return error.MethodNotImplemented;
+                    try consume();
                 },
                 // consume_ok
                 21 => {
-                    try basic_interface.consume_ok();
+                    const consume_ok = BASIC_IMPLEMENTATION.consume_ok orelse return error.MethodNotImplemented;
+                    try consume_ok();
                 },
                 // cancel
                 30 => {
-                    try basic_interface.cancel();
+                    const cancel = BASIC_IMPLEMENTATION.cancel orelse return error.MethodNotImplemented;
+                    try cancel();
                 },
                 // cancel_ok
                 31 => {
-                    try basic_interface.cancel_ok();
+                    const cancel_ok = BASIC_IMPLEMENTATION.cancel_ok orelse return error.MethodNotImplemented;
+                    try cancel_ok();
                 },
                 // publish
                 40 => {
-                    try basic_interface.publish();
+                    const publish = BASIC_IMPLEMENTATION.publish orelse return error.MethodNotImplemented;
+                    try publish();
                 },
                 // @"return"
                 50 => {
-                    try basic_interface.@"return"();
+                    const @"return" = BASIC_IMPLEMENTATION.@"return" orelse return error.MethodNotImplemented;
+                    try @"return"();
                 },
                 // deliver
                 60 => {
-                    try basic_interface.deliver();
+                    const deliver = BASIC_IMPLEMENTATION.deliver orelse return error.MethodNotImplemented;
+                    try deliver();
                 },
                 // get
                 70 => {
-                    try basic_interface.get();
+                    const get = BASIC_IMPLEMENTATION.get orelse return error.MethodNotImplemented;
+                    try get();
                 },
                 // get_ok
                 71 => {
-                    try basic_interface.get_ok();
+                    const get_ok = BASIC_IMPLEMENTATION.get_ok orelse return error.MethodNotImplemented;
+                    try get_ok();
                 },
                 // get_empty
                 72 => {
-                    try basic_interface.get_empty();
+                    const get_empty = BASIC_IMPLEMENTATION.get_empty orelse return error.MethodNotImplemented;
+                    try get_empty();
                 },
                 // ack
                 80 => {
-                    try basic_interface.ack();
+                    const ack = BASIC_IMPLEMENTATION.ack orelse return error.MethodNotImplemented;
+                    try ack();
                 },
                 // reject
                 90 => {
-                    try basic_interface.reject();
+                    const reject = BASIC_IMPLEMENTATION.reject orelse return error.MethodNotImplemented;
+                    try reject();
                 },
                 // recover_async
                 100 => {
-                    try basic_interface.recover_async();
+                    const recover_async = BASIC_IMPLEMENTATION.recover_async orelse return error.MethodNotImplemented;
+                    try recover_async();
                 },
                 // recover
                 110 => {
-                    try basic_interface.recover();
+                    const recover = BASIC_IMPLEMENTATION.recover orelse return error.MethodNotImplemented;
+                    try recover();
                 },
                 // recover_ok
                 111 => {
-                    try basic_interface.recover_ok();
+                    const recover_ok = BASIC_IMPLEMENTATION.recover_ok orelse return error.MethodNotImplemented;
+                    try recover_ok();
                 },
+                else => return error.UnknownMethod,
             }
         },
         // tx
@@ -229,30 +283,299 @@ pub fn dispatchCallback(class: u16, method: u16) !void {
             switch (method_id) {
                 // select
                 10 => {
-                    try tx_interface.select();
+                    const select = TX_IMPLEMENTATION.select orelse return error.MethodNotImplemented;
+                    try select();
                 },
                 // select_ok
                 11 => {
-                    try tx_interface.select_ok();
+                    const select_ok = TX_IMPLEMENTATION.select_ok orelse return error.MethodNotImplemented;
+                    try select_ok();
                 },
                 // commit
                 20 => {
-                    try tx_interface.commit();
+                    const commit = TX_IMPLEMENTATION.commit orelse return error.MethodNotImplemented;
+                    try commit();
                 },
                 // commit_ok
                 21 => {
-                    try tx_interface.commit_ok();
+                    const commit_ok = TX_IMPLEMENTATION.commit_ok orelse return error.MethodNotImplemented;
+                    try commit_ok();
                 },
                 // rollback
                 30 => {
-                    try tx_interface.rollback();
+                    const rollback = TX_IMPLEMENTATION.rollback orelse return error.MethodNotImplemented;
+                    try rollback();
                 },
                 // rollback_ok
                 31 => {
-                    try tx_interface.rollback_ok();
+                    const rollback_ok = TX_IMPLEMENTATION.rollback_ok orelse return error.MethodNotImplemented;
+                    try rollback_ok();
                 },
+                else => return error.UnknownMethod,
             }
         },
+        else => return error.UnknownClass,
+    }
+}
+pub fn isSynchronous(class_id: u16, method_id: u16) !bool {
+    switch (class_id) {
+        // connection
+        10 => {
+            switch (method_id) {
+                // start
+                10 => {
+                    return true;
+                },
+                // start_ok
+                11 => {
+                    return true;
+                },
+                // secure
+                20 => {
+                    return true;
+                },
+                // secure_ok
+                21 => {
+                    return true;
+                },
+                // tune
+                30 => {
+                    return true;
+                },
+                // tune_ok
+                31 => {
+                    return true;
+                },
+                // open
+                40 => {
+                    return true;
+                },
+                // open_ok
+                41 => {
+                    return true;
+                },
+                // close
+                50 => {
+                    return true;
+                },
+                // close_ok
+                51 => {
+                    return true;
+                },
+                // blocked
+                60 => {
+                    return false;
+                },
+                // unblocked
+                61 => {
+                    return false;
+                },
+                else => return error.UnknownMethod,
+            }
+        },
+        // channel
+        20 => {
+            switch (method_id) {
+                // open
+                10 => {
+                    return true;
+                },
+                // open_ok
+                11 => {
+                    return true;
+                },
+                // flow
+                20 => {
+                    return true;
+                },
+                // flow_ok
+                21 => {
+                    return false;
+                },
+                // close
+                40 => {
+                    return true;
+                },
+                // close_ok
+                41 => {
+                    return true;
+                },
+                else => return error.UnknownMethod,
+            }
+        },
+        // exchange
+        40 => {
+            switch (method_id) {
+                // declare
+                10 => {
+                    return true;
+                },
+                // declare_ok
+                11 => {
+                    return true;
+                },
+                // delete
+                20 => {
+                    return true;
+                },
+                // delete_ok
+                21 => {
+                    return true;
+                },
+                else => return error.UnknownMethod,
+            }
+        },
+        // queue
+        50 => {
+            switch (method_id) {
+                // declare
+                10 => {
+                    return true;
+                },
+                // declare_ok
+                11 => {
+                    return true;
+                },
+                // bind
+                20 => {
+                    return true;
+                },
+                // bind_ok
+                21 => {
+                    return true;
+                },
+                // unbind
+                50 => {
+                    return true;
+                },
+                // unbind_ok
+                51 => {
+                    return true;
+                },
+                // purge
+                30 => {
+                    return true;
+                },
+                // purge_ok
+                31 => {
+                    return true;
+                },
+                // delete
+                40 => {
+                    return true;
+                },
+                // delete_ok
+                41 => {
+                    return true;
+                },
+                else => return error.UnknownMethod,
+            }
+        },
+        // basic
+        60 => {
+            switch (method_id) {
+                // qos
+                10 => {
+                    return true;
+                },
+                // qos_ok
+                11 => {
+                    return true;
+                },
+                // consume
+                20 => {
+                    return true;
+                },
+                // consume_ok
+                21 => {
+                    return true;
+                },
+                // cancel
+                30 => {
+                    return true;
+                },
+                // cancel_ok
+                31 => {
+                    return true;
+                },
+                // publish
+                40 => {
+                    return false;
+                },
+                // @"return"
+                50 => {
+                    return false;
+                },
+                // deliver
+                60 => {
+                    return false;
+                },
+                // get
+                70 => {
+                    return true;
+                },
+                // get_ok
+                71 => {
+                    return true;
+                },
+                // get_empty
+                72 => {
+                    return true;
+                },
+                // ack
+                80 => {
+                    return false;
+                },
+                // reject
+                90 => {
+                    return false;
+                },
+                // recover_async
+                100 => {
+                    return false;
+                },
+                // recover
+                110 => {
+                    return false;
+                },
+                // recover_ok
+                111 => {
+                    return true;
+                },
+                else => return error.UnknownMethod,
+            }
+        },
+        // tx
+        90 => {
+            switch (method_id) {
+                // select
+                10 => {
+                    return true;
+                },
+                // select_ok
+                11 => {
+                    return true;
+                },
+                // commit
+                20 => {
+                    return true;
+                },
+                // commit_ok
+                21 => {
+                    return true;
+                },
+                // rollback
+                30 => {
+                    return true;
+                },
+                // rollback_ok
+                31 => {
+                    return true;
+                },
+                else => return error.UnknownMethod,
+            }
+        },
+        else => return error.UnknownClass,
     }
 }
 const frame_method: u16 = 1;
@@ -280,18 +603,18 @@ const not_allowed: u16 = 530;
 const not_implemented: u16 = 540;
 const internal_error: u16 = 541;
 pub const connection_interface = struct {
-    start: fn () !void,
-    start_ok: fn () !void,
-    secure: fn () !void,
-    secure_ok: fn () !void,
-    tune: fn () !void,
-    tune_ok: fn () !void,
-    open: fn () !void,
-    open_ok: fn () !void,
-    close: fn () !void,
-    close_ok: fn () !void,
-    blocked: fn () !void,
-    unblocked: fn () !void,
+    start: ?fn () anyerror!void,
+    start_ok: ?fn () anyerror!void,
+    secure: ?fn () anyerror!void,
+    secure_ok: ?fn () anyerror!void,
+    tune: ?fn () anyerror!void,
+    tune_ok: ?fn () anyerror!void,
+    open: ?fn () anyerror!void,
+    open_ok: ?fn () anyerror!void,
+    close: ?fn () anyerror!void,
+    close_ok: ?fn () anyerror!void,
+    blocked: ?fn () anyerror!void,
+    unblocked: ?fn () anyerror!void,
 };
 
 pub var CONNECTION_IMPLEMENTATION = connection_interface{
@@ -311,7 +634,7 @@ pub var CONNECTION_IMPLEMENTATION = connection_interface{
 
 pub const CONNECTION_INDEX = 10; // CLASS
 pub const Connection = struct {
-    conn: *Connection,
+    conn: *Wire,
     const Self = @This();
     // METHOD =============================
     pub const OPEN_INDEX = 40;
@@ -340,12 +663,12 @@ pub const Connection = struct {
     }
 };
 pub const channel_interface = struct {
-    open: fn () !void,
-    open_ok: fn () !void,
-    flow: fn () !void,
-    flow_ok: fn () !void,
-    close: fn () !void,
-    close_ok: fn () !void,
+    open: ?fn () anyerror!void,
+    open_ok: ?fn () anyerror!void,
+    flow: ?fn () anyerror!void,
+    flow_ok: ?fn () anyerror!void,
+    close: ?fn () anyerror!void,
+    close_ok: ?fn () anyerror!void,
 };
 
 pub var CHANNEL_IMPLEMENTATION = channel_interface{
@@ -359,7 +682,7 @@ pub var CHANNEL_IMPLEMENTATION = channel_interface{
 
 pub const CHANNEL_INDEX = 20; // CLASS
 pub const Channel = struct {
-    conn: *Connection,
+    conn: *Wire,
     const Self = @This();
     // METHOD =============================
     pub const OPEN_INDEX = 10;
@@ -398,10 +721,10 @@ pub const Channel = struct {
     }
 };
 pub const exchange_interface = struct {
-    declare: fn () !void,
-    declare_ok: fn () !void,
-    delete: fn () !void,
-    delete_ok: fn () !void,
+    declare: ?fn () anyerror!void,
+    declare_ok: ?fn () anyerror!void,
+    delete: ?fn () anyerror!void,
+    delete_ok: ?fn () anyerror!void,
 };
 
 pub var EXCHANGE_IMPLEMENTATION = exchange_interface{
@@ -413,7 +736,7 @@ pub var EXCHANGE_IMPLEMENTATION = exchange_interface{
 
 pub const EXCHANGE_INDEX = 40; // CLASS
 pub const Exchange = struct {
-    conn: *Connection,
+    conn: *Wire,
     const Self = @This();
     // METHOD =============================
     pub const DECLARE_INDEX = 10;
@@ -446,16 +769,16 @@ pub const Exchange = struct {
     }
 };
 pub const queue_interface = struct {
-    declare: fn () !void,
-    declare_ok: fn () !void,
-    bind: fn () !void,
-    bind_ok: fn () !void,
-    unbind: fn () !void,
-    unbind_ok: fn () !void,
-    purge: fn () !void,
-    purge_ok: fn () !void,
-    delete: fn () !void,
-    delete_ok: fn () !void,
+    declare: ?fn () anyerror!void,
+    declare_ok: ?fn () anyerror!void,
+    bind: ?fn () anyerror!void,
+    bind_ok: ?fn () anyerror!void,
+    unbind: ?fn () anyerror!void,
+    unbind_ok: ?fn () anyerror!void,
+    purge: ?fn () anyerror!void,
+    purge_ok: ?fn () anyerror!void,
+    delete: ?fn () anyerror!void,
+    delete_ok: ?fn () anyerror!void,
 };
 
 pub var QUEUE_IMPLEMENTATION = queue_interface{
@@ -473,7 +796,7 @@ pub var QUEUE_IMPLEMENTATION = queue_interface{
 
 pub const QUEUE_INDEX = 50; // CLASS
 pub const Queue = struct {
-    conn: *Connection,
+    conn: *Wire,
     const Self = @This();
     // METHOD =============================
     pub const DECLARE_INDEX = 10;
@@ -549,23 +872,23 @@ pub const Queue = struct {
     }
 };
 pub const basic_interface = struct {
-    qos: fn () !void,
-    qos_ok: fn () !void,
-    consume: fn () !void,
-    consume_ok: fn () !void,
-    cancel: fn () !void,
-    cancel_ok: fn () !void,
-    publish: fn () !void,
-    @"return": fn () !void,
-    deliver: fn () !void,
-    get: fn () !void,
-    get_ok: fn () !void,
-    get_empty: fn () !void,
-    ack: fn () !void,
-    reject: fn () !void,
-    recover_async: fn () !void,
-    recover: fn () !void,
-    recover_ok: fn () !void,
+    qos: ?fn () anyerror!void,
+    qos_ok: ?fn () anyerror!void,
+    consume: ?fn () anyerror!void,
+    consume_ok: ?fn () anyerror!void,
+    cancel: ?fn () anyerror!void,
+    cancel_ok: ?fn () anyerror!void,
+    publish: ?fn () anyerror!void,
+    @"return": ?fn () anyerror!void,
+    deliver: ?fn () anyerror!void,
+    get: ?fn () anyerror!void,
+    get_ok: ?fn () anyerror!void,
+    get_empty: ?fn () anyerror!void,
+    ack: ?fn () anyerror!void,
+    reject: ?fn () anyerror!void,
+    recover_async: ?fn () anyerror!void,
+    recover: ?fn () anyerror!void,
+    recover_ok: ?fn () anyerror!void,
 };
 
 pub var BASIC_IMPLEMENTATION = basic_interface{
@@ -590,7 +913,7 @@ pub var BASIC_IMPLEMENTATION = basic_interface{
 
 pub const BASIC_INDEX = 60; // CLASS
 pub const Basic = struct {
-    conn: *Connection,
+    conn: *Wire,
     const Self = @This();
     // METHOD =============================
     pub const QOS_INDEX = 10;
@@ -648,12 +971,12 @@ pub const Basic = struct {
     }
 };
 pub const tx_interface = struct {
-    select: fn () !void,
-    select_ok: fn () !void,
-    commit: fn () !void,
-    commit_ok: fn () !void,
-    rollback: fn () !void,
-    rollback_ok: fn () !void,
+    select: ?fn () anyerror!void,
+    select_ok: ?fn () anyerror!void,
+    commit: ?fn () anyerror!void,
+    commit_ok: ?fn () anyerror!void,
+    rollback: ?fn () anyerror!void,
+    rollback_ok: ?fn () anyerror!void,
 };
 
 pub var TX_IMPLEMENTATION = tx_interface{
@@ -667,7 +990,7 @@ pub var TX_IMPLEMENTATION = tx_interface{
 
 pub const TX_INDEX = 90; // CLASS
 pub const Tx = struct {
-    conn: *Connection,
+    conn: *Wire,
     const Self = @This();
     // METHOD =============================
     pub const SELECT_INDEX = 10;

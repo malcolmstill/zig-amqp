@@ -22,10 +22,12 @@ pub fn main() !void {
         defer arena.deinit();
         const allocator = &arena.allocator;
 
-        conn.dispatch(allocator, null) catch |err| {
+        const ret = conn.dispatch(allocator, null) catch |err| {
             switch (err) {
                 error.ConnectionResetByPeer => return err,
-                else => {},
+                else => {
+                    return err;
+                },
             }
         };
     }
