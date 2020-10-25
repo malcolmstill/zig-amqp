@@ -14,7 +14,7 @@ pub fn open(allocator: *mem.Allocator, host: ?[]u8, port: ?u16) !Connection {
     };
     // We asynchronously process incoming messages (calling callbacks ) 
     while (true) {
-        const message = try conn.dispatch(allocator);
+        const message = try conn.dispatch(allocator, null);
     }
 
     return conn;
@@ -22,6 +22,8 @@ pub fn open(allocator: *mem.Allocator, host: ?[]u8, port: ?u16) !Connection {
 
 pub const Connection = struct {
     file: fs.File,
+    rx_buffer: [4096]u8 = undefined,
+    tx_buffer: [4096]u8 = undefined,
 
     const Self = @This();
 
@@ -29,17 +31,17 @@ pub const Connection = struct {
         self.file.close();
     }
 
-    pub fn dispatch(self: *Self, allocator: *mem.Allocator) !void {
-        var header_buf: [4096]u8 = undefined;
-        const n = try os.read(self.file.handle, header_buf[0..]);
+    pub fn dispatch(self: *Self, allocator: *mem.Allocator, response: ?struct{ class: u16, method: u16 }) !void {
+        const n = try os.read(self.file.handle, self.rx_buffer[0..]);
 
         if (n < @sizeOf(FrameHeader)) return error.HeaderReadFailed;
-        const header = @ptrCast(*FrameHeader, &header_buf[0]);
+        const header = @ptrCast(*FrameHeader, &self.rx_buffer[0]);
         const size = byteOrder(u32, header.size);
 
         switch (header.@"type") {
             .Method => {
-                std.debug.warn("Got method\n", .{});
+                const method = @ptrCast(*MethodHeader, &self.rx_buffer[@sizeOf(FrameHeader)]);
+                std.debug.warn("Got method: {}.{}\n", .{ byteOrder(u16, method.class), byteOrder(u16, method.method)});
             },
             else => {},
         }
@@ -55,11 +57,11 @@ fn byteOrder(comptime T: type, value: T) T {
     };
 }
 
-const Frame = packed struct {
-    header: FrameHeader = undefined,
-    class: u16 = 0,
-    method: u16 = 0,
-};
+// const Frame = packed struct {
+//     header: FrameHeader = undefined,
+//     class: u16 = 0,
+//     method: u16 = 0,
+// };
 
 const FrameHeader = packed struct {
     @"type": FrameType = .Method,
@@ -72,4 +74,9 @@ const FrameType = enum(u8) {
     Header,
     Body,
     Heartbeat,
+};
+
+const MethodHeader = packed struct {
+    class: u16 = 0,
+    method: u16 = 0,
 };

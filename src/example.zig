@@ -15,14 +15,14 @@ pub fn main() !void {
 
     var ch = try channel.open(conn);
 
-    std.debug.warn("async io: {}\n", .{std.io.is_async});
+    // std.debug.warn("async io: {}\n", .{std.io.is_async});
     // Now wait for messages
     while(true) {
         var arena = heap.ArenaAllocator.init(heap.page_allocator);
         defer arena.deinit();
         const allocator = &arena.allocator;
 
-        conn.dispatch(allocator) catch |err| {
+        conn.dispatch(allocator, null) catch |err| {
             switch (err) {
                 error.ConnectionResetByPeer => return err,
                 else => {},

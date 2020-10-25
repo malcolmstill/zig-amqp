@@ -1,4 +1,5 @@
 const std = @import("std");
+const Connection = @import("connection.zig").Connection;
 // amqp
 const frame_method: u16 = 1;
 const frame_header: u16 = 2;
@@ -24,64 +25,348 @@ const resource_error: u16 = 506;
 const not_allowed: u16 = 530;
 const not_implemented: u16 = 540;
 const internal_error: u16 = 541;
-pub const CONNECTION = 10; // CLASS
-pub const START = 10; // METHOD
-pub const START_OK = 11; // METHOD
-pub const SECURE = 20; // METHOD
-pub const SECURE_OK = 21; // METHOD
-pub const TUNE = 30; // METHOD
-pub const TUNE_OK = 31; // METHOD
-pub const OPEN = 40; // METHOD
-pub const OPEN_OK = 41; // METHOD
-pub const CLOSE = 50; // METHOD
-pub const CLOSE_OK = 51; // METHOD
-pub const BLOCKED = 60; // METHOD
-pub const UNBLOCKED = 61; // METHOD
-pub const CHANNEL = 20; // CLASS
-pub const OPEN = 10; // METHOD
-pub const OPEN_OK = 11; // METHOD
-pub const FLOW = 20; // METHOD
-pub const FLOW_OK = 21; // METHOD
-pub const CLOSE = 40; // METHOD
-pub const CLOSE_OK = 41; // METHOD
-pub const EXCHANGE = 40; // CLASS
-pub const DECLARE = 10; // METHOD
-pub const DECLARE_OK = 11; // METHOD
-pub const DELETE = 20; // METHOD
-pub const DELETE_OK = 21; // METHOD
-pub const QUEUE = 50; // CLASS
-pub const DECLARE = 10; // METHOD
-pub const DECLARE_OK = 11; // METHOD
-pub const BIND = 20; // METHOD
-pub const BIND_OK = 21; // METHOD
-pub const UNBIND = 50; // METHOD
-pub const UNBIND_OK = 51; // METHOD
-pub const PURGE = 30; // METHOD
-pub const PURGE_OK = 31; // METHOD
-pub const DELETE = 40; // METHOD
-pub const DELETE_OK = 41; // METHOD
-pub const BASIC = 60; // CLASS
-pub const QOS = 10; // METHOD
-pub const QOS_OK = 11; // METHOD
-pub const CONSUME = 20; // METHOD
-pub const CONSUME_OK = 21; // METHOD
-pub const CANCEL = 30; // METHOD
-pub const CANCEL_OK = 31; // METHOD
-pub const PUBLISH = 40; // METHOD
-pub const RETURN = 50; // METHOD
-pub const DELIVER = 60; // METHOD
-pub const GET = 70; // METHOD
-pub const GET_OK = 71; // METHOD
-pub const GET_EMPTY = 72; // METHOD
-pub const ACK = 80; // METHOD
-pub const REJECT = 90; // METHOD
-pub const RECOVER_ASYNC = 100; // METHOD
-pub const RECOVER = 110; // METHOD
-pub const RECOVER_OK = 111; // METHOD
-pub const TX = 90; // CLASS
-pub const SELECT = 10; // METHOD
-pub const SELECT_OK = 11; // METHOD
-pub const COMMIT = 20; // METHOD
-pub const COMMIT_OK = 21; // METHOD
-pub const ROLLBACK = 30; // METHOD
-pub const ROLLBACK_OK = 31; // METHOD
+pub const CONNECTION_INDEX = 10; // CLASS
+pub const Connection = struct {
+    // METHOD =============================
+    pub const START_OK_INDEX = 11;
+    pub fn start_ok_sync(
+        conn: *Connection,
+        client_properties: void,
+        mechanism: void,
+        response: void,
+        locale: void,
+    ) void {
+        const n = try os.write(conn.file, conn.tx_buffer[0..]);
+        while (true) {
+            const message = try conn.dispatch(allocator, null);
+        }
+    }
+    // METHOD =============================
+    pub const SECURE_OK_INDEX = 21;
+    pub fn secure_ok_sync(
+        conn: *Connection,
+        response: void,
+    ) void {
+        const n = try os.write(conn.file, conn.tx_buffer[0..]);
+        while (true) {
+            const message = try conn.dispatch(allocator, null);
+        }
+    }
+    // METHOD =============================
+    pub const TUNE_OK_INDEX = 31;
+    pub fn tune_ok_sync(
+        conn: *Connection,
+        channel_max: u16,
+        frame_max: u32,
+        heartbeat: u16,
+    ) void {
+        const n = try os.write(conn.file, conn.tx_buffer[0..]);
+        while (true) {
+            const message = try conn.dispatch(allocator, null);
+        }
+    }
+    // METHOD =============================
+    pub const OPEN_INDEX = 40;
+    pub fn open_sync(
+        conn: *Connection,
+        virtual_host: ?[128]u8,
+    ) void {
+        const n = try os.write(conn.file, conn.tx_buffer[0..]);
+        while (true) {
+            const message = try conn.dispatch(allocator, null);
+        }
+    }
+    // METHOD =============================
+    pub const CLOSE_INDEX = 50;
+    pub fn close_sync(
+        conn: *Connection,
+        reply_code: u16,
+        reply_text: []u8,
+        class_id: u16,
+        method_id: u16,
+    ) void {
+        const n = try os.write(conn.file, conn.tx_buffer[0..]);
+        while (true) {
+            const message = try conn.dispatch(allocator, null);
+        }
+    }
+    // METHOD =============================
+    pub const CLOSE_OK_INDEX = 51;
+    pub fn close_ok_sync(
+        conn: *Connection,
+    ) void {
+        const n = try os.write(conn.file, conn.tx_buffer[0..]);
+        while (true) {
+            const message = try conn.dispatch(allocator, null);
+        }
+    }
+    // METHOD =============================
+    pub const BLOCKED_INDEX = 60;
+    pub fn blocked(conn: *Connection) void {}
+    // METHOD =============================
+    pub const UNBLOCKED_INDEX = 61;
+    pub fn unblocked(conn: *Connection) void {}
+};
+pub const CHANNEL_INDEX = 20; // CLASS
+pub const Channel = struct {
+    // METHOD =============================
+    pub const OPEN_INDEX = 10;
+    pub fn open_sync(
+        conn: *Connection,
+    ) void {
+        const n = try os.write(conn.file, conn.tx_buffer[0..]);
+        while (true) {
+            const message = try conn.dispatch(allocator, null);
+        }
+    }
+    // METHOD =============================
+    pub const FLOW_INDEX = 20;
+    pub fn flow_sync(
+        conn: *Connection,
+        active: bool,
+    ) void {
+        const n = try os.write(conn.file, conn.tx_buffer[0..]);
+        while (true) {
+            const message = try conn.dispatch(allocator, null);
+        }
+    }
+    // METHOD =============================
+    pub const FLOW_OK_INDEX = 21;
+    pub fn flow_ok(conn: *Connection) void {}
+    // METHOD =============================
+    pub const CLOSE_INDEX = 40;
+    pub fn close_sync(
+        conn: *Connection,
+        reply_code: u16,
+        reply_text: []u8,
+        class_id: u16,
+        method_id: u16,
+    ) void {
+        const n = try os.write(conn.file, conn.tx_buffer[0..]);
+        while (true) {
+            const message = try conn.dispatch(allocator, null);
+        }
+    }
+    // METHOD =============================
+    pub const CLOSE_OK_INDEX = 41;
+    pub fn close_ok_sync(
+        conn: *Connection,
+    ) void {
+        const n = try os.write(conn.file, conn.tx_buffer[0..]);
+        while (true) {
+            const message = try conn.dispatch(allocator, null);
+        }
+    }
+};
+pub const EXCHANGE_INDEX = 40; // CLASS
+pub const Exchange = struct {
+    // METHOD =============================
+    pub const DECLARE_INDEX = 10;
+    pub fn declare_sync(
+        conn: *Connection,
+        exchange: void,
+        @"type": void,
+        passive: bool,
+        durable: bool,
+        no_wait: bool,
+        arguments: void,
+    ) void {
+        const n = try os.write(conn.file, conn.tx_buffer[0..]);
+        while (true) {
+            const message = try conn.dispatch(allocator, null);
+        }
+    }
+    // METHOD =============================
+    pub const DELETE_INDEX = 20;
+    pub fn delete_sync(
+        conn: *Connection,
+        exchange: void,
+        if_unused: bool,
+        no_wait: bool,
+    ) void {
+        const n = try os.write(conn.file, conn.tx_buffer[0..]);
+        while (true) {
+            const message = try conn.dispatch(allocator, null);
+        }
+    }
+};
+pub const QUEUE_INDEX = 50; // CLASS
+pub const Queue = struct {
+    // METHOD =============================
+    pub const DECLARE_INDEX = 10;
+    pub fn declare_sync(
+        conn: *Connection,
+        queue: [128]u8,
+        passive: bool,
+        durable: bool,
+        exclusive: bool,
+        auto_delete: bool,
+        no_wait: bool,
+        arguments: void,
+    ) void {
+        const n = try os.write(conn.file, conn.tx_buffer[0..]);
+        while (true) {
+            const message = try conn.dispatch(allocator, null);
+        }
+    }
+    // METHOD =============================
+    pub const BIND_INDEX = 20;
+    pub fn bind_sync(
+        conn: *Connection,
+        queue: [128]u8,
+        exchange: void,
+        routing_key: void,
+        no_wait: bool,
+        arguments: void,
+    ) void {
+        const n = try os.write(conn.file, conn.tx_buffer[0..]);
+        while (true) {
+            const message = try conn.dispatch(allocator, null);
+        }
+    }
+    // METHOD =============================
+    pub const UNBIND_INDEX = 50;
+    pub fn unbind_sync(
+        conn: *Connection,
+        queue: [128]u8,
+        exchange: void,
+        routing_key: void,
+        arguments: void,
+    ) void {
+        const n = try os.write(conn.file, conn.tx_buffer[0..]);
+        while (true) {
+            const message = try conn.dispatch(allocator, null);
+        }
+    }
+    // METHOD =============================
+    pub const PURGE_INDEX = 30;
+    pub fn purge_sync(
+        conn: *Connection,
+        queue: [128]u8,
+        no_wait: bool,
+    ) void {
+        const n = try os.write(conn.file, conn.tx_buffer[0..]);
+        while (true) {
+            const message = try conn.dispatch(allocator, null);
+        }
+    }
+    // METHOD =============================
+    pub const DELETE_INDEX = 40;
+    pub fn delete_sync(
+        conn: *Connection,
+        queue: [128]u8,
+        if_unused: bool,
+        if_empty: bool,
+        no_wait: bool,
+    ) void {
+        const n = try os.write(conn.file, conn.tx_buffer[0..]);
+        while (true) {
+            const message = try conn.dispatch(allocator, null);
+        }
+    }
+};
+pub const BASIC_INDEX = 60; // CLASS
+pub const Basic = struct {
+    // METHOD =============================
+    pub const QOS_INDEX = 10;
+    pub fn qos_sync(
+        conn: *Connection,
+        prefetch_size: u32,
+        prefetch_count: u16,
+        global: bool,
+    ) void {
+        const n = try os.write(conn.file, conn.tx_buffer[0..]);
+        while (true) {
+            const message = try conn.dispatch(allocator, null);
+        }
+    }
+    // METHOD =============================
+    pub const CONSUME_INDEX = 20;
+    pub fn consume_sync(
+        conn: *Connection,
+        queue: [128]u8,
+        consumer_tag: []u8,
+        no_local: bool,
+        no_ack: bool,
+        exclusive: bool,
+        no_wait: bool,
+        arguments: void,
+    ) void {
+        const n = try os.write(conn.file, conn.tx_buffer[0..]);
+        while (true) {
+            const message = try conn.dispatch(allocator, null);
+        }
+    }
+    // METHOD =============================
+    pub const CANCEL_INDEX = 30;
+    pub fn cancel_sync(
+        conn: *Connection,
+        consumer_tag: []u8,
+        no_wait: bool,
+    ) void {
+        const n = try os.write(conn.file, conn.tx_buffer[0..]);
+        while (true) {
+            const message = try conn.dispatch(allocator, null);
+        }
+    }
+    // METHOD =============================
+    pub const PUBLISH_INDEX = 40;
+    pub fn publish(conn: *Connection) void {}
+    // METHOD =============================
+    pub const GET_INDEX = 70;
+    pub fn get_sync(
+        conn: *Connection,
+        queue: [128]u8,
+        no_ack: bool,
+    ) void {
+        const n = try os.write(conn.file, conn.tx_buffer[0..]);
+        while (true) {
+            const message = try conn.dispatch(allocator, null);
+        }
+    }
+    // METHOD =============================
+    pub const ACK_INDEX = 80;
+    pub fn ack(conn: *Connection) void {}
+    // METHOD =============================
+    pub const REJECT_INDEX = 90;
+    pub fn reject(conn: *Connection) void {}
+    // METHOD =============================
+    pub const RECOVER_ASYNC_INDEX = 100;
+    pub fn recover_async(conn: *Connection) void {}
+    // METHOD =============================
+    pub const RECOVER_INDEX = 110;
+    pub fn recover(conn: *Connection) void {}
+};
+pub const TX_INDEX = 90; // CLASS
+pub const Tx = struct {
+    // METHOD =============================
+    pub const SELECT_INDEX = 10;
+    pub fn select_sync(
+        conn: *Connection,
+    ) void {
+        const n = try os.write(conn.file, conn.tx_buffer[0..]);
+        while (true) {
+            const message = try conn.dispatch(allocator, null);
+        }
+    }
+    // METHOD =============================
+    pub const COMMIT_INDEX = 20;
+    pub fn commit_sync(
+        conn: *Connection,
+    ) void {
+        const n = try os.write(conn.file, conn.tx_buffer[0..]);
+        while (true) {
+            const message = try conn.dispatch(allocator, null);
+        }
+    }
+    // METHOD =============================
+    pub const ROLLBACK_INDEX = 30;
+    pub fn rollback_sync(
+        conn: *Connection,
+    ) void {
+        const n = try os.write(conn.file, conn.tx_buffer[0..]);
+        while (true) {
+            const message = try conn.dispatch(allocator, null);
+        }
+    }
+};
