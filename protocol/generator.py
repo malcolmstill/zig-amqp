@@ -32,12 +32,15 @@ def generateLookup(amqp):
 
 def generateLookupMethod(klass):
     print(f"switch (method_id) {{")
+    class_name = klass.attrib['name']
     for child in klass:
         if child.tag == "method":
             method = child
+            method_name = nameClean(method)
             index = method.attrib['index']
-            print(f"// {method.attrib['name']}")
+            print(f"// {method_name}")
             print(f"{index} => {{")
+            print(f"try {class_name}_interface.{method_name}();")
             print(f"}},")
     print(f"}}")
 

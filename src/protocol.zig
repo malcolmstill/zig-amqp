@@ -7,140 +7,250 @@ pub fn dispatchCallback(class: u16, method: u16) !void {
         10 => {
             switch (method_id) {
                 // start
-                10 => {},
-                // start-ok
-                11 => {},
+                10 => {
+                    try connection_interface.start();
+                },
+                // start_ok
+                11 => {
+                    try connection_interface.start_ok();
+                },
                 // secure
-                20 => {},
-                // secure-ok
-                21 => {},
+                20 => {
+                    try connection_interface.secure();
+                },
+                // secure_ok
+                21 => {
+                    try connection_interface.secure_ok();
+                },
                 // tune
-                30 => {},
-                // tune-ok
-                31 => {},
+                30 => {
+                    try connection_interface.tune();
+                },
+                // tune_ok
+                31 => {
+                    try connection_interface.tune_ok();
+                },
                 // open
-                40 => {},
-                // open-ok
-                41 => {},
+                40 => {
+                    try connection_interface.open();
+                },
+                // open_ok
+                41 => {
+                    try connection_interface.open_ok();
+                },
                 // close
-                50 => {},
-                // close-ok
-                51 => {},
+                50 => {
+                    try connection_interface.close();
+                },
+                // close_ok
+                51 => {
+                    try connection_interface.close_ok();
+                },
                 // blocked
-                60 => {},
+                60 => {
+                    try connection_interface.blocked();
+                },
                 // unblocked
-                61 => {},
+                61 => {
+                    try connection_interface.unblocked();
+                },
             }
         },
         // channel
         20 => {
             switch (method_id) {
                 // open
-                10 => {},
-                // open-ok
-                11 => {},
+                10 => {
+                    try channel_interface.open();
+                },
+                // open_ok
+                11 => {
+                    try channel_interface.open_ok();
+                },
                 // flow
-                20 => {},
-                // flow-ok
-                21 => {},
+                20 => {
+                    try channel_interface.flow();
+                },
+                // flow_ok
+                21 => {
+                    try channel_interface.flow_ok();
+                },
                 // close
-                40 => {},
-                // close-ok
-                41 => {},
+                40 => {
+                    try channel_interface.close();
+                },
+                // close_ok
+                41 => {
+                    try channel_interface.close_ok();
+                },
             }
         },
         // exchange
         40 => {
             switch (method_id) {
                 // declare
-                10 => {},
-                // declare-ok
-                11 => {},
+                10 => {
+                    try exchange_interface.declare();
+                },
+                // declare_ok
+                11 => {
+                    try exchange_interface.declare_ok();
+                },
                 // delete
-                20 => {},
-                // delete-ok
-                21 => {},
+                20 => {
+                    try exchange_interface.delete();
+                },
+                // delete_ok
+                21 => {
+                    try exchange_interface.delete_ok();
+                },
             }
         },
         // queue
         50 => {
             switch (method_id) {
                 // declare
-                10 => {},
-                // declare-ok
-                11 => {},
+                10 => {
+                    try queue_interface.declare();
+                },
+                // declare_ok
+                11 => {
+                    try queue_interface.declare_ok();
+                },
                 // bind
-                20 => {},
-                // bind-ok
-                21 => {},
+                20 => {
+                    try queue_interface.bind();
+                },
+                // bind_ok
+                21 => {
+                    try queue_interface.bind_ok();
+                },
                 // unbind
-                50 => {},
-                // unbind-ok
-                51 => {},
+                50 => {
+                    try queue_interface.unbind();
+                },
+                // unbind_ok
+                51 => {
+                    try queue_interface.unbind_ok();
+                },
                 // purge
-                30 => {},
-                // purge-ok
-                31 => {},
+                30 => {
+                    try queue_interface.purge();
+                },
+                // purge_ok
+                31 => {
+                    try queue_interface.purge_ok();
+                },
                 // delete
-                40 => {},
-                // delete-ok
-                41 => {},
+                40 => {
+                    try queue_interface.delete();
+                },
+                // delete_ok
+                41 => {
+                    try queue_interface.delete_ok();
+                },
             }
         },
         // basic
         60 => {
             switch (method_id) {
                 // qos
-                10 => {},
-                // qos-ok
-                11 => {},
+                10 => {
+                    try basic_interface.qos();
+                },
+                // qos_ok
+                11 => {
+                    try basic_interface.qos_ok();
+                },
                 // consume
-                20 => {},
-                // consume-ok
-                21 => {},
+                20 => {
+                    try basic_interface.consume();
+                },
+                // consume_ok
+                21 => {
+                    try basic_interface.consume_ok();
+                },
                 // cancel
-                30 => {},
-                // cancel-ok
-                31 => {},
+                30 => {
+                    try basic_interface.cancel();
+                },
+                // cancel_ok
+                31 => {
+                    try basic_interface.cancel_ok();
+                },
                 // publish
-                40 => {},
-                // return
-                50 => {},
+                40 => {
+                    try basic_interface.publish();
+                },
+                // @"return"
+                50 => {
+                    try basic_interface.@"return"();
+                },
                 // deliver
-                60 => {},
+                60 => {
+                    try basic_interface.deliver();
+                },
                 // get
-                70 => {},
-                // get-ok
-                71 => {},
-                // get-empty
-                72 => {},
+                70 => {
+                    try basic_interface.get();
+                },
+                // get_ok
+                71 => {
+                    try basic_interface.get_ok();
+                },
+                // get_empty
+                72 => {
+                    try basic_interface.get_empty();
+                },
                 // ack
-                80 => {},
+                80 => {
+                    try basic_interface.ack();
+                },
                 // reject
-                90 => {},
-                // recover-async
-                100 => {},
+                90 => {
+                    try basic_interface.reject();
+                },
+                // recover_async
+                100 => {
+                    try basic_interface.recover_async();
+                },
                 // recover
-                110 => {},
-                // recover-ok
-                111 => {},
+                110 => {
+                    try basic_interface.recover();
+                },
+                // recover_ok
+                111 => {
+                    try basic_interface.recover_ok();
+                },
             }
         },
         // tx
         90 => {
             switch (method_id) {
                 // select
-                10 => {},
-                // select-ok
-                11 => {},
+                10 => {
+                    try tx_interface.select();
+                },
+                // select_ok
+                11 => {
+                    try tx_interface.select_ok();
+                },
                 // commit
-                20 => {},
-                // commit-ok
-                21 => {},
+                20 => {
+                    try tx_interface.commit();
+                },
+                // commit_ok
+                21 => {
+                    try tx_interface.commit_ok();
+                },
                 // rollback
-                30 => {},
-                // rollback-ok
-                31 => {},
+                30 => {
+                    try tx_interface.rollback();
+                },
+                // rollback_ok
+                31 => {
+                    try tx_interface.rollback_ok();
+                },
             }
         },
     }
