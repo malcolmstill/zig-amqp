@@ -1,6 +1,150 @@
 const std = @import("std");
 const Connection = @import("connection.zig").Connection;
 // amqp
+pub fn dispatchCallback(class: u16, method: u16) !void {
+    switch (class_id) {
+        // connection
+        10 => {
+            switch (method_id) {
+                // start
+                10 => {},
+                // start-ok
+                11 => {},
+                // secure
+                20 => {},
+                // secure-ok
+                21 => {},
+                // tune
+                30 => {},
+                // tune-ok
+                31 => {},
+                // open
+                40 => {},
+                // open-ok
+                41 => {},
+                // close
+                50 => {},
+                // close-ok
+                51 => {},
+                // blocked
+                60 => {},
+                // unblocked
+                61 => {},
+            }
+        },
+        // channel
+        20 => {
+            switch (method_id) {
+                // open
+                10 => {},
+                // open-ok
+                11 => {},
+                // flow
+                20 => {},
+                // flow-ok
+                21 => {},
+                // close
+                40 => {},
+                // close-ok
+                41 => {},
+            }
+        },
+        // exchange
+        40 => {
+            switch (method_id) {
+                // declare
+                10 => {},
+                // declare-ok
+                11 => {},
+                // delete
+                20 => {},
+                // delete-ok
+                21 => {},
+            }
+        },
+        // queue
+        50 => {
+            switch (method_id) {
+                // declare
+                10 => {},
+                // declare-ok
+                11 => {},
+                // bind
+                20 => {},
+                // bind-ok
+                21 => {},
+                // unbind
+                50 => {},
+                // unbind-ok
+                51 => {},
+                // purge
+                30 => {},
+                // purge-ok
+                31 => {},
+                // delete
+                40 => {},
+                // delete-ok
+                41 => {},
+            }
+        },
+        // basic
+        60 => {
+            switch (method_id) {
+                // qos
+                10 => {},
+                // qos-ok
+                11 => {},
+                // consume
+                20 => {},
+                // consume-ok
+                21 => {},
+                // cancel
+                30 => {},
+                // cancel-ok
+                31 => {},
+                // publish
+                40 => {},
+                // return
+                50 => {},
+                // deliver
+                60 => {},
+                // get
+                70 => {},
+                // get-ok
+                71 => {},
+                // get-empty
+                72 => {},
+                // ack
+                80 => {},
+                // reject
+                90 => {},
+                // recover-async
+                100 => {},
+                // recover
+                110 => {},
+                // recover-ok
+                111 => {},
+            }
+        },
+        // tx
+        90 => {
+            switch (method_id) {
+                // select
+                10 => {},
+                // select-ok
+                11 => {},
+                // commit
+                20 => {},
+                // commit-ok
+                21 => {},
+                // rollback
+                30 => {},
+                // rollback-ok
+                31 => {},
+            }
+        },
+    }
+}
 const frame_method: u16 = 1;
 const frame_header: u16 = 2;
 const frame_body: u16 = 3;

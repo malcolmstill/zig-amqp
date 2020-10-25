@@ -9,11 +9,37 @@ def generate(file):
     amqp = tree.getroot()
     if amqp.tag == "amqp":
         print("// amqp")
+        generateLookup(amqp)
         for child in amqp:
             if child.tag == "constant":
                 print(f"const {nameClean(child)}: u16 = {child.attrib['value']};")
             if child.tag == "class":
                 generate_class(child)
+
+def generateLookup(amqp):
+    print(f"pub fn dispatchCallback(class: u16, method: u16) !void {{")
+    print(f"switch (class_id) {{")
+    for child in amqp:
+        if child.tag == "class":
+            klass = child
+            index = klass.attrib['index']
+            print(f"// {klass.attrib['name']}")
+            print(f"{index} => {{")
+            generateLookupMethod(klass)
+            print(f"}},")
+    print(f"}}")
+    print(f"}}")
+
+def generateLookupMethod(klass):
+    print(f"switch (method_id) {{")
+    for child in klass:
+        if child.tag == "method":
+            method = child
+            index = method.attrib['index']
+            print(f"// {method.attrib['name']}")
+            print(f"{index} => {{")
+            print(f"}},")
+    print(f"}}")
 
 def generate_class(c):
     # print(f"pub const {nameClean(c)} = struct {{")
