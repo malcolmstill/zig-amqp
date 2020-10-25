@@ -279,6 +279,36 @@ const resource_error: u16 = 506;
 const not_allowed: u16 = 530;
 const not_implemented: u16 = 540;
 const internal_error: u16 = 541;
+pub const connection_interface = struct {
+    start: fn () !void,
+    start_ok: fn () !void,
+    secure: fn () !void,
+    secure_ok: fn () !void,
+    tune: fn () !void,
+    tune_ok: fn () !void,
+    open: fn () !void,
+    open_ok: fn () !void,
+    close: fn () !void,
+    close_ok: fn () !void,
+    blocked: fn () !void,
+    unblocked: fn () !void,
+};
+
+pub var CONNECTION_IMPLEMENTATION = connection_interface{
+    .start = null,
+    .start_ok = null,
+    .secure = null,
+    .secure_ok = null,
+    .tune = null,
+    .tune_ok = null,
+    .open = null,
+    .open_ok = null,
+    .close = null,
+    .close_ok = null,
+    .blocked = null,
+    .unblocked = null,
+};
+
 pub const CONNECTION_INDEX = 10; // CLASS
 pub const Connection = struct {
     conn: *Connection,
@@ -309,6 +339,24 @@ pub const Connection = struct {
         }
     }
 };
+pub const channel_interface = struct {
+    open: fn () !void,
+    open_ok: fn () !void,
+    flow: fn () !void,
+    flow_ok: fn () !void,
+    close: fn () !void,
+    close_ok: fn () !void,
+};
+
+pub var CHANNEL_IMPLEMENTATION = channel_interface{
+    .open = null,
+    .open_ok = null,
+    .flow = null,
+    .flow_ok = null,
+    .close = null,
+    .close_ok = null,
+};
+
 pub const CHANNEL_INDEX = 20; // CLASS
 pub const Channel = struct {
     conn: *Connection,
@@ -349,6 +397,20 @@ pub const Channel = struct {
         }
     }
 };
+pub const exchange_interface = struct {
+    declare: fn () !void,
+    declare_ok: fn () !void,
+    delete: fn () !void,
+    delete_ok: fn () !void,
+};
+
+pub var EXCHANGE_IMPLEMENTATION = exchange_interface{
+    .declare = null,
+    .declare_ok = null,
+    .delete = null,
+    .delete_ok = null,
+};
+
 pub const EXCHANGE_INDEX = 40; // CLASS
 pub const Exchange = struct {
     conn: *Connection,
@@ -383,6 +445,32 @@ pub const Exchange = struct {
         }
     }
 };
+pub const queue_interface = struct {
+    declare: fn () !void,
+    declare_ok: fn () !void,
+    bind: fn () !void,
+    bind_ok: fn () !void,
+    unbind: fn () !void,
+    unbind_ok: fn () !void,
+    purge: fn () !void,
+    purge_ok: fn () !void,
+    delete: fn () !void,
+    delete_ok: fn () !void,
+};
+
+pub var QUEUE_IMPLEMENTATION = queue_interface{
+    .declare = null,
+    .declare_ok = null,
+    .bind = null,
+    .bind_ok = null,
+    .unbind = null,
+    .unbind_ok = null,
+    .purge = null,
+    .purge_ok = null,
+    .delete = null,
+    .delete_ok = null,
+};
+
 pub const QUEUE_INDEX = 50; // CLASS
 pub const Queue = struct {
     conn: *Connection,
@@ -460,6 +548,46 @@ pub const Queue = struct {
         }
     }
 };
+pub const basic_interface = struct {
+    qos: fn () !void,
+    qos_ok: fn () !void,
+    consume: fn () !void,
+    consume_ok: fn () !void,
+    cancel: fn () !void,
+    cancel_ok: fn () !void,
+    publish: fn () !void,
+    @"return": fn () !void,
+    deliver: fn () !void,
+    get: fn () !void,
+    get_ok: fn () !void,
+    get_empty: fn () !void,
+    ack: fn () !void,
+    reject: fn () !void,
+    recover_async: fn () !void,
+    recover: fn () !void,
+    recover_ok: fn () !void,
+};
+
+pub var BASIC_IMPLEMENTATION = basic_interface{
+    .qos = null,
+    .qos_ok = null,
+    .consume = null,
+    .consume_ok = null,
+    .cancel = null,
+    .cancel_ok = null,
+    .publish = null,
+    .@"return" = null,
+    .deliver = null,
+    .get = null,
+    .get_ok = null,
+    .get_empty = null,
+    .ack = null,
+    .reject = null,
+    .recover_async = null,
+    .recover = null,
+    .recover_ok = null,
+};
+
 pub const BASIC_INDEX = 60; // CLASS
 pub const Basic = struct {
     conn: *Connection,
@@ -519,6 +647,24 @@ pub const Basic = struct {
         }
     }
 };
+pub const tx_interface = struct {
+    select: fn () !void,
+    select_ok: fn () !void,
+    commit: fn () !void,
+    commit_ok: fn () !void,
+    rollback: fn () !void,
+    rollback_ok: fn () !void,
+};
+
+pub var TX_IMPLEMENTATION = tx_interface{
+    .select = null,
+    .select_ok = null,
+    .commit = null,
+    .commit_ok = null,
+    .rollback = null,
+    .rollback_ok = null,
+};
+
 pub const TX_INDEX = 90; // CLASS
 pub const Tx = struct {
     conn: *Connection,

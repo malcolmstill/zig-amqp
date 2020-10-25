@@ -14,7 +14,9 @@ def generate(file):
             if child.tag == "constant":
                 print(f"const {nameClean(child)}: u16 = {child.attrib['value']};")
             if child.tag == "class":
-                generate_class(child)
+                generateInterface(child)
+                generateImplementation(child)
+                generateClass(child)
 
 def generateLookup(amqp):
     print(f"pub fn dispatchCallback(class: u16, method: u16) !void {{")
@@ -44,7 +46,31 @@ def generateLookupMethod(klass):
             print(f"}},")
     print(f"}}")
 
-def generate_class(c):
+def generateInterface(klass):
+    class_name = nameClean(klass)
+    print(f"pub const {class_name}_interface = struct {{")
+    for child in klass:
+        if child.tag == "method":
+            method = child
+            generateInterfaceMethod(method)
+    print(f"}};\n")
+
+def generateInterfaceMethod(method):
+    method_name = nameClean(method)
+    print(f"{method_name}: fn() !void,")
+
+def generateImplementation(klass):
+    class_name_upper = nameCleanUpper(klass)
+    class_name = nameClean(klass)
+    print(f"pub var {class_name_upper}_IMPLEMENTATION = {class_name}_interface {{")
+    for child in klass:
+        if child.tag == 'method':
+            method = child
+            method_name = nameClean(method)
+            print(f".{method_name} = null,")
+    print(f"}};\n")
+
+def generateClass(c):
     # print(f"pub const {nameClean(c)} = struct {{")
     print(f"pub const {nameCleanUpper(c)}_INDEX = {c.attrib['index']}; // CLASS")
     print(f"pub const {nameCleanCap(c)} = struct {{")
