@@ -20,7 +20,7 @@ def generate(file):
                 generateClass(child)
 
 def generateLookup(amqp):
-    print(f"pub fn dispatchCallback(class_id: u16, method_id: u16) !void {{")
+    print(f"pub fn dispatchCallback(conn: *Wire, class_id: u16, method_id: u16) !void {{")
     print(f"switch (class_id) {{")
     for child in amqp:
         if child.tag == "class":
@@ -43,8 +43,17 @@ def generateLookupMethod(klass):
             index = method.attrib['index']
             print(f"// {method_name}")
             print(f"{index} => {{")
-            print(f"const {method_name} = {class_name_upper}_IMPLEMENTATION.{method_name} orelse return error.MethodNotImplemented;")
-            print(f"try {method_name}();")
+            print(f"const {method_name} = {class_name_upper}_IMPL.{method_name} orelse return error.MethodNotImplemented;")
+            for child in method:
+                if child.tag == 'field':
+                    field = child
+                    print(f"const {nameClean(field)} = void; ")
+            print(f"try {method_name}(")
+            for child in method:
+                if child.tag == 'field':
+                    field = child
+                    print(f"{nameClean(field)}, ")
+            print(f");")
             print(f"}},")
     print(f"else => return error.UnknownMethod, ")            
     print(f"}}")
@@ -65,7 +74,6 @@ def generateIsSyncrhonous(amqp):
 
 def generateIsSyncrhonousMethod(method):
     print(f"switch (method_id) {{")
-    class_name_upper = nameCleanUpper(method)
     for child in method:
         if child.tag == "method":
             method = child
@@ -93,12 +101,17 @@ def generateInterface(klass):
 
 def generateInterfaceMethod(method):
     method_name = nameClean(method)
-    print(f"{method_name}: ?fn() anyerror!void,")
+    print(f"{method_name}: ?fn(")
+    for child in method:
+        if child.tag == 'field':
+            field = child
+            print(f"{nameClean(field)}: {generateArg(field)}, ")
+    print(f") anyerror!void,")
 
 def generateImplementation(klass):
     class_name_upper = nameCleanUpper(klass)
     class_name = nameClean(klass)
-    print(f"pub var {class_name_upper}_IMPLEMENTATION = {class_name}_interface {{")
+    print(f"pub var {class_name_upper}_IMPL = {class_name}_interface {{")
     for child in klass:
         if child.tag == 'method':
             method = child
@@ -143,7 +156,14 @@ def generateClientInitiatedRequest(method):
     print(f"}}")
 
 def generateArg(field):
-    field_type = field.attrib['domain']
+    field_type = None
+    if 'domain' in field.attrib:
+        field_type = field.attrib['domain']
+    if 'type' in field.attrib:
+        field_type = field.attrib['type']
+
+    if field_type == 'octet':
+        return 'u8'
     if field_type == 'long':
         return 'u32'
     if field_type in ['short', 'class-id', 'method-id', 'reply-code']:
@@ -154,7 +174,7 @@ def generateArg(field):
         return '[128]u8'
     if field_type in ['path', 'shortstr']:
         return '?[128]u8'        
-    if field_type in ['consumer-tag', 'reply-text']:
+    if field_type in ['consumer-tag', 'reply-text', 'peer-properties', 'longstr']:
         return '[]u8'              
     return 'void'
 

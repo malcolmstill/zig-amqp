@@ -37,6 +37,13 @@ pub const Wire = struct {
         self.file.close();
     }
 
+    // dispatch reads from our socket and dispatches methods in response
+    // Where dispatch is invoked in initialising a request, we pass in an expected_response
+    // ClassMethod that specifies what (synchronous) response we are expecting. If this value
+    // is supplied and we receive an incorrect (synchronous) method we error, otherwise we
+    // dispatch and return true. In the case
+    // (expected_response supplied), if we receive an asynchronous response we dispatch it
+    // but return true.
     pub fn dispatch(self: *Self, allocator: *mem.Allocator, expected_response: ?ClassMethod) !bool {
         const n = try os.read(self.file.handle, self.rx_buffer[0..]);
 
@@ -60,10 +67,10 @@ pub const Wire = struct {
                         if (class != expected.class) return error.UnexpectedResponseClass;
                         if (method != expected.method) return error.UnexpectedResponseClass;
                     }
-                    try proto.dispatchCallback(class, method);
+                    try proto.dispatchCallback(self, class, method);
                     return true;
                 } else {
-                    try proto.dispatchCallback(class, method);
+                    try proto.dispatchCallback(self, class, method);
                     return false;
                 }
             },

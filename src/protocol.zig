@@ -1,69 +1,131 @@
 const std = @import("std");
 const Wire = @import("connection.zig").Wire;
 // amqp
-pub fn dispatchCallback(class_id: u16, method_id: u16) !void {
+pub fn dispatchCallback(conn: *Wire, class_id: u16, method_id: u16) !void {
     switch (class_id) {
         // connection
         10 => {
             switch (method_id) {
                 // start
                 10 => {
-                    const start = CONNECTION_IMPLEMENTATION.start orelse return error.MethodNotImplemented;
-                    try start();
+                    const start = CONNECTION_IMPL.start orelse return error.MethodNotImplemented;
+                    const version_major = void;
+                    const version_minor = void;
+                    const server_properties = void;
+                    const mechanisms = void;
+                    const locales = void;
+                    try start(
+                        version_major,
+                        version_minor,
+                        server_properties,
+                        mechanisms,
+                        locales,
+                    );
                 },
                 // start_ok
                 11 => {
-                    const start_ok = CONNECTION_IMPLEMENTATION.start_ok orelse return error.MethodNotImplemented;
-                    try start_ok();
+                    const start_ok = CONNECTION_IMPL.start_ok orelse return error.MethodNotImplemented;
+                    const client_properties = void;
+                    const mechanism = void;
+                    const response = void;
+                    const locale = void;
+                    try start_ok(
+                        client_properties,
+                        mechanism,
+                        response,
+                        locale,
+                    );
                 },
                 // secure
                 20 => {
-                    const secure = CONNECTION_IMPLEMENTATION.secure orelse return error.MethodNotImplemented;
-                    try secure();
+                    const secure = CONNECTION_IMPL.secure orelse return error.MethodNotImplemented;
+                    const challenge = void;
+                    try secure(
+                        challenge,
+                    );
                 },
                 // secure_ok
                 21 => {
-                    const secure_ok = CONNECTION_IMPLEMENTATION.secure_ok orelse return error.MethodNotImplemented;
-                    try secure_ok();
+                    const secure_ok = CONNECTION_IMPL.secure_ok orelse return error.MethodNotImplemented;
+                    const response = void;
+                    try secure_ok(
+                        response,
+                    );
                 },
                 // tune
                 30 => {
-                    const tune = CONNECTION_IMPLEMENTATION.tune orelse return error.MethodNotImplemented;
-                    try tune();
+                    const tune = CONNECTION_IMPL.tune orelse return error.MethodNotImplemented;
+                    const channel_max = void;
+                    const frame_max = void;
+                    const heartbeat = void;
+                    try tune(
+                        channel_max,
+                        frame_max,
+                        heartbeat,
+                    );
                 },
                 // tune_ok
                 31 => {
-                    const tune_ok = CONNECTION_IMPLEMENTATION.tune_ok orelse return error.MethodNotImplemented;
-                    try tune_ok();
+                    const tune_ok = CONNECTION_IMPL.tune_ok orelse return error.MethodNotImplemented;
+                    const channel_max = void;
+                    const frame_max = void;
+                    const heartbeat = void;
+                    try tune_ok(
+                        channel_max,
+                        frame_max,
+                        heartbeat,
+                    );
                 },
                 // open
                 40 => {
-                    const open = CONNECTION_IMPLEMENTATION.open orelse return error.MethodNotImplemented;
-                    try open();
+                    const open = CONNECTION_IMPL.open orelse return error.MethodNotImplemented;
+                    const virtual_host = void;
+                    const reserved_1 = void;
+                    const reserved_2 = void;
+                    try open(
+                        virtual_host,
+                        reserved_1,
+                        reserved_2,
+                    );
                 },
                 // open_ok
                 41 => {
-                    const open_ok = CONNECTION_IMPLEMENTATION.open_ok orelse return error.MethodNotImplemented;
-                    try open_ok();
+                    const open_ok = CONNECTION_IMPL.open_ok orelse return error.MethodNotImplemented;
+                    const reserved_1 = void;
+                    try open_ok(
+                        reserved_1,
+                    );
                 },
                 // close
                 50 => {
-                    const close = CONNECTION_IMPLEMENTATION.close orelse return error.MethodNotImplemented;
-                    try close();
+                    const close = CONNECTION_IMPL.close orelse return error.MethodNotImplemented;
+                    const reply_code = void;
+                    const reply_text = void;
+                    const class_id = void;
+                    const method_id = void;
+                    try close(
+                        reply_code,
+                        reply_text,
+                        class_id,
+                        method_id,
+                    );
                 },
                 // close_ok
                 51 => {
-                    const close_ok = CONNECTION_IMPLEMENTATION.close_ok orelse return error.MethodNotImplemented;
+                    const close_ok = CONNECTION_IMPL.close_ok orelse return error.MethodNotImplemented;
                     try close_ok();
                 },
                 // blocked
                 60 => {
-                    const blocked = CONNECTION_IMPLEMENTATION.blocked orelse return error.MethodNotImplemented;
-                    try blocked();
+                    const blocked = CONNECTION_IMPL.blocked orelse return error.MethodNotImplemented;
+                    const reason = void;
+                    try blocked(
+                        reason,
+                    );
                 },
                 // unblocked
                 61 => {
-                    const unblocked = CONNECTION_IMPLEMENTATION.unblocked orelse return error.MethodNotImplemented;
+                    const unblocked = CONNECTION_IMPL.unblocked orelse return error.MethodNotImplemented;
                     try unblocked();
                 },
                 else => return error.UnknownMethod,
@@ -74,32 +136,53 @@ pub fn dispatchCallback(class_id: u16, method_id: u16) !void {
             switch (method_id) {
                 // open
                 10 => {
-                    const open = CHANNEL_IMPLEMENTATION.open orelse return error.MethodNotImplemented;
-                    try open();
+                    const open = CHANNEL_IMPL.open orelse return error.MethodNotImplemented;
+                    const reserved_1 = void;
+                    try open(
+                        reserved_1,
+                    );
                 },
                 // open_ok
                 11 => {
-                    const open_ok = CHANNEL_IMPLEMENTATION.open_ok orelse return error.MethodNotImplemented;
-                    try open_ok();
+                    const open_ok = CHANNEL_IMPL.open_ok orelse return error.MethodNotImplemented;
+                    const reserved_1 = void;
+                    try open_ok(
+                        reserved_1,
+                    );
                 },
                 // flow
                 20 => {
-                    const flow = CHANNEL_IMPLEMENTATION.flow orelse return error.MethodNotImplemented;
-                    try flow();
+                    const flow = CHANNEL_IMPL.flow orelse return error.MethodNotImplemented;
+                    const active = void;
+                    try flow(
+                        active,
+                    );
                 },
                 // flow_ok
                 21 => {
-                    const flow_ok = CHANNEL_IMPLEMENTATION.flow_ok orelse return error.MethodNotImplemented;
-                    try flow_ok();
+                    const flow_ok = CHANNEL_IMPL.flow_ok orelse return error.MethodNotImplemented;
+                    const active = void;
+                    try flow_ok(
+                        active,
+                    );
                 },
                 // close
                 40 => {
-                    const close = CHANNEL_IMPLEMENTATION.close orelse return error.MethodNotImplemented;
-                    try close();
+                    const close = CHANNEL_IMPL.close orelse return error.MethodNotImplemented;
+                    const reply_code = void;
+                    const reply_text = void;
+                    const class_id = void;
+                    const method_id = void;
+                    try close(
+                        reply_code,
+                        reply_text,
+                        class_id,
+                        method_id,
+                    );
                 },
                 // close_ok
                 41 => {
-                    const close_ok = CHANNEL_IMPLEMENTATION.close_ok orelse return error.MethodNotImplemented;
+                    const close_ok = CHANNEL_IMPL.close_ok orelse return error.MethodNotImplemented;
                     try close_ok();
                 },
                 else => return error.UnknownMethod,
@@ -110,22 +193,50 @@ pub fn dispatchCallback(class_id: u16, method_id: u16) !void {
             switch (method_id) {
                 // declare
                 10 => {
-                    const declare = EXCHANGE_IMPLEMENTATION.declare orelse return error.MethodNotImplemented;
-                    try declare();
+                    const declare = EXCHANGE_IMPL.declare orelse return error.MethodNotImplemented;
+                    const reserved_1 = void;
+                    const exchange = void;
+                    const @"type" = void;
+                    const passive = void;
+                    const durable = void;
+                    const reserved_2 = void;
+                    const reserved_3 = void;
+                    const no_wait = void;
+                    const arguments = void;
+                    try declare(
+                        reserved_1,
+                        exchange,
+                        @"type",
+                        passive,
+                        durable,
+                        reserved_2,
+                        reserved_3,
+                        no_wait,
+                        arguments,
+                    );
                 },
                 // declare_ok
                 11 => {
-                    const declare_ok = EXCHANGE_IMPLEMENTATION.declare_ok orelse return error.MethodNotImplemented;
+                    const declare_ok = EXCHANGE_IMPL.declare_ok orelse return error.MethodNotImplemented;
                     try declare_ok();
                 },
                 // delete
                 20 => {
-                    const delete = EXCHANGE_IMPLEMENTATION.delete orelse return error.MethodNotImplemented;
-                    try delete();
+                    const delete = EXCHANGE_IMPL.delete orelse return error.MethodNotImplemented;
+                    const reserved_1 = void;
+                    const exchange = void;
+                    const if_unused = void;
+                    const no_wait = void;
+                    try delete(
+                        reserved_1,
+                        exchange,
+                        if_unused,
+                        no_wait,
+                    );
                 },
                 // delete_ok
                 21 => {
-                    const delete_ok = EXCHANGE_IMPLEMENTATION.delete_ok orelse return error.MethodNotImplemented;
+                    const delete_ok = EXCHANGE_IMPL.delete_ok orelse return error.MethodNotImplemented;
                     try delete_ok();
                 },
                 else => return error.UnknownMethod,
@@ -136,53 +247,125 @@ pub fn dispatchCallback(class_id: u16, method_id: u16) !void {
             switch (method_id) {
                 // declare
                 10 => {
-                    const declare = QUEUE_IMPLEMENTATION.declare orelse return error.MethodNotImplemented;
-                    try declare();
+                    const declare = QUEUE_IMPL.declare orelse return error.MethodNotImplemented;
+                    const reserved_1 = void;
+                    const queue = void;
+                    const passive = void;
+                    const durable = void;
+                    const exclusive = void;
+                    const auto_delete = void;
+                    const no_wait = void;
+                    const arguments = void;
+                    try declare(
+                        reserved_1,
+                        queue,
+                        passive,
+                        durable,
+                        exclusive,
+                        auto_delete,
+                        no_wait,
+                        arguments,
+                    );
                 },
                 // declare_ok
                 11 => {
-                    const declare_ok = QUEUE_IMPLEMENTATION.declare_ok orelse return error.MethodNotImplemented;
-                    try declare_ok();
+                    const declare_ok = QUEUE_IMPL.declare_ok orelse return error.MethodNotImplemented;
+                    const queue = void;
+                    const message_count = void;
+                    const consumer_count = void;
+                    try declare_ok(
+                        queue,
+                        message_count,
+                        consumer_count,
+                    );
                 },
                 // bind
                 20 => {
-                    const bind = QUEUE_IMPLEMENTATION.bind orelse return error.MethodNotImplemented;
-                    try bind();
+                    const bind = QUEUE_IMPL.bind orelse return error.MethodNotImplemented;
+                    const reserved_1 = void;
+                    const queue = void;
+                    const exchange = void;
+                    const routing_key = void;
+                    const no_wait = void;
+                    const arguments = void;
+                    try bind(
+                        reserved_1,
+                        queue,
+                        exchange,
+                        routing_key,
+                        no_wait,
+                        arguments,
+                    );
                 },
                 // bind_ok
                 21 => {
-                    const bind_ok = QUEUE_IMPLEMENTATION.bind_ok orelse return error.MethodNotImplemented;
+                    const bind_ok = QUEUE_IMPL.bind_ok orelse return error.MethodNotImplemented;
                     try bind_ok();
                 },
                 // unbind
                 50 => {
-                    const unbind = QUEUE_IMPLEMENTATION.unbind orelse return error.MethodNotImplemented;
-                    try unbind();
+                    const unbind = QUEUE_IMPL.unbind orelse return error.MethodNotImplemented;
+                    const reserved_1 = void;
+                    const queue = void;
+                    const exchange = void;
+                    const routing_key = void;
+                    const arguments = void;
+                    try unbind(
+                        reserved_1,
+                        queue,
+                        exchange,
+                        routing_key,
+                        arguments,
+                    );
                 },
                 // unbind_ok
                 51 => {
-                    const unbind_ok = QUEUE_IMPLEMENTATION.unbind_ok orelse return error.MethodNotImplemented;
+                    const unbind_ok = QUEUE_IMPL.unbind_ok orelse return error.MethodNotImplemented;
                     try unbind_ok();
                 },
                 // purge
                 30 => {
-                    const purge = QUEUE_IMPLEMENTATION.purge orelse return error.MethodNotImplemented;
-                    try purge();
+                    const purge = QUEUE_IMPL.purge orelse return error.MethodNotImplemented;
+                    const reserved_1 = void;
+                    const queue = void;
+                    const no_wait = void;
+                    try purge(
+                        reserved_1,
+                        queue,
+                        no_wait,
+                    );
                 },
                 // purge_ok
                 31 => {
-                    const purge_ok = QUEUE_IMPLEMENTATION.purge_ok orelse return error.MethodNotImplemented;
-                    try purge_ok();
+                    const purge_ok = QUEUE_IMPL.purge_ok orelse return error.MethodNotImplemented;
+                    const message_count = void;
+                    try purge_ok(
+                        message_count,
+                    );
                 },
                 // delete
                 40 => {
-                    const delete = QUEUE_IMPLEMENTATION.delete orelse return error.MethodNotImplemented;
-                    try delete();
+                    const delete = QUEUE_IMPL.delete orelse return error.MethodNotImplemented;
+                    const reserved_1 = void;
+                    const queue = void;
+                    const if_unused = void;
+                    const if_empty = void;
+                    const no_wait = void;
+                    try delete(
+                        reserved_1,
+                        queue,
+                        if_unused,
+                        if_empty,
+                        no_wait,
+                    );
                 },
                 // delete_ok
                 41 => {
-                    const delete_ok = QUEUE_IMPLEMENTATION.delete_ok orelse return error.MethodNotImplemented;
-                    try delete_ok();
+                    const delete_ok = QUEUE_IMPL.delete_ok orelse return error.MethodNotImplemented;
+                    const message_count = void;
+                    try delete_ok(
+                        message_count,
+                    );
                 },
                 else => return error.UnknownMethod,
             }
@@ -192,87 +375,190 @@ pub fn dispatchCallback(class_id: u16, method_id: u16) !void {
             switch (method_id) {
                 // qos
                 10 => {
-                    const qos = BASIC_IMPLEMENTATION.qos orelse return error.MethodNotImplemented;
-                    try qos();
+                    const qos = BASIC_IMPL.qos orelse return error.MethodNotImplemented;
+                    const prefetch_size = void;
+                    const prefetch_count = void;
+                    const global = void;
+                    try qos(
+                        prefetch_size,
+                        prefetch_count,
+                        global,
+                    );
                 },
                 // qos_ok
                 11 => {
-                    const qos_ok = BASIC_IMPLEMENTATION.qos_ok orelse return error.MethodNotImplemented;
+                    const qos_ok = BASIC_IMPL.qos_ok orelse return error.MethodNotImplemented;
                     try qos_ok();
                 },
                 // consume
                 20 => {
-                    const consume = BASIC_IMPLEMENTATION.consume orelse return error.MethodNotImplemented;
-                    try consume();
+                    const consume = BASIC_IMPL.consume orelse return error.MethodNotImplemented;
+                    const reserved_1 = void;
+                    const queue = void;
+                    const consumer_tag = void;
+                    const no_local = void;
+                    const no_ack = void;
+                    const exclusive = void;
+                    const no_wait = void;
+                    const arguments = void;
+                    try consume(
+                        reserved_1,
+                        queue,
+                        consumer_tag,
+                        no_local,
+                        no_ack,
+                        exclusive,
+                        no_wait,
+                        arguments,
+                    );
                 },
                 // consume_ok
                 21 => {
-                    const consume_ok = BASIC_IMPLEMENTATION.consume_ok orelse return error.MethodNotImplemented;
-                    try consume_ok();
+                    const consume_ok = BASIC_IMPL.consume_ok orelse return error.MethodNotImplemented;
+                    const consumer_tag = void;
+                    try consume_ok(
+                        consumer_tag,
+                    );
                 },
                 // cancel
                 30 => {
-                    const cancel = BASIC_IMPLEMENTATION.cancel orelse return error.MethodNotImplemented;
-                    try cancel();
+                    const cancel = BASIC_IMPL.cancel orelse return error.MethodNotImplemented;
+                    const consumer_tag = void;
+                    const no_wait = void;
+                    try cancel(
+                        consumer_tag,
+                        no_wait,
+                    );
                 },
                 // cancel_ok
                 31 => {
-                    const cancel_ok = BASIC_IMPLEMENTATION.cancel_ok orelse return error.MethodNotImplemented;
-                    try cancel_ok();
+                    const cancel_ok = BASIC_IMPL.cancel_ok orelse return error.MethodNotImplemented;
+                    const consumer_tag = void;
+                    try cancel_ok(
+                        consumer_tag,
+                    );
                 },
                 // publish
                 40 => {
-                    const publish = BASIC_IMPLEMENTATION.publish orelse return error.MethodNotImplemented;
-                    try publish();
+                    const publish = BASIC_IMPL.publish orelse return error.MethodNotImplemented;
+                    const reserved_1 = void;
+                    const exchange = void;
+                    const routing_key = void;
+                    const mandatory = void;
+                    const immediate = void;
+                    try publish(
+                        reserved_1,
+                        exchange,
+                        routing_key,
+                        mandatory,
+                        immediate,
+                    );
                 },
                 // @"return"
                 50 => {
-                    const @"return" = BASIC_IMPLEMENTATION.@"return" orelse return error.MethodNotImplemented;
-                    try @"return"();
+                    const @"return" = BASIC_IMPL.@"return" orelse return error.MethodNotImplemented;
+                    const reply_code = void;
+                    const reply_text = void;
+                    const exchange = void;
+                    const routing_key = void;
+                    try @"return"(
+                        reply_code,
+                        reply_text,
+                        exchange,
+                        routing_key,
+                    );
                 },
                 // deliver
                 60 => {
-                    const deliver = BASIC_IMPLEMENTATION.deliver orelse return error.MethodNotImplemented;
-                    try deliver();
+                    const deliver = BASIC_IMPL.deliver orelse return error.MethodNotImplemented;
+                    const consumer_tag = void;
+                    const delivery_tag = void;
+                    const redelivered = void;
+                    const exchange = void;
+                    const routing_key = void;
+                    try deliver(
+                        consumer_tag,
+                        delivery_tag,
+                        redelivered,
+                        exchange,
+                        routing_key,
+                    );
                 },
                 // get
                 70 => {
-                    const get = BASIC_IMPLEMENTATION.get orelse return error.MethodNotImplemented;
-                    try get();
+                    const get = BASIC_IMPL.get orelse return error.MethodNotImplemented;
+                    const reserved_1 = void;
+                    const queue = void;
+                    const no_ack = void;
+                    try get(
+                        reserved_1,
+                        queue,
+                        no_ack,
+                    );
                 },
                 // get_ok
                 71 => {
-                    const get_ok = BASIC_IMPLEMENTATION.get_ok orelse return error.MethodNotImplemented;
-                    try get_ok();
+                    const get_ok = BASIC_IMPL.get_ok orelse return error.MethodNotImplemented;
+                    const delivery_tag = void;
+                    const redelivered = void;
+                    const exchange = void;
+                    const routing_key = void;
+                    const message_count = void;
+                    try get_ok(
+                        delivery_tag,
+                        redelivered,
+                        exchange,
+                        routing_key,
+                        message_count,
+                    );
                 },
                 // get_empty
                 72 => {
-                    const get_empty = BASIC_IMPLEMENTATION.get_empty orelse return error.MethodNotImplemented;
-                    try get_empty();
+                    const get_empty = BASIC_IMPL.get_empty orelse return error.MethodNotImplemented;
+                    const reserved_1 = void;
+                    try get_empty(
+                        reserved_1,
+                    );
                 },
                 // ack
                 80 => {
-                    const ack = BASIC_IMPLEMENTATION.ack orelse return error.MethodNotImplemented;
-                    try ack();
+                    const ack = BASIC_IMPL.ack orelse return error.MethodNotImplemented;
+                    const delivery_tag = void;
+                    const multiple = void;
+                    try ack(
+                        delivery_tag,
+                        multiple,
+                    );
                 },
                 // reject
                 90 => {
-                    const reject = BASIC_IMPLEMENTATION.reject orelse return error.MethodNotImplemented;
-                    try reject();
+                    const reject = BASIC_IMPL.reject orelse return error.MethodNotImplemented;
+                    const delivery_tag = void;
+                    const requeue = void;
+                    try reject(
+                        delivery_tag,
+                        requeue,
+                    );
                 },
                 // recover_async
                 100 => {
-                    const recover_async = BASIC_IMPLEMENTATION.recover_async orelse return error.MethodNotImplemented;
-                    try recover_async();
+                    const recover_async = BASIC_IMPL.recover_async orelse return error.MethodNotImplemented;
+                    const requeue = void;
+                    try recover_async(
+                        requeue,
+                    );
                 },
                 // recover
                 110 => {
-                    const recover = BASIC_IMPLEMENTATION.recover orelse return error.MethodNotImplemented;
-                    try recover();
+                    const recover = BASIC_IMPL.recover orelse return error.MethodNotImplemented;
+                    const requeue = void;
+                    try recover(
+                        requeue,
+                    );
                 },
                 // recover_ok
                 111 => {
-                    const recover_ok = BASIC_IMPLEMENTATION.recover_ok orelse return error.MethodNotImplemented;
+                    const recover_ok = BASIC_IMPL.recover_ok orelse return error.MethodNotImplemented;
                     try recover_ok();
                 },
                 else => return error.UnknownMethod,
@@ -283,32 +569,32 @@ pub fn dispatchCallback(class_id: u16, method_id: u16) !void {
             switch (method_id) {
                 // select
                 10 => {
-                    const select = TX_IMPLEMENTATION.select orelse return error.MethodNotImplemented;
+                    const select = TX_IMPL.select orelse return error.MethodNotImplemented;
                     try select();
                 },
                 // select_ok
                 11 => {
-                    const select_ok = TX_IMPLEMENTATION.select_ok orelse return error.MethodNotImplemented;
+                    const select_ok = TX_IMPL.select_ok orelse return error.MethodNotImplemented;
                     try select_ok();
                 },
                 // commit
                 20 => {
-                    const commit = TX_IMPLEMENTATION.commit orelse return error.MethodNotImplemented;
+                    const commit = TX_IMPL.commit orelse return error.MethodNotImplemented;
                     try commit();
                 },
                 // commit_ok
                 21 => {
-                    const commit_ok = TX_IMPLEMENTATION.commit_ok orelse return error.MethodNotImplemented;
+                    const commit_ok = TX_IMPL.commit_ok orelse return error.MethodNotImplemented;
                     try commit_ok();
                 },
                 // rollback
                 30 => {
-                    const rollback = TX_IMPLEMENTATION.rollback orelse return error.MethodNotImplemented;
+                    const rollback = TX_IMPL.rollback orelse return error.MethodNotImplemented;
                     try rollback();
                 },
                 // rollback_ok
                 31 => {
-                    const rollback_ok = TX_IMPLEMENTATION.rollback_ok orelse return error.MethodNotImplemented;
+                    const rollback_ok = TX_IMPL.rollback_ok orelse return error.MethodNotImplemented;
                     try rollback_ok();
                 },
                 else => return error.UnknownMethod,
@@ -603,21 +889,57 @@ const not_allowed: u16 = 530;
 const not_implemented: u16 = 540;
 const internal_error: u16 = 541;
 pub const connection_interface = struct {
-    start: ?fn () anyerror!void,
-    start_ok: ?fn () anyerror!void,
-    secure: ?fn () anyerror!void,
-    secure_ok: ?fn () anyerror!void,
-    tune: ?fn () anyerror!void,
-    tune_ok: ?fn () anyerror!void,
-    open: ?fn () anyerror!void,
-    open_ok: ?fn () anyerror!void,
-    close: ?fn () anyerror!void,
+    start: ?fn (
+        version_major: u8,
+        version_minor: u8,
+        server_properties: []u8,
+        mechanisms: []u8,
+        locales: []u8,
+    ) anyerror!void,
+    start_ok: ?fn (
+        client_properties: []u8,
+        mechanism: ?[128]u8,
+        response: []u8,
+        locale: ?[128]u8,
+    ) anyerror!void,
+    secure: ?fn (
+        challenge: []u8,
+    ) anyerror!void,
+    secure_ok: ?fn (
+        response: []u8,
+    ) anyerror!void,
+    tune: ?fn (
+        channel_max: u16,
+        frame_max: u32,
+        heartbeat: u16,
+    ) anyerror!void,
+    tune_ok: ?fn (
+        channel_max: u16,
+        frame_max: u32,
+        heartbeat: u16,
+    ) anyerror!void,
+    open: ?fn (
+        virtual_host: ?[128]u8,
+        reserved_1: ?[128]u8,
+        reserved_2: bool,
+    ) anyerror!void,
+    open_ok: ?fn (
+        reserved_1: ?[128]u8,
+    ) anyerror!void,
+    close: ?fn (
+        reply_code: u16,
+        reply_text: []u8,
+        class_id: u16,
+        method_id: u16,
+    ) anyerror!void,
     close_ok: ?fn () anyerror!void,
-    blocked: ?fn () anyerror!void,
+    blocked: ?fn (
+        reason: ?[128]u8,
+    ) anyerror!void,
     unblocked: ?fn () anyerror!void,
 };
 
-pub var CONNECTION_IMPLEMENTATION = connection_interface{
+pub var CONNECTION_IMPL = connection_interface{
     .start = null,
     .start_ok = null,
     .secure = null,
@@ -663,15 +985,28 @@ pub const Connection = struct {
     }
 };
 pub const channel_interface = struct {
-    open: ?fn () anyerror!void,
-    open_ok: ?fn () anyerror!void,
-    flow: ?fn () anyerror!void,
-    flow_ok: ?fn () anyerror!void,
-    close: ?fn () anyerror!void,
+    open: ?fn (
+        reserved_1: ?[128]u8,
+    ) anyerror!void,
+    open_ok: ?fn (
+        reserved_1: []u8,
+    ) anyerror!void,
+    flow: ?fn (
+        active: bool,
+    ) anyerror!void,
+    flow_ok: ?fn (
+        active: bool,
+    ) anyerror!void,
+    close: ?fn (
+        reply_code: u16,
+        reply_text: []u8,
+        class_id: u16,
+        method_id: u16,
+    ) anyerror!void,
     close_ok: ?fn () anyerror!void,
 };
 
-pub var CHANNEL_IMPLEMENTATION = channel_interface{
+pub var CHANNEL_IMPL = channel_interface{
     .open = null,
     .open_ok = null,
     .flow = null,
@@ -721,13 +1056,28 @@ pub const Channel = struct {
     }
 };
 pub const exchange_interface = struct {
-    declare: ?fn () anyerror!void,
+    declare: ?fn (
+        reserved_1: u16,
+        exchange: [128]u8,
+        @"type": ?[128]u8,
+        passive: bool,
+        durable: bool,
+        reserved_2: bool,
+        reserved_3: bool,
+        no_wait: bool,
+        arguments: void,
+    ) anyerror!void,
     declare_ok: ?fn () anyerror!void,
-    delete: ?fn () anyerror!void,
+    delete: ?fn (
+        reserved_1: u16,
+        exchange: [128]u8,
+        if_unused: bool,
+        no_wait: bool,
+    ) anyerror!void,
     delete_ok: ?fn () anyerror!void,
 };
 
-pub var EXCHANGE_IMPLEMENTATION = exchange_interface{
+pub var EXCHANGE_IMPL = exchange_interface{
     .declare = null,
     .declare_ok = null,
     .delete = null,
@@ -769,19 +1119,59 @@ pub const Exchange = struct {
     }
 };
 pub const queue_interface = struct {
-    declare: ?fn () anyerror!void,
-    declare_ok: ?fn () anyerror!void,
-    bind: ?fn () anyerror!void,
+    declare: ?fn (
+        reserved_1: u16,
+        queue: [128]u8,
+        passive: bool,
+        durable: bool,
+        exclusive: bool,
+        auto_delete: bool,
+        no_wait: bool,
+        arguments: void,
+    ) anyerror!void,
+    declare_ok: ?fn (
+        queue: [128]u8,
+        message_count: void,
+        consumer_count: u32,
+    ) anyerror!void,
+    bind: ?fn (
+        reserved_1: u16,
+        queue: [128]u8,
+        exchange: [128]u8,
+        routing_key: ?[128]u8,
+        no_wait: bool,
+        arguments: void,
+    ) anyerror!void,
     bind_ok: ?fn () anyerror!void,
-    unbind: ?fn () anyerror!void,
+    unbind: ?fn (
+        reserved_1: u16,
+        queue: [128]u8,
+        exchange: [128]u8,
+        routing_key: ?[128]u8,
+        arguments: void,
+    ) anyerror!void,
     unbind_ok: ?fn () anyerror!void,
-    purge: ?fn () anyerror!void,
-    purge_ok: ?fn () anyerror!void,
-    delete: ?fn () anyerror!void,
-    delete_ok: ?fn () anyerror!void,
+    purge: ?fn (
+        reserved_1: u16,
+        queue: [128]u8,
+        no_wait: bool,
+    ) anyerror!void,
+    purge_ok: ?fn (
+        message_count: void,
+    ) anyerror!void,
+    delete: ?fn (
+        reserved_1: u16,
+        queue: [128]u8,
+        if_unused: bool,
+        if_empty: bool,
+        no_wait: bool,
+    ) anyerror!void,
+    delete_ok: ?fn (
+        message_count: void,
+    ) anyerror!void,
 };
 
-pub var QUEUE_IMPLEMENTATION = queue_interface{
+pub var QUEUE_IMPL = queue_interface{
     .declare = null,
     .declare_ok = null,
     .bind = null,
@@ -872,26 +1262,85 @@ pub const Queue = struct {
     }
 };
 pub const basic_interface = struct {
-    qos: ?fn () anyerror!void,
+    qos: ?fn (
+        prefetch_size: u32,
+        prefetch_count: u16,
+        global: bool,
+    ) anyerror!void,
     qos_ok: ?fn () anyerror!void,
-    consume: ?fn () anyerror!void,
-    consume_ok: ?fn () anyerror!void,
-    cancel: ?fn () anyerror!void,
-    cancel_ok: ?fn () anyerror!void,
-    publish: ?fn () anyerror!void,
-    @"return": ?fn () anyerror!void,
-    deliver: ?fn () anyerror!void,
-    get: ?fn () anyerror!void,
-    get_ok: ?fn () anyerror!void,
-    get_empty: ?fn () anyerror!void,
-    ack: ?fn () anyerror!void,
-    reject: ?fn () anyerror!void,
-    recover_async: ?fn () anyerror!void,
-    recover: ?fn () anyerror!void,
+    consume: ?fn (
+        reserved_1: u16,
+        queue: [128]u8,
+        consumer_tag: []u8,
+        no_local: bool,
+        no_ack: bool,
+        exclusive: bool,
+        no_wait: bool,
+        arguments: void,
+    ) anyerror!void,
+    consume_ok: ?fn (
+        consumer_tag: []u8,
+    ) anyerror!void,
+    cancel: ?fn (
+        consumer_tag: []u8,
+        no_wait: bool,
+    ) anyerror!void,
+    cancel_ok: ?fn (
+        consumer_tag: []u8,
+    ) anyerror!void,
+    publish: ?fn (
+        reserved_1: u16,
+        exchange: [128]u8,
+        routing_key: ?[128]u8,
+        mandatory: bool,
+        immediate: bool,
+    ) anyerror!void,
+    @"return": ?fn (
+        reply_code: u16,
+        reply_text: []u8,
+        exchange: [128]u8,
+        routing_key: ?[128]u8,
+    ) anyerror!void,
+    deliver: ?fn (
+        consumer_tag: []u8,
+        delivery_tag: void,
+        redelivered: void,
+        exchange: [128]u8,
+        routing_key: ?[128]u8,
+    ) anyerror!void,
+    get: ?fn (
+        reserved_1: u16,
+        queue: [128]u8,
+        no_ack: bool,
+    ) anyerror!void,
+    get_ok: ?fn (
+        delivery_tag: void,
+        redelivered: void,
+        exchange: [128]u8,
+        routing_key: ?[128]u8,
+        message_count: void,
+    ) anyerror!void,
+    get_empty: ?fn (
+        reserved_1: ?[128]u8,
+    ) anyerror!void,
+    ack: ?fn (
+        delivery_tag: void,
+        multiple: bool,
+    ) anyerror!void,
+    reject: ?fn (
+        delivery_tag: void,
+        requeue: bool,
+    ) anyerror!void,
+    recover_async: ?fn (
+        requeue: bool,
+    ) anyerror!void,
+    recover: ?fn (
+        requeue: bool,
+    ) anyerror!void,
     recover_ok: ?fn () anyerror!void,
 };
 
-pub var BASIC_IMPLEMENTATION = basic_interface{
+pub var BASIC_IMPL = basic_interface{
     .qos = null,
     .qos_ok = null,
     .consume = null,
@@ -979,7 +1428,7 @@ pub const tx_interface = struct {
     rollback_ok: ?fn () anyerror!void,
 };
 
-pub var TX_IMPLEMENTATION = tx_interface{
+pub var TX_IMPL = tx_interface{
     .select = null,
     .select_ok = null,
     .commit = null,
