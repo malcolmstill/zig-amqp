@@ -19,31 +19,37 @@ def generate_class(c):
     # print(f"pub const {nameClean(c)} = struct {{")
     print(f"pub const {nameCleanUpper(c)}_INDEX = {c.attrib['index']}; // CLASS")
     print(f"pub const {nameCleanCap(c)} = struct {{")
+    print(f"conn: *Connection,")
+    print(f"const Self = @This();")
     for child in c:
         if child.tag == "method":
-            is_client = False
-            for method_child in child:
-                if method_child.tag == 'chassis' and 'name' in method_child.attrib and method_child.attrib['name'] == 'server':
-                    is_client = True
-            if is_client:
-                print(f"// METHOD =============================")
-                print(f"pub const {nameCleanUpper(child)}_INDEX = {child.attrib['index']};")
-                # Case 1: a client-initiated synchronous call
-                # We send the initial call and await a given response
-                if ('synchronous' in child.attrib) and (child.attrib['synchronous'] == '1'):
-                    print(f"pub fn {nameClean(child)}_sync(conn: *Connection,")
-                    for method_child in child:
-                        if method_child.tag == 'field' and not ('reserved' in method_child.attrib and method_child.attrib['reserved'] == '1'):
-                            print(f"{nameClean(method_child)}: {generateArg(method_child)}, ", end = '')
-                    print(f") void {{")
-                    # Send message
-                    print(f"const n = try os.write(conn.file, conn.tx_buffer[0..]);")
-                    print(f"while (true) {{ const message = try conn.dispatch(allocator, null); }}")
-                    print(f"}}")
-                else:
-                    print(f"pub fn {nameClean(child)}(conn: *Connection) void {{}}")
+            if isClientInitiatedRequest(child):
+                generateClientInitiatedRequest(child)
 
     print(f"}};")
+
+def isClientInitiatedRequest(method):
+    isRequestSentToServer = False
+    expectsResponse = False
+    for child in method:
+        if child.tag == 'chassis' and 'name' in child.attrib and child.attrib['name'] == 'server':
+            isRequestSentToServer = True
+        if child.tag == 'response':
+            expectsResponse = True
+    return isRequestSentToServer and expectsResponse
+
+def generateClientInitiatedRequest(method):
+    print(f"// METHOD =============================")
+    print(f"pub const {nameCleanUpper(method)}_INDEX = {method.attrib['index']};")
+    print(f"pub fn {nameClean(method)}_sync(self: *Self,")
+    for method_child in method:
+        if method_child.tag == 'field' and not ('reserved' in method_child.attrib and method_child.attrib['reserved'] == '1'):
+            print(f"{nameClean(method_child)}: {generateArg(method_child)}, ", end = '')
+    print(f") void {{")
+    # Send message
+    print(f"const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);")
+    print(f"while (true) {{ const message = try self.conn.dispatch(allocator, null); }}")
+    print(f"}}")
 
 def generateArg(field):
     field_type = field.attrib['domain']
@@ -53,9 +59,9 @@ def generateArg(field):
         return 'u16'
     if field_type in ['bit', 'no-ack', 'no-local', 'no-wait']:
         return 'bool'
-    if field_type == 'queue-name':
+    if field_type in ['queue-name', 'exchange-name']:
         return '[128]u8'
-    if field_type == 'path':
+    if field_type in ['path', 'shortstr']:
         return '?[128]u8'        
     if field_type in ['consumer-tag', 'reply-text']:
         return '[]u8'              
