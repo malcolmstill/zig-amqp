@@ -1,0 +1,6 @@
+example
+example.o
+
+bin/
+
+zig-cache/
