@@ -19,7 +19,7 @@ pub fn open(allocator: *mem.Allocator, host: ?[]u8, port: ?u16) !Wire {
     // We asynchronously process incoming messages (calling callbacks )
     var received_response = false;
     while (!received_response) {
-        const expecting: ClassMethod = .{ .class = 10, .method = 10 };
+        const expecting: ClassMethod = .{ .class = proto.CONNECTION_CLASS, .method = proto.Connection.START_METHOD };
         received_response = try conn.dispatch(allocator, expecting);
     }
 
@@ -30,6 +30,8 @@ pub const Wire = struct {
     file: fs.File,
     rx_buffer: [4096]u8 = undefined,
     tx_buffer: [4096]u8 = undefined,
+    read_head: usize = 0,
+    write_head: usize = 0,
 
     const Self = @This();
 
@@ -45,20 +47,21 @@ pub const Wire = struct {
     // (expected_response supplied), if we receive an asynchronous response we dispatch it
     // but return true.
     pub fn dispatch(self: *Self, allocator: *mem.Allocator, expected_response: ?ClassMethod) !bool {
+        self.read_head = 0;
         const n = try os.read(self.file.handle, self.rx_buffer[0..]);
 
         if (n < @sizeOf(FrameHeader)) return error.HeaderReadFailed;
-        const header = @ptrCast(*FrameHeader, &self.rx_buffer[0]);
+        const header = @ptrCast(*FrameHeader, &self.rx_buffer[self.read_head]);
+        self.read_head += @sizeOf(FrameHeader);
         const size = byteOrder(u32, header.size);
 
         switch (header.@"type") {
             .Method => {
-                const method_header = @ptrCast(*MethodHeader, &self.rx_buffer[@sizeOf(FrameHeader)]);
+                const method_header = @ptrCast(*MethodHeader, &self.rx_buffer[self.read_head]);
                 const class = byteOrder(u16, method_header.class);
                 const method = byteOrder(u16, method_header.method);
-                std.debug.warn("{}.{}\n", .{ class, method });
+                self.read_head += @sizeOf(MethodHeader);
 
-                // TODO: If we are expecting a response and it is not asynchronous, we should that it's what we expect
                 if (expected_response) |expected| {
                     // TODO: ignore asynchronous
                     const is_synchronous = try proto.isSynchronous(class, method);
@@ -82,6 +85,49 @@ pub const Wire = struct {
                 return false;
             },
         }
+    }
+
+    pub fn readU8(self: *Self) u8 {
+        const r = @ptrCast(u8, self.rx_buffer[self.read_head]);
+        self.read_head += 1;
+        return r;
+    }
+
+    pub fn readU16(self: *Self) u16 {
+        const r = @ptrCast(*u16, @alignCast(@alignOf(u16), &self.rx_buffer[self.read_head]));
+        self.read_head += 2;
+        return byteOrder(u16, r.*);
+    }
+
+    pub fn readU32(self: *Self) u32 {
+        const r = @ptrCast(*u32, @alignCast(@alignOf(u32), &self.rx_buffer[self.read_head]));
+        self.read_head += 4;
+        return byteOrder(u32, r.*);
+    }
+
+    pub fn readU64(self: *Self) u64 {
+        const r = @ptrCast(*u64, @alignCast(@alignOf(u64), &self.rx_buffer[self.read_head]));
+        self.read_head += 8;
+        return byteOrder(u64, r.*);
+    }
+
+    pub fn readBool(self: *Self) bool {
+        return false;
+    }
+
+    pub fn readArrayU8(self: *Self) []u8 {
+        const array = self.rx_buffer[self.read_head..self.read_head+128];
+        return array;
+    }
+
+    pub fn readArray128U8(self: *Self) []u8 {
+        const array = self.rx_buffer[self.read_head..self.read_head+128];
+        return array;
+    }
+
+    pub fn readOptionalArray128U8(self: *Self) ?[]u8 {
+        const array = self.rx_buffer[self.read_head..self.read_head+128];
+        return array;
     }
 };
 
