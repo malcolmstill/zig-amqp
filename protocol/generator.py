@@ -177,10 +177,10 @@ def generateRead(field):
         return 'readBool'
     if field_type in ['queue-name', 'exchange-name']:
         return 'readArray128U8'
-    if field_type in ['path', 'shortstr']:
-        return 'readOptionalArray128U8'        
     if field_type in ['consumer-tag', 'reply-text']:
         return 'readArrayU8'
+    if field_type in ['shortstr', 'path']:
+        return 'readLongString'
     if field_type in ['longstr']:
         return 'readLongString'
     if field_type in ['peer-properties', 'table']:
