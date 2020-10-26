@@ -94,15 +94,15 @@ pub const Wire = struct {
     }
 
     pub fn readU16(self: *Self) u16 {
-        const r = @ptrCast(*u16, @alignCast(@alignOf(u16), &self.rx_buffer[self.read_head]));
-        self.read_head += 2;
-        return byteOrder(u16, r.*);
+        const r = std.mem.readInt(u16, @ptrCast(*const [@sizeOf(u16)]u8, &self.rx_buffer[self.read_head]), .Big);
+        self.read_head += @sizeOf(u16);
+        return r;
     }
 
     pub fn readU32(self: *Self) u32 {
-        const r = @ptrCast(*u32, @alignCast(@alignOf(u32), &self.rx_buffer[self.read_head]));
-        self.read_head += 4;
-        return byteOrder(u32, r.*);
+        const r = std.mem.readInt(u32, @ptrCast(*const [@sizeOf(u32)]u8, &self.rx_buffer[self.read_head]), .Big);
+        self.read_head += @sizeOf(u32);
+        return r;
     }
 
     pub fn readU64(self: *Self) u64 {
@@ -112,21 +112,74 @@ pub const Wire = struct {
     }
 
     pub fn readBool(self: *Self) bool {
-        return false;
+        const r = self.readU8();
+        if (r == 0) return false;
+        return true;
     }
 
     pub fn readArrayU8(self: *Self) []u8 {
         const array = self.rx_buffer[self.read_head..self.read_head+128];
+        self.read_head += 128;
         return array;
     }
 
     pub fn readArray128U8(self: *Self) []u8 {
         const array = self.rx_buffer[self.read_head..self.read_head+128];
+        self.read_head += 128;
         return array;
     }
 
     pub fn readOptionalArray128U8(self: *Self) ?[]u8 {
         const array = self.rx_buffer[self.read_head..self.read_head+128];
+        self.read_head += 128;
+        return array;
+    }
+
+    pub fn readShortString(self: *Self) []u8 {
+        const length = self.readU8();
+        const array = self.rx_buffer[self.read_head..self.read_head+length];
+        self.read_head += length;
+        return array;
+    }
+
+    pub fn readLongString(self: *Self) []u8 {
+        const length = self.readU32();
+        const array = self.rx_buffer[self.read_head..self.read_head+length];
+        self.read_head += length;
+        return array;
+    }
+
+    // TODO: this is purely incrementing the read_head without returning anything useful
+    pub fn readTable(self: *Self) []u8 {
+        const length = self.readU32();
+        const saved_read_head = self.read_head;
+
+        while (self.read_head - saved_read_head < length) {
+            const key = self.readShortString();
+            const t = self.readU8();
+            std.debug.warn("{}: ", .{ key });
+            switch (t) {
+                @as(u8, 'F') => {
+                    std.debug.warn("\n\t", .{});
+                    _ = self.readTable();
+                },
+                @as(u8, 't') => {
+                    const b = self.readBool();
+                    std.debug.warn("{}\n", .{ b });
+                },
+                @as(u8, 's') => {
+                    const s = self.readShortString();
+                    std.debug.warn("{}\n", .{ s });
+                },
+                @as(u8, 'S') => {
+                    const s = self.readLongString();
+                    std.debug.warn("{}\n", .{ s });
+                },
+                else => continue,
+            }
+        }
+        const array: []u8 = self.rx_buffer[0..];
+
         return array;
     }
 };
