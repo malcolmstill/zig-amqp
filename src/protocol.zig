@@ -936,14 +936,37 @@ pub const Connection = struct {
     pub const START_METHOD = 10;
     // METHOD =============================
     pub const START_OK_METHOD = 11;
+    pub fn start_ok_resp(
+        self: *Self,
+        client_properties: []u8,
+        mechanism: ?[]u8,
+        response: []u8,
+        locale: ?[]u8,
+    ) void {
+        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    }
     // METHOD =============================
     pub const SECURE_METHOD = 20;
     // METHOD =============================
     pub const SECURE_OK_METHOD = 21;
+    pub fn secure_ok_resp(
+        self: *Self,
+        response: []u8,
+    ) void {
+        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    }
     // METHOD =============================
     pub const TUNE_METHOD = 30;
     // METHOD =============================
     pub const TUNE_OK_METHOD = 31;
+    pub fn tune_ok_resp(
+        self: *Self,
+        channel_max: u16,
+        frame_max: u32,
+        heartbeat: u16,
+    ) void {
+        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    }
     // METHOD =============================
     pub const OPEN_METHOD = 40;
     pub fn open_sync(
@@ -973,10 +996,26 @@ pub const Connection = struct {
     }
     // METHOD =============================
     pub const CLOSE_OK_METHOD = 51;
+    pub fn close_ok_resp(
+        self: *Self,
+    ) void {
+        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    }
     // METHOD =============================
     pub const BLOCKED_METHOD = 60;
+    pub fn blocked_resp(
+        self: *Self,
+        reason: ?[]u8,
+    ) void {
+        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    }
     // METHOD =============================
     pub const UNBLOCKED_METHOD = 61;
+    pub fn unblocked_resp(
+        self: *Self,
+    ) void {
+        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    }
 };
 pub const channel_interface = struct {
     open: ?fn () anyerror!void,
@@ -1034,6 +1073,12 @@ pub const Channel = struct {
     }
     // METHOD =============================
     pub const FLOW_OK_METHOD = 21;
+    pub fn flow_ok_resp(
+        self: *Self,
+        active: bool,
+    ) void {
+        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    }
     // METHOD =============================
     pub const CLOSE_METHOD = 40;
     pub fn close_sync(
@@ -1050,6 +1095,11 @@ pub const Channel = struct {
     }
     // METHOD =============================
     pub const CLOSE_OK_METHOD = 41;
+    pub fn close_ok_resp(
+        self: *Self,
+    ) void {
+        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    }
 };
 pub const exchange_interface = struct {
     declare: ?fn (
@@ -1410,6 +1460,15 @@ pub const Basic = struct {
     pub const CANCEL_OK_METHOD = 31;
     // METHOD =============================
     pub const PUBLISH_METHOD = 40;
+    pub fn publish_resp(
+        self: *Self,
+        exchange: []u8,
+        routing_key: ?[]u8,
+        mandatory: bool,
+        immediate: bool,
+    ) void {
+        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    }
     // METHOD =============================
     pub const RETURN_METHOD = 50;
     // METHOD =============================
@@ -1432,12 +1491,38 @@ pub const Basic = struct {
     pub const GET_EMPTY_METHOD = 72;
     // METHOD =============================
     pub const ACK_METHOD = 80;
+    pub fn ack_resp(
+        self: *Self,
+        delivery_tag: u64,
+        multiple: bool,
+    ) void {
+        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    }
     // METHOD =============================
     pub const REJECT_METHOD = 90;
+    pub fn reject_resp(
+        self: *Self,
+        delivery_tag: u64,
+        requeue: bool,
+    ) void {
+        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    }
     // METHOD =============================
     pub const RECOVER_ASYNC_METHOD = 100;
+    pub fn recover_async_resp(
+        self: *Self,
+        requeue: bool,
+    ) void {
+        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    }
     // METHOD =============================
     pub const RECOVER_METHOD = 110;
+    pub fn recover_resp(
+        self: *Self,
+        requeue: bool,
+    ) void {
+        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    }
     // METHOD =============================
     pub const RECOVER_OK_METHOD = 111;
 };

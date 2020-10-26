@@ -134,6 +134,8 @@ def generateClass(c):
             print(f"pub const {nameCleanUpper(method)}_METHOD = {method.attrib['index']};")
             if isClientInitiatedRequest(method):
                 generateClientInitiatedRequest(method)
+            if isClientResponse(method):
+                generateClientResponse(method)
 
     print(f"}};")
 
@@ -147,6 +149,16 @@ def isClientInitiatedRequest(method):
             expectsResponse = True
     return isRequestSentToServer and expectsResponse
 
+def isClientResponse(method):
+    isRequestSentToServer = False
+    expectsResponse = False
+    for child in method:
+        if child.tag == 'chassis' and 'name' in child.attrib and child.attrib['name'] == 'server':
+            isRequestSentToServer = True
+        if child.tag == 'response':
+            expectsResponse = True
+    return isRequestSentToServer and not expectsResponse
+
 def generateClientInitiatedRequest(method):
     print(f"pub fn {nameClean(method)}_sync(self: *Self,")
     for method_child in method:
@@ -156,6 +168,16 @@ def generateClientInitiatedRequest(method):
     # Send message
     print(f"const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);")
     print(f"while (true) {{ const message = try self.conn.dispatch(allocator, null); }}")
+    print(f"}}")
+
+def generateClientResponse(method):
+    print(f"pub fn {nameClean(method)}_resp(self: *Self,")
+    for method_child in method:
+        if method_child.tag == 'field' and not ('reserved' in method_child.attrib and method_child.attrib['reserved'] == '1'):
+            print(f"{nameClean(method_child)}: {generateArg(method_child)}, ", end = '')
+    print(f") void {{")
+    # Send message
+    print(f"const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);")
     print(f"}}")
 
 def generateRead(field):
