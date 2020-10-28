@@ -8,3 +8,5 @@ zig-cache/
 inject.sh
 
 *.xcf
+
+TOUR.md
