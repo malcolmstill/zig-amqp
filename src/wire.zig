@@ -159,19 +159,19 @@ pub const Wire = struct {
             const t = self.readU8();
             std.debug.warn("{}: ", .{ key });
             switch (t) {
-                @as(u8, 'F') => {
+                'F' => {
                     std.debug.warn("\n\t", .{});
                     _ = self.readTable();
                 },
-                @as(u8, 't') => {
+                't' => {
                     const b = self.readBool();
                     std.debug.warn("{}\n", .{ b });
                 },
-                @as(u8, 's') => {
+                's' => {
                     const s = self.readShortString();
                     std.debug.warn("{}\n", .{ s });
                 },
-                @as(u8, 'S') => {
+                'S' => {
                     const s = self.readLongString();
                     std.debug.warn("{}\n", .{ s });
                 },
