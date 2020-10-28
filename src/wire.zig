@@ -123,7 +123,6 @@ pub const WireBuffer = struct {
                 else => continue,
             }
         }
-        const array: []u8 = self.mem[0..];
 
         return Table {
             .buf = WireBuffer.init(self.mem[saved_read_head..self.head]),

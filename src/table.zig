@@ -19,7 +19,9 @@ pub const Table = struct {
 
     // Lookup a value in the table. Note we need to know the type
     // we expect at compile time. We might not know this at which
-    // point I guess I need a union 
+    // point I guess I need a union. By the time we call lookup we
+    // should already have validated the frame, so I think we maybe
+    // can't error here.
     pub fn lookup(self: *Self, comptime T: type, key: []const u8) ?T {
         defer self.buf.reset();
         const length = self.buf.readU32();
