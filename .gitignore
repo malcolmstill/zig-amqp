@@ -6,3 +6,5 @@ bin/
 zig-cache/
 
 inject.sh
+
+*.xcf

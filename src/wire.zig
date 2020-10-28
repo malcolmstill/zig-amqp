@@ -1,11 +1,12 @@
 // A WireBuffer is an abstraction over a slice that knows how
 // to read and write the AMQP messages
 const std = @import("std");
+const Table = @import("table.zig").Table;
 
 pub const WireBuffer = struct {
     // the current position in the buffer
     mem: []u8 = undefined,
-    head: usize = 0,
+    head: usize = 0, // TODO: do we even need head? Can we just update mem?
 
     const Self = @This();
 
@@ -19,6 +20,10 @@ pub const WireBuffer = struct {
     // move head back to beginning of buffer
     pub fn reset(self: *Self) void {
         self.head = 0;
+    }
+
+    pub fn is_more_data(self: *Self) bool {
+        return self.head < self.mem.len;
     }
 
     pub fn readFrameHeader(self: *Self) !FrameHeader {
@@ -90,37 +95,39 @@ pub const WireBuffer = struct {
     }
 
     // TODO: this is purely incrementing the read_head without returning anything useful
-    pub fn readTable(self: *Self) []u8 {
-        const length = self.readU32();
+    pub fn readTable(self: *Self) Table {
         const saved_read_head = self.head;
+        const length = self.readU32();
 
-        while (self.head - saved_read_head < length) {
+        while (self.head - saved_read_head < (length+@sizeOf(u32))) {
             const key = self.readShortString();
             const t = self.readU8();
-            std.debug.warn("{}: ", .{ key });
+            // std.debug.warn("{}: ", .{ key });
             switch (t) {
                 'F' => {
-                    std.debug.warn("\n\t", .{});
+                    // std.debug.warn("\n\t", .{});
                     _ = self.readTable();
                 },
                 't' => {
                     const b = self.readBool();
-                    std.debug.warn("{}\n", .{ b });
+                    // std.debug.warn("{}\n", .{ b });
                 },
                 's' => {
                     const s = self.readShortString();
-                    std.debug.warn("{}\n", .{ s });
+                    // std.debug.warn("{}\n", .{ s });
                 },
                 'S' => {
                     const s = self.readLongString();
-                    std.debug.warn("{}\n", .{ s });
+                    // std.debug.warn("{}\n", .{ s });
                 },
                 else => continue,
             }
         }
         const array: []u8 = self.mem[0..];
 
-        return array;
+        return Table {
+            .buf = WireBuffer.init(self.mem[saved_read_head..self.head]),
+        };
     }
 
     // Not sure if all of the following are required
