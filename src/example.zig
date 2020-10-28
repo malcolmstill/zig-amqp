@@ -1,13 +1,13 @@
 const std = @import("std");
 const os = std.os;
 const heap = std.heap;
-const connection = @import("connection.zig");
+const Conn = @import("connection.zig").Conn;
 const channel = @import("channel.zig");
 
 pub fn main() !void {
     const stdout = &std.io.getStdOut().outStream();
 
-    var conn = try connection.open(heap.page_allocator, null, null);
+    var conn = try Conn.open(heap.page_allocator, null, null);
     defer conn.deinit();
 
     var ch = try channel.open(conn);
