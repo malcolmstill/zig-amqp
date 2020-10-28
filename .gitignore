@@ -4,3 +4,5 @@ example.o
 bin/
 
 zig-cache/
+
+inject.sh

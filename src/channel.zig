@@ -3,7 +3,7 @@ const fs = std.fs;
 const mem = std.mem;
 const os = std.os;
 const builtin = std.builtin;
-const Wire = @import("wire.zig").Wire;
+const Conn = @import("connection.zig").Conn;
 
 const Channel = struct {
     channel: u16 = 0,
@@ -12,7 +12,7 @@ const Channel = struct {
 
 };
 
-pub fn open(conn: Wire) !Channel {
+pub fn open(conn: Conn) !Channel {
     return Channel{
         .channel = 0, 
     };

@@ -1,7 +1,7 @@
 const std = @import("std");
 const os = std.os;
 const heap = std.heap;
-const connection = @import("wire.zig");
+const connection = @import("connection.zig");
 const channel = @import("channel.zig");
 
 pub fn main() !void {
