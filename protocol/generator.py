@@ -3,7 +3,9 @@ import sys
 
 def generate(file):
     print(f'const std = @import("std");')
-    print(f'const Wire = @import("wire.zig").Wire;')
+    print(f'const Conn = @import("connection.zig").Conn;')
+    print(f'const WireBuffer = @import("wire.zig").WireBuffer;')
+    print(f'const Table = @import("table.zig").Table;')
 
     tree = Tree.parse(file)
     amqp = tree.getroot()
@@ -20,7 +22,7 @@ def generate(file):
                 generateClass(child)
 
 def generateLookup(amqp):
-    print(f"pub fn dispatchCallback(conn: *Wire, class: u16, method: u16) !void {{")
+    print(f"pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {{")
     print(f"switch (class) {{")
     for child in amqp:
         if child.tag == "class":
@@ -47,7 +49,7 @@ def generateLookupMethod(klass):
             for child in method:
                 if child.tag == 'field':
                     field = child
-                    print(f"const {nameClean(field)} = conn.{generateRead(field)}(); ")
+                    print(f"{fieldConstness(field)} {nameClean(field)} = buf.{generateRead(field)}(); ")
             print(f"try {method_name}(")
             for child in method:
                 if child.tag == 'field':
@@ -125,7 +127,7 @@ def generateClass(c):
     # print(f"pub const {nameClean(c)} = struct {{")
     print(f"pub const {nameCleanUpper(c)}_CLASS = {c.attrib['index']}; // CLASS")
     print(f"pub const {nameCleanCap(c)} = struct {{")
-    print(f"conn: *Wire,")
+    print(f"conn: *Conn,")
     print(f"const Self = @This();")
     for child in c:
         if child.tag == "method":
@@ -230,9 +232,23 @@ def generateArg(field):
         return '[]u8'
     if field_type in ['path', 'shortstr']:
         return '?[]u8'        
-    if field_type in ['consumer-tag', 'reply-text', 'peer-properties', 'longstr', 'table']:
-        return '[]u8'              
+    if field_type in ['consumer-tag', 'reply-text', 'longstr']:
+        return '[]u8'
+    if field_type in ['peer-properties', 'table']:
+        return 'Table'
     return 'void'
+
+def fieldConstness(field):
+    field_type = None
+    if 'domain' in field.attrib:
+        field_type = field.attrib['domain']
+    if 'type' in field.attrib:
+        field_type = field.attrib['type']
+
+    if field_type in ['peer-properties', 'table']:
+        return 'var'
+    
+    return 'const'
 
 def nameClean(tag):
     name = tag.attrib['name'].replace('-', '_')
