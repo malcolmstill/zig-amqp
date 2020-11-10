@@ -19,7 +19,7 @@ pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {
                     try start(
                         version_major,
                         version_minor,
-                        server_properties,
+                        &server_properties,
                         mechanisms,
                         locales,
                     );
@@ -32,7 +32,7 @@ pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {
                     const response = buf.readLongString();
                     const locale = buf.readLongString();
                     try start_ok(
-                        client_properties,
+                        &client_properties,
                         mechanism,
                         response,
                         locale,
@@ -203,7 +203,7 @@ pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {
                         passive,
                         durable,
                         no_wait,
-                        arguments,
+                        &arguments,
                     );
                 },
                 // declare_ok
@@ -253,7 +253,7 @@ pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {
                         exclusive,
                         auto_delete,
                         no_wait,
-                        arguments,
+                        &arguments,
                     );
                 },
                 // declare_ok
@@ -282,7 +282,7 @@ pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {
                         exchange,
                         routing_key,
                         no_wait,
-                        arguments,
+                        &arguments,
                     );
                 },
                 // bind_ok
@@ -302,7 +302,7 @@ pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {
                         queue,
                         exchange,
                         routing_key,
-                        arguments,
+                        &arguments,
                     );
                 },
                 // unbind_ok
@@ -393,7 +393,7 @@ pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {
                         no_ack,
                         exclusive,
                         no_wait,
-                        arguments,
+                        &arguments,
                     );
                 },
                 // consume_ok
@@ -872,12 +872,12 @@ pub const connection_interface = struct {
     start: ?fn (
         version_major: u8,
         version_minor: u8,
-        server_properties: Table,
+        server_properties: *Table,
         mechanisms: []u8,
         locales: []u8,
     ) anyerror!void,
     start_ok: ?fn (
-        client_properties: Table,
+        client_properties: *Table,
         mechanism: ?[]u8,
         response: []u8,
         locale: ?[]u8,
@@ -940,7 +940,7 @@ pub const Connection = struct {
     pub const START_OK_METHOD = 11;
     pub fn start_ok_resp(
         self: *Self,
-        client_properties: Table,
+        client_properties: *Table,
         mechanism: ?[]u8,
         response: []u8,
         locale: ?[]u8,
@@ -1110,7 +1110,7 @@ pub const exchange_interface = struct {
         passive: bool,
         durable: bool,
         no_wait: bool,
-        arguments: Table,
+        arguments: *Table,
     ) anyerror!void,
     declare_ok: ?fn () anyerror!void,
     delete: ?fn (
@@ -1141,7 +1141,7 @@ pub const Exchange = struct {
         passive: bool,
         durable: bool,
         no_wait: bool,
-        arguments: Table,
+        arguments: *Table,
     ) void {
         const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
         while (true) {
@@ -1174,7 +1174,7 @@ pub const queue_interface = struct {
         exclusive: bool,
         auto_delete: bool,
         no_wait: bool,
-        arguments: Table,
+        arguments: *Table,
     ) anyerror!void,
     declare_ok: ?fn (
         queue: []u8,
@@ -1186,14 +1186,14 @@ pub const queue_interface = struct {
         exchange: []u8,
         routing_key: ?[]u8,
         no_wait: bool,
-        arguments: Table,
+        arguments: *Table,
     ) anyerror!void,
     bind_ok: ?fn () anyerror!void,
     unbind: ?fn (
         queue: []u8,
         exchange: []u8,
         routing_key: ?[]u8,
-        arguments: Table,
+        arguments: *Table,
     ) anyerror!void,
     unbind_ok: ?fn () anyerror!void,
     purge: ?fn (
@@ -1241,7 +1241,7 @@ pub const Queue = struct {
         exclusive: bool,
         auto_delete: bool,
         no_wait: bool,
-        arguments: Table,
+        arguments: *Table,
     ) void {
         const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
         while (true) {
@@ -1258,7 +1258,7 @@ pub const Queue = struct {
         exchange: []u8,
         routing_key: ?[]u8,
         no_wait: bool,
-        arguments: Table,
+        arguments: *Table,
     ) void {
         const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
         while (true) {
@@ -1274,7 +1274,7 @@ pub const Queue = struct {
         queue: []u8,
         exchange: []u8,
         routing_key: ?[]u8,
-        arguments: Table,
+        arguments: *Table,
     ) void {
         const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
         while (true) {
@@ -1328,7 +1328,7 @@ pub const basic_interface = struct {
         no_ack: bool,
         exclusive: bool,
         no_wait: bool,
-        arguments: Table,
+        arguments: *Table,
     ) anyerror!void,
     consume_ok: ?fn (
         consumer_tag: []u8,
@@ -1437,7 +1437,7 @@ pub const Basic = struct {
         no_ack: bool,
         exclusive: bool,
         no_wait: bool,
-        arguments: Table,
+        arguments: *Table,
     ) void {
         const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
         while (true) {

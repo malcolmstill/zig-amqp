@@ -55,7 +55,7 @@ def generateLookupMethod(klass):
                 if child.tag == 'field':
                     field = child
                     if not ('reserved' in field.attrib):
-                        print(f"{nameClean(field)}, ")
+                        print(f"{addressOf(field)}{nameClean(field)}, ")
             print(f");")
             print(f"}},")
     print(f"else => return error.UnknownMethod, ")            
@@ -182,6 +182,17 @@ def generateClientResponse(method):
     print(f"const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);")
     print(f"}}")
 
+def addressOf(field):
+    field_type = None
+    if 'domain' in field.attrib:
+        field_type = field.attrib['domain']
+    if 'type' in field.attrib:
+        field_type = field.attrib['type']
+
+    if field_type in ['peer-properties', 'table']:
+        return '&'
+    return ''
+
 def generateRead(field):
     field_type = None
     if 'domain' in field.attrib:
@@ -235,7 +246,7 @@ def generateArg(field):
     if field_type in ['consumer-tag', 'reply-text', 'longstr']:
         return '[]u8'
     if field_type in ['peer-properties', 'table']:
-        return 'Table'
+        return '*Table'
     return 'void'
 
 def fieldConstness(field):
