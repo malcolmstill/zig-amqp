@@ -16,7 +16,6 @@ pub const Conn = struct {
 
     const Self = @This();
 
-
     pub fn open(allocator: *mem.Allocator, host: ?[]u8, port: ?u16) !Conn {
         init.init();
 
