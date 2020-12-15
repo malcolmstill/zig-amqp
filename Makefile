@@ -1,7 +1,6 @@
 
 build-example:
 	zig build-exe --single-threaded src/example.zig
-	strip example
 
 build-example-small:
 	zig build-exe --release-small --single-threaded --strip src/example.zig
