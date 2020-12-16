@@ -3,6 +3,8 @@
 const std = @import("std");
 const Table = @import("table.zig").Table;
 
+// TODO: Think about input sanitisation
+
 pub const WireBuffer = struct {
     // the current position in the buffer
     mem: []u8 = undefined,
