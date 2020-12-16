@@ -14,7 +14,7 @@ pub fn build(b: *Builder) void {
     const exe = b.addExecutable("simple_client", "src/main.zig");
     exe.setTarget(target);
     exe.setBuildMode(mode);
-    exe.addPackagePath("connection", "../../src/connection.zig");
+    exe.addPackagePath("amqp", "../../src/amqp.zig");
     exe.install();
 
     const run_cmd = exe.run();
