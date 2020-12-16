@@ -14,13 +14,14 @@ fn connection_start (conn: *Conn, version_major: u8, version_minor: u8, server_p
         locales
     });
 
-    var props_buffer: [1024]u8 = undefined;
+    var props_buffer: [10]u8 = undefined;
     var props_wb: WireBuffer = WireBuffer.init(props_buffer[0..]);
     var client_properties: Table = Table.init(props_wb);
 
     client_properties.insertLongString("product", "Zig AMQP Library");
     client_properties.insertLongString("platform", "Zig 0.7.0");
 
+    // TODO: it's annoying having 3 lines for a single initialisation
     var caps_buf: [1024]u8 = undefined;
     var caps_wb: WireBuffer = WireBuffer.init(caps_buf[0..]);
     var capabilities: Table = Table.init(caps_wb);
@@ -36,14 +37,12 @@ fn connection_start (conn: *Conn, version_major: u8, version_minor: u8, server_p
     client_properties.insertLongString("version", "0.0.1");
 
     // TODO: We want to be able to call start_ok_resp as a function
-    //       rather than having to deal with buffers
+    //       rather than having to deal with buffers.
+    // UPDATE: the above TODO is what we now have, but we require extra
+    //         buffers, and how do we size them. It would be nice to
+    //         avoid allocations.
     var connection: proto.Connection = proto.Connection { .conn = conn };
-    try connection.start_ok_resp(
-        &client_properties,
-        "PLAIN",
-        "\x00guest\x00guest",
-        "en_US",
-    );
+    try connection.start_ok_resp(&client_properties, "PLAIN", "\x00guest\x00guest", "en_US");
 }
 
 pub fn init() void {
