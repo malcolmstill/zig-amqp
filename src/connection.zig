@@ -105,7 +105,7 @@ pub const Conn = struct {
                 return sync_resp_ok;
             },
             .Heartbeat => {
-                std.debug.warn("Got heartbeat\n", .{});
+                if (std.builtin.mode = .Debug) std.debug.warn("Got heartbeat\n", .{});
                 return false;
             },
             else => {

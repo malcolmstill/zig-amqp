@@ -35,6 +35,7 @@ pub const WireBuffer = struct {
         const frame_type = self.readU8();
         const channel = self.readU16();
         const size = self.readU32();
+        // std.debug.warn("frame_type: {}, channel: {}, size: {}\n", .{frame_type, channel, size});
 
         return FrameHeader {
             .@"type" = @intToEnum(FrameType, frame_type),
@@ -234,10 +235,10 @@ const FrameHeader = struct {
 };
 
 const FrameType = enum(u8) {
-    Method = 1,
-    Header,
-    Body,
-    Heartbeat,
+    Method    = 0x01,
+    Header    = 0x02,
+    Body      = 0x04,
+    Heartbeat = 0x08,
 };
 
 const MethodHeader = struct {

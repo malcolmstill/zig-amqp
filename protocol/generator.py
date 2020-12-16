@@ -243,7 +243,7 @@ def generateRead(field):
     if field_type in ['consumer-tag', 'reply-text']:
         return 'readArrayU8'
     if field_type in ['shortstr', 'path']:
-        return 'readLongString'
+        return 'readShortString'
     if field_type in ['longstr']:
         return 'readLongString'
     if field_type in ['peer-properties', 'table']:

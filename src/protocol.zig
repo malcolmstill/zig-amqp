@@ -30,9 +30,9 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                 11 => {
                     const start_ok = CONNECTION_IMPL.start_ok orelse return error.MethodNotImplemented;
                     var client_properties = conn.rx_buffer.readTable();
-                    const mechanism = conn.rx_buffer.readLongString();
+                    const mechanism = conn.rx_buffer.readShortString();
                     const response = conn.rx_buffer.readLongString();
-                    const locale = conn.rx_buffer.readLongString();
+                    const locale = conn.rx_buffer.readShortString();
                     try start_ok(
                         conn,
                         &client_properties,
@@ -88,8 +88,8 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                 // open
                 40 => {
                     const open = CONNECTION_IMPL.open orelse return error.MethodNotImplemented;
-                    const virtual_host = conn.rx_buffer.readLongString();
-                    const reserved_1 = conn.rx_buffer.readLongString();
+                    const virtual_host = conn.rx_buffer.readShortString();
+                    const reserved_1 = conn.rx_buffer.readShortString();
                     const reserved_2 = conn.rx_buffer.readBool();
                     try open(
                         conn,
@@ -99,7 +99,7 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                 // open_ok
                 41 => {
                     const open_ok = CONNECTION_IMPL.open_ok orelse return error.MethodNotImplemented;
-                    const reserved_1 = conn.rx_buffer.readLongString();
+                    const reserved_1 = conn.rx_buffer.readShortString();
                     try open_ok(
                         conn,
                     );
@@ -129,7 +129,7 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                 // blocked
                 60 => {
                     const blocked = CONNECTION_IMPL.blocked orelse return error.MethodNotImplemented;
-                    const reason = conn.rx_buffer.readLongString();
+                    const reason = conn.rx_buffer.readShortString();
                     try blocked(
                         conn,
                         reason,
@@ -151,7 +151,7 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                 // open
                 10 => {
                     const open = CHANNEL_IMPL.open orelse return error.MethodNotImplemented;
-                    const reserved_1 = conn.rx_buffer.readLongString();
+                    const reserved_1 = conn.rx_buffer.readShortString();
                     try open(
                         conn,
                     );
@@ -215,7 +215,7 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                     const declare = EXCHANGE_IMPL.declare orelse return error.MethodNotImplemented;
                     const reserved_1 = conn.rx_buffer.readU16();
                     const exchange = conn.rx_buffer.readArray128U8();
-                    const tipe = conn.rx_buffer.readLongString();
+                    const tipe = conn.rx_buffer.readShortString();
                     const passive = conn.rx_buffer.readBool();
                     const durable = conn.rx_buffer.readBool();
                     const reserved_2 = conn.rx_buffer.readBool();
@@ -307,7 +307,7 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                     const reserved_1 = conn.rx_buffer.readU16();
                     const queue = conn.rx_buffer.readArray128U8();
                     const exchange = conn.rx_buffer.readArray128U8();
-                    const routing_key = conn.rx_buffer.readLongString();
+                    const routing_key = conn.rx_buffer.readShortString();
                     const no_wait = conn.rx_buffer.readBool();
                     var arguments = conn.rx_buffer.readTable();
                     try bind(
@@ -332,7 +332,7 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                     const reserved_1 = conn.rx_buffer.readU16();
                     const queue = conn.rx_buffer.readArray128U8();
                     const exchange = conn.rx_buffer.readArray128U8();
-                    const routing_key = conn.rx_buffer.readLongString();
+                    const routing_key = conn.rx_buffer.readShortString();
                     var arguments = conn.rx_buffer.readTable();
                     try unbind(
                         conn,
@@ -477,7 +477,7 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                     const publish = BASIC_IMPL.publish orelse return error.MethodNotImplemented;
                     const reserved_1 = conn.rx_buffer.readU16();
                     const exchange = conn.rx_buffer.readArray128U8();
-                    const routing_key = conn.rx_buffer.readLongString();
+                    const routing_key = conn.rx_buffer.readShortString();
                     const mandatory = conn.rx_buffer.readBool();
                     const immediate = conn.rx_buffer.readBool();
                     try publish(
@@ -494,7 +494,7 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                     const reply_code = conn.rx_buffer.readU16();
                     const reply_text = conn.rx_buffer.readArrayU8();
                     const exchange = conn.rx_buffer.readArray128U8();
-                    const routing_key = conn.rx_buffer.readLongString();
+                    const routing_key = conn.rx_buffer.readShortString();
                     try @"return"(
                         conn,
                         reply_code,
@@ -510,7 +510,7 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                     const delivery_tag = conn.rx_buffer.readU64();
                     const redelivered = conn.rx_buffer.readBool();
                     const exchange = conn.rx_buffer.readArray128U8();
-                    const routing_key = conn.rx_buffer.readLongString();
+                    const routing_key = conn.rx_buffer.readShortString();
                     try deliver(
                         conn,
                         consumer_tag,
@@ -538,7 +538,7 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                     const delivery_tag = conn.rx_buffer.readU64();
                     const redelivered = conn.rx_buffer.readBool();
                     const exchange = conn.rx_buffer.readArray128U8();
-                    const routing_key = conn.rx_buffer.readLongString();
+                    const routing_key = conn.rx_buffer.readShortString();
                     const message_count = conn.rx_buffer.readU32();
                     try get_ok(
                         conn,
@@ -552,7 +552,7 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                 // get_empty
                 72 => {
                     const get_empty = BASIC_IMPL.get_empty orelse return error.MethodNotImplemented;
-                    const reserved_1 = conn.rx_buffer.readLongString();
+                    const reserved_1 = conn.rx_buffer.readShortString();
                     try get_empty(
                         conn,
                     );

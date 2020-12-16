@@ -46,12 +46,20 @@ fn connection_start (conn: *Conn, version_major: u8, version_minor: u8, server_p
     try connection.start_ok_resp(&client_properties, "PLAIN", "\x00guest\x00guest", "en_US");
 }
 
-fn tune (conn: *Conn, channel_max: u16, frame_max: u32, heartbeat: u16) !void {
+fn tune(conn: *Conn, channel_max: u16, frame_max: u32, heartbeat: u16) !void {
     var connection: proto.Connection = proto.Connection { .conn = conn };
     try connection.tune_ok_resp(channel_max, frame_max, heartbeat);
+}
+
+fn open_ok(conn: *Conn) anyerror!void {
+    // var connection: proto.Connection = proto.Connection { .conn = conn };
+    // try connection.tune_ok_resp(channel_max, frame_max, heartbeat);
+    // if (true) return error.Noop;
+    return;
 }
 
 pub fn init() void {
     proto.CONNECTION_IMPL.start = connection_start;
     proto.CONNECTION_IMPL.tune = tune;
+    proto.CONNECTION_IMPL.open_ok = open_ok;
 }
