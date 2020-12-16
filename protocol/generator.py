@@ -181,9 +181,9 @@ def generateClientInitiatedRequest(method, klass_cap, klass_upper):
                 print(f"const {nameClean(method_child)} = {generateReserved(method_child)};")
             print(f"self.conn.tx_buffer.{generateWrite(method_child, nameClean(method_child))};")
     # Send message
-    print(f"self.conn.tx_buffer.updateFrameLength();");
+    print(f"self.conn.tx_buffer.updateFrameLength();")
     print(f"const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());")
-    print(f"self.conn.tx_buffer.reset();");
+    print(f"self.conn.tx_buffer.reset();")
     print(f"var received_response = false; while (!received_response) {{ const expecting: ClassMethod = .{{ .class = {klass_upper}_CLASS, .method = {klass_cap}.{reply_method}_METHOD }}; received_response = try self.conn.dispatch(expecting); }}")
     print(f"}}")
 
