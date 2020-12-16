@@ -186,9 +186,9 @@ def generateClientResponse(method, class_index, method_index):
             print(f"self.conn.tx_buffer.{generateWrite(method_child, nameClean(method_child))};")
     # Send message
     print(f"self.conn.tx_buffer.updateFrameLength();");
-    print(f"for (self.conn.tx_buffer.extent()) |x| {{ std.debug.warn(\"0x{{x:0>2}} \", .{{x}}); }}")
-    print(f"std.debug.warn(\"{{}}\\n\", .{{self.conn.tx_buffer.extent()}});")
-    print(f"std.debug.warn(\"{{x}}\\n\", .{{self.conn.tx_buffer.extent()}});")
+    # print(f"for (self.conn.tx_buffer.extent()) |x| {{ std.debug.warn(\"0x{{x:0>2}} \", .{{x}}); }}")
+    # print(f"std.debug.warn(\"{{}}\\n\", .{{self.conn.tx_buffer.extent()}});")
+    # print(f"std.debug.warn(\"{{x}}\\n\", .{{self.conn.tx_buffer.extent()}});")
     print(f"const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());")
     print(f"}}")
 

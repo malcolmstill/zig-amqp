@@ -1041,11 +1041,6 @@ pub const Connection = struct {
         self.conn.tx_buffer.writeLongString(response);
         self.conn.tx_buffer.writeShortString(locale);
         self.conn.tx_buffer.updateFrameLength();
-        for (self.conn.tx_buffer.extent()) |x| {
-            std.debug.warn("0x{x:0>2} ", .{x});
-        }
-        std.debug.warn("{}\n", .{self.conn.tx_buffer.extent()});
-        std.debug.warn("{x}\n", .{self.conn.tx_buffer.extent()});
         const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
     }
     // METHOD =============================
@@ -1060,11 +1055,6 @@ pub const Connection = struct {
         self.conn.tx_buffer.writeMethodHeader(10, 21);
         self.conn.tx_buffer.writeLongString(response);
         self.conn.tx_buffer.updateFrameLength();
-        for (self.conn.tx_buffer.extent()) |x| {
-            std.debug.warn("0x{x:0>2} ", .{x});
-        }
-        std.debug.warn("{}\n", .{self.conn.tx_buffer.extent()});
-        std.debug.warn("{x}\n", .{self.conn.tx_buffer.extent()});
         const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
     }
     // METHOD =============================
@@ -1083,11 +1073,6 @@ pub const Connection = struct {
         self.conn.tx_buffer.writeU32(frame_max);
         self.conn.tx_buffer.writeU16(heartbeat);
         self.conn.tx_buffer.updateFrameLength();
-        for (self.conn.tx_buffer.extent()) |x| {
-            std.debug.warn("0x{x:0>2} ", .{x});
-        }
-        std.debug.warn("{}\n", .{self.conn.tx_buffer.extent()});
-        std.debug.warn("{x}\n", .{self.conn.tx_buffer.extent()});
         const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
     }
     // METHOD =============================
@@ -1125,11 +1110,6 @@ pub const Connection = struct {
         self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
         self.conn.tx_buffer.writeMethodHeader(10, 51);
         self.conn.tx_buffer.updateFrameLength();
-        for (self.conn.tx_buffer.extent()) |x| {
-            std.debug.warn("0x{x:0>2} ", .{x});
-        }
-        std.debug.warn("{}\n", .{self.conn.tx_buffer.extent()});
-        std.debug.warn("{x}\n", .{self.conn.tx_buffer.extent()});
         const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
     }
     // METHOD =============================
@@ -1142,11 +1122,6 @@ pub const Connection = struct {
         self.conn.tx_buffer.writeMethodHeader(10, 60);
         self.conn.tx_buffer.writeShortString(reason);
         self.conn.tx_buffer.updateFrameLength();
-        for (self.conn.tx_buffer.extent()) |x| {
-            std.debug.warn("0x{x:0>2} ", .{x});
-        }
-        std.debug.warn("{}\n", .{self.conn.tx_buffer.extent()});
-        std.debug.warn("{x}\n", .{self.conn.tx_buffer.extent()});
         const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
     }
     // METHOD =============================
@@ -1157,11 +1132,6 @@ pub const Connection = struct {
         self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
         self.conn.tx_buffer.writeMethodHeader(10, 61);
         self.conn.tx_buffer.updateFrameLength();
-        for (self.conn.tx_buffer.extent()) |x| {
-            std.debug.warn("0x{x:0>2} ", .{x});
-        }
-        std.debug.warn("{}\n", .{self.conn.tx_buffer.extent()});
-        std.debug.warn("{x}\n", .{self.conn.tx_buffer.extent()});
         const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
     }
 };
@@ -1238,11 +1208,6 @@ pub const Channel = struct {
         self.conn.tx_buffer.writeMethodHeader(20, 21);
         self.conn.tx_buffer.writeBool(active);
         self.conn.tx_buffer.updateFrameLength();
-        for (self.conn.tx_buffer.extent()) |x| {
-            std.debug.warn("0x{x:0>2} ", .{x});
-        }
-        std.debug.warn("{}\n", .{self.conn.tx_buffer.extent()});
-        std.debug.warn("{x}\n", .{self.conn.tx_buffer.extent()});
         const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
     }
     // METHOD =============================
@@ -1267,11 +1232,6 @@ pub const Channel = struct {
         self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
         self.conn.tx_buffer.writeMethodHeader(20, 41);
         self.conn.tx_buffer.updateFrameLength();
-        for (self.conn.tx_buffer.extent()) |x| {
-            std.debug.warn("0x{x:0>2} ", .{x});
-        }
-        std.debug.warn("{}\n", .{self.conn.tx_buffer.extent()});
-        std.debug.warn("{x}\n", .{self.conn.tx_buffer.extent()});
         const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
     }
 };
@@ -1686,11 +1646,6 @@ pub const Basic = struct {
         self.conn.tx_buffer.writeBool(mandatory);
         self.conn.tx_buffer.writeBool(immediate);
         self.conn.tx_buffer.updateFrameLength();
-        for (self.conn.tx_buffer.extent()) |x| {
-            std.debug.warn("0x{x:0>2} ", .{x});
-        }
-        std.debug.warn("{}\n", .{self.conn.tx_buffer.extent()});
-        std.debug.warn("{x}\n", .{self.conn.tx_buffer.extent()});
         const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
     }
     // METHOD =============================
@@ -1725,11 +1680,6 @@ pub const Basic = struct {
         self.conn.tx_buffer.writeU64(delivery_tag);
         self.conn.tx_buffer.writeBool(multiple);
         self.conn.tx_buffer.updateFrameLength();
-        for (self.conn.tx_buffer.extent()) |x| {
-            std.debug.warn("0x{x:0>2} ", .{x});
-        }
-        std.debug.warn("{}\n", .{self.conn.tx_buffer.extent()});
-        std.debug.warn("{x}\n", .{self.conn.tx_buffer.extent()});
         const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
     }
     // METHOD =============================
@@ -1744,11 +1694,6 @@ pub const Basic = struct {
         self.conn.tx_buffer.writeU64(delivery_tag);
         self.conn.tx_buffer.writeBool(requeue);
         self.conn.tx_buffer.updateFrameLength();
-        for (self.conn.tx_buffer.extent()) |x| {
-            std.debug.warn("0x{x:0>2} ", .{x});
-        }
-        std.debug.warn("{}\n", .{self.conn.tx_buffer.extent()});
-        std.debug.warn("{x}\n", .{self.conn.tx_buffer.extent()});
         const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
     }
     // METHOD =============================
@@ -1761,11 +1706,6 @@ pub const Basic = struct {
         self.conn.tx_buffer.writeMethodHeader(60, 100);
         self.conn.tx_buffer.writeBool(requeue);
         self.conn.tx_buffer.updateFrameLength();
-        for (self.conn.tx_buffer.extent()) |x| {
-            std.debug.warn("0x{x:0>2} ", .{x});
-        }
-        std.debug.warn("{}\n", .{self.conn.tx_buffer.extent()});
-        std.debug.warn("{x}\n", .{self.conn.tx_buffer.extent()});
         const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
     }
     // METHOD =============================
@@ -1778,11 +1718,6 @@ pub const Basic = struct {
         self.conn.tx_buffer.writeMethodHeader(60, 110);
         self.conn.tx_buffer.writeBool(requeue);
         self.conn.tx_buffer.updateFrameLength();
-        for (self.conn.tx_buffer.extent()) |x| {
-            std.debug.warn("0x{x:0>2} ", .{x});
-        }
-        std.debug.warn("{}\n", .{self.conn.tx_buffer.extent()});
-        std.debug.warn("{x}\n", .{self.conn.tx_buffer.extent()});
         const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
     }
     // METHOD =============================

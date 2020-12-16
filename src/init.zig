@@ -14,12 +14,6 @@ fn connection_start (conn: *Conn, version_major: u8, version_minor: u8, server_p
         locales
     });
 
-    std.debug.warn("product: {}\n", .{ server_properties.lookup([]u8, "product") });
-
-    // if (server_properties.lookup(Table, "capabilities")) |*caps| {
-    //     std.debug.warn("\tconnection.blocked: {}\n", .{ caps.lookup(bool, "connection.blocked") });
-    // }
-
     var props_buffer: [1024]u8 = undefined;
     var props_wb: WireBuffer = WireBuffer.init(props_buffer[0..]);
     var client_properties: Table = Table.init(props_wb);
@@ -40,10 +34,6 @@ fn connection_start (conn: *Conn, version_major: u8, version_minor: u8, server_p
 
     client_properties.insertLongString("information", "See https://github.com/malcolmstill/zig-amqp");
     client_properties.insertLongString("version", "0.0.1");
-
-    std.debug.warn("client_properties:\n", .{});
-    client_properties.print();
-    std.debug.warn("end client_properties:\n", .{});
 
     // TODO: We want to be able to call start_ok_resp as a function
     //       rather than having to deal with buffers
