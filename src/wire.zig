@@ -51,11 +51,11 @@ pub const WireBuffer = struct {
 
 
     pub fn updateFrameLength(self: *Self) void {
+        self.writeFrameEnd();
         const head = self.head;
         self.head = 3;
-        self.writeU32(@intCast(u32, head));
+        self.writeU32(@intCast(u32, head-8)); // size is head - header length (7 bytes) - frame end (1 bytes)
         self.head = head;
-        self.writeFrameEnd();
     }
 
     fn writeFrameEnd(self: *Self) void {
