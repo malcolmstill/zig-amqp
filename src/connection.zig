@@ -86,10 +86,14 @@ pub const Conn = struct {
                     const is_synchronous = try proto.isSynchronous(class, method);
                     
                     if (is_synchronous) {
+                        // if (class != expected.class) return error.UnexpectedResponseClass;
+                        // if (method != expected.method) return error.UnexpectedResponseClass;
+
                         if (class == expected.class and method == expected.method) {
                             sync_resp_ok = true;
                         } else {
-                            sync_resp_ok = false;
+                            // sync_resp_ok = false;
+                            return error.UnexpectedSync;
                         }
                     } else {
                         sync_resp_ok = true;

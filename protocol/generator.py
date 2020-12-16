@@ -176,7 +176,9 @@ def generateClientInitiatedRequest(method, klass_cap, klass_upper):
     print(f"self.conn.tx_buffer.writeMethodHeader({klass_upper}_CLASS, {klass_cap}.{method_name}_METHOD);")
     # Generate writes
     for method_child in method:
-        if method_child.tag == 'field' and not ('reserved' in method_child.attrib and method_child.attrib['reserved'] == '1'):
+        if method_child.tag == 'field':
+            if ('reserved' in method_child.attrib and method_child.attrib['reserved'] == '1'):
+                print(f"const {nameClean(method_child)} = {generateReserved(method_child)};")
             print(f"self.conn.tx_buffer.{generateWrite(method_child, nameClean(method_child))};")
     # Send message
     print(f"self.conn.tx_buffer.updateFrameLength();");
@@ -195,7 +197,9 @@ def generateClientResponse(method, class_index, method_index):
     print(f"self.conn.tx_buffer.writeMethodHeader({class_index}, {method_index});")
     # Generate writes
     for method_child in method:
-        if method_child.tag == 'field' and not ('reserved' in method_child.attrib and method_child.attrib['reserved'] == '1'):
+        if method_child.tag == 'field':
+            if ('reserved' in method_child.attrib and method_child.attrib['reserved'] == '1'):
+                print(f"const {nameClean(method_child)} = {generateReserved(method_child)};")
             print(f"self.conn.tx_buffer.{generateWrite(method_child, nameClean(method_child))};")
     # Send message
     print(f"self.conn.tx_buffer.updateFrameLength();");
@@ -273,7 +277,7 @@ def generateWrite(field, name):
         return 'writeLongString(' + name + ')'
     if field_type in ['peer-properties', 'table']:
         return f"writeTable({name}.buf.mem[0..{name}.buf.head])"
-    return 'void'
+    return 'void'    
 
 def generateArg(field):
     field_type = None
@@ -300,6 +304,35 @@ def generateArg(field):
         return '[]const u8'
     if field_type in ['peer-properties', 'table']:
         return '*Table'
+    return 'void'
+
+def generateReserved(field):
+    field_type = None
+    if 'domain' in field.attrib:
+        field_type = field.attrib['domain']
+    if 'type' in field.attrib:
+        field_type = field.attrib['type']
+
+    if field_type == 'octet':
+        return '0'
+    if field_type in ['longlong', 'delivery-tag']:
+        return '0'
+    if field_type in ['long', 'message-count']:
+        return '0'
+    if field_type in ['short', 'class-id', 'method-id', 'reply-code']:
+        return '0'
+    if field_type in ['bit', 'no-ack', 'no-local', 'no-wait', 'redelivered']:
+        return 'false'
+    if field_type in ['queue-name', 'exchange-name']:
+        return ''
+    if field_type in ['consumer-tag', 'reply-text']:
+        return ''
+    if field_type in ['shortstr', 'path']:
+        return '""'
+    if field_type in ['longstr']:
+        return '""'
+    if field_type in ['peer-properties', 'table']:
+        return ''
     return 'void'
 
 def fieldConstness(field):

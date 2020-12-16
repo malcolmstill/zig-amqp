@@ -1088,6 +1088,10 @@ pub const Connection = struct {
         self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
         self.conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.OPEN_METHOD);
         self.conn.tx_buffer.writeShortString(virtual_host);
+        const reserved_1 = "";
+        self.conn.tx_buffer.writeShortString(reserved_1);
+        const reserved_2 = false;
+        self.conn.tx_buffer.writeBool(reserved_2);
         self.conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
         self.conn.tx_buffer.reset();
@@ -1206,6 +1210,8 @@ pub const Channel = struct {
     ) !void {
         self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
         self.conn.tx_buffer.writeMethodHeader(CHANNEL_CLASS, Channel.OPEN_METHOD);
+        const reserved_1 = "";
+        self.conn.tx_buffer.writeShortString(reserved_1);
         self.conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
         self.conn.tx_buffer.reset();
@@ -1332,10 +1338,16 @@ pub const Exchange = struct {
     ) !void {
         self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
         self.conn.tx_buffer.writeMethodHeader(EXCHANGE_CLASS, Exchange.DECLARE_METHOD);
+        const reserved_1 = 0;
+        self.conn.tx_buffer.writeU16(reserved_1);
         self.conn.tx_buffer.writeArray128U8(exchange);
         self.conn.tx_buffer.writeShortString(tipe);
         self.conn.tx_buffer.writeBool(passive);
         self.conn.tx_buffer.writeBool(durable);
+        const reserved_2 = false;
+        self.conn.tx_buffer.writeBool(reserved_2);
+        const reserved_3 = false;
+        self.conn.tx_buffer.writeBool(reserved_3);
         self.conn.tx_buffer.writeBool(no_wait);
         self.conn.tx_buffer.writeTable(arguments.buf.mem[0..arguments.buf.head]);
         self.conn.tx_buffer.updateFrameLength();
@@ -1359,6 +1371,8 @@ pub const Exchange = struct {
     ) !void {
         self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
         self.conn.tx_buffer.writeMethodHeader(EXCHANGE_CLASS, Exchange.DELETE_METHOD);
+        const reserved_1 = 0;
+        self.conn.tx_buffer.writeU16(reserved_1);
         self.conn.tx_buffer.writeArray128U8(exchange);
         self.conn.tx_buffer.writeBool(if_unused);
         self.conn.tx_buffer.writeBool(no_wait);
@@ -1465,6 +1479,8 @@ pub const Queue = struct {
     ) !void {
         self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
         self.conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.DECLARE_METHOD);
+        const reserved_1 = 0;
+        self.conn.tx_buffer.writeU16(reserved_1);
         self.conn.tx_buffer.writeArray128U8(queue);
         self.conn.tx_buffer.writeBool(passive);
         self.conn.tx_buffer.writeBool(durable);
@@ -1495,6 +1511,8 @@ pub const Queue = struct {
     ) !void {
         self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
         self.conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.BIND_METHOD);
+        const reserved_1 = 0;
+        self.conn.tx_buffer.writeU16(reserved_1);
         self.conn.tx_buffer.writeArray128U8(queue);
         self.conn.tx_buffer.writeArray128U8(exchange);
         self.conn.tx_buffer.writeShortString(routing_key);
@@ -1522,6 +1540,8 @@ pub const Queue = struct {
     ) !void {
         self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
         self.conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.UNBIND_METHOD);
+        const reserved_1 = 0;
+        self.conn.tx_buffer.writeU16(reserved_1);
         self.conn.tx_buffer.writeArray128U8(queue);
         self.conn.tx_buffer.writeArray128U8(exchange);
         self.conn.tx_buffer.writeShortString(routing_key);
@@ -1546,6 +1566,8 @@ pub const Queue = struct {
     ) !void {
         self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
         self.conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.PURGE_METHOD);
+        const reserved_1 = 0;
+        self.conn.tx_buffer.writeU16(reserved_1);
         self.conn.tx_buffer.writeArray128U8(queue);
         self.conn.tx_buffer.writeBool(no_wait);
         self.conn.tx_buffer.updateFrameLength();
@@ -1570,6 +1592,8 @@ pub const Queue = struct {
     ) !void {
         self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
         self.conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.DELETE_METHOD);
+        const reserved_1 = 0;
+        self.conn.tx_buffer.writeU16(reserved_1);
         self.conn.tx_buffer.writeArray128U8(queue);
         self.conn.tx_buffer.writeBool(if_unused);
         self.conn.tx_buffer.writeBool(if_empty);
@@ -1742,6 +1766,8 @@ pub const Basic = struct {
     ) !void {
         self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
         self.conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.CONSUME_METHOD);
+        const reserved_1 = 0;
+        self.conn.tx_buffer.writeU16(reserved_1);
         self.conn.tx_buffer.writeArray128U8(queue);
         self.conn.tx_buffer.writeArrayU8(consumer_tag);
         self.conn.tx_buffer.writeBool(no_local);
@@ -1793,6 +1819,8 @@ pub const Basic = struct {
     ) !void {
         self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
         self.conn.tx_buffer.writeMethodHeader(60, 40);
+        const reserved_1 = 0;
+        self.conn.tx_buffer.writeU16(reserved_1);
         self.conn.tx_buffer.writeArray128U8(exchange);
         self.conn.tx_buffer.writeShortString(routing_key);
         self.conn.tx_buffer.writeBool(mandatory);
@@ -1814,6 +1842,8 @@ pub const Basic = struct {
     ) !void {
         self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
         self.conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.GET_METHOD);
+        const reserved_1 = 0;
+        self.conn.tx_buffer.writeU16(reserved_1);
         self.conn.tx_buffer.writeArray128U8(queue);
         self.conn.tx_buffer.writeBool(no_ack);
         self.conn.tx_buffer.updateFrameLength();
