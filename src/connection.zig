@@ -18,14 +18,17 @@ pub const Conn = struct {
 
     const Self = @This();
 
-    pub fn open(allocator: *mem.Allocator, host: ?[]u8, port: ?u16) !Conn {
+    // TODO: This should return Connection instead of Conn
+    pub fn open(allocator: *mem.Allocator, host: ?[]u8, port: ?u16) !proto.Connection {
         init.init();
 
         const file = try net.tcpConnectToHost(allocator, host orelse "127.0.0.1", port orelse 5672);
         const n = try file.write("AMQP\x00\x00\x09\x01");
 
-        var conn = Conn {
-            .file = file,
+        var connection: proto.Connection = proto.Connection {
+            .conn = Conn {
+                .file = file,
+            }
         };
 
         // TODO: I think we want something like an await_start_ok()
@@ -33,21 +36,20 @@ pub const Conn = struct {
         var received_response = false;
         while (!received_response) {
             const expecting: ClassMethod = .{ .class = proto.CONNECTION_CLASS, .method = proto.Connection.START_METHOD };
-            received_response = try conn.dispatch(expecting);
+            received_response = try connection.conn.dispatch(expecting);
         }
 
         // Await tune
         received_response = false;
         while (!received_response) {
             const expecting: ClassMethod = .{ .class = proto.CONNECTION_CLASS, .method = proto.Connection.TUNE_METHOD };
-            received_response = try conn.dispatch(expecting);
+            received_response = try connection.conn.dispatch(expecting);
             // if (received_response) std.debug.warn("Received tune\n", .{});
         }
 
-        var connection: proto.Connection = proto.Connection { .conn = &conn };
         try connection.open_sync("/");
 
-        return conn;
+        return connection;
     }
 
     pub fn deinit(self: *Self) void {
@@ -103,7 +105,8 @@ pub const Conn = struct {
                 }
 
                 // 4a. Finally dispatch the class / method
-                try proto.dispatchCallback(self, class, method);
+                const connection: *proto.Connection = @fieldParentPtr(proto.Connection, "conn", self);
+                try proto.dispatchCallback(connection, class, method);
                 return sync_resp_ok;
             },
             .Heartbeat => {

@@ -4,7 +4,7 @@ const Table = @import("table.zig").Table;
 const WireBuffer = @import("wire.zig").WireBuffer;
 const Conn = @import("connection.zig").Conn;
 
-fn connection_start (conn: *Conn, version_major: u8, version_minor: u8, server_properties: *Table, mechanisms: []const u8, locales: []const u8) !void {
+fn connection_start (connection: *proto.Connection, version_major: u8, version_minor: u8, server_properties: *Table, mechanisms: []const u8, locales: []const u8) !void {
     const host = server_properties.lookup([]u8, "cluster_name");
     std.debug.warn("Connected to {} AMQP server (version {}.{})\nmechanisms: {}\nlocale: {}\n", .{
         host,
@@ -37,7 +37,7 @@ fn connection_start (conn: *Conn, version_major: u8, version_minor: u8, server_p
     client_properties.insertLongString("version", "0.0.1");
 
     // TODO: We don't want to have to do this:
-    var connection: proto.Connection = proto.Connection { .conn = conn };
+    // var connection: proto.Connection = proto.Connection { .conn = conn };
     // TODO: We want to be able to call start_ok_resp as a function
     //       rather than having to deal with buffers.
     // UPDATE: the above TODO is what we now have, but we require extra
@@ -46,12 +46,11 @@ fn connection_start (conn: *Conn, version_major: u8, version_minor: u8, server_p
     try connection.start_ok_resp(&client_properties, "PLAIN", "\x00guest\x00guest", "en_US");
 }
 
-fn tune(conn: *Conn, channel_max: u16, frame_max: u32, heartbeat: u16) !void {
-    var connection: proto.Connection = proto.Connection { .conn = conn };
+fn tune(connection: *proto.Connection, channel_max: u16, frame_max: u32, heartbeat: u16) !void {
     try connection.tune_ok_resp(channel_max, frame_max, heartbeat);
 }
 
-fn open_ok(conn: *Conn) anyerror!void {
+fn open_ok(connection: *proto.Connection) anyerror!void {
     // var connection: proto.Connection = proto.Connection { .conn = conn };
     // try connection.tune_ok_resp(channel_max, frame_max, heartbeat);
     // if (true) return error.Noop;

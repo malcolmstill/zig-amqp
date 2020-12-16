@@ -4,7 +4,7 @@ const ClassMethod = @import("connection.zig").ClassMethod;
 const WireBuffer = @import("wire.zig").WireBuffer;
 const Table = @import("table.zig").Table;
 // amqp
-pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
+pub fn dispatchCallback(c: *Connection, class: u16, method: u16) !void {
     switch (class) {
         // connection
         10 => {
@@ -12,13 +12,13 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                 // start
                 10 => {
                     const start = CONNECTION_IMPL.start orelse return error.MethodNotImplemented;
-                    const version_major = conn.rx_buffer.readU8();
-                    const version_minor = conn.rx_buffer.readU8();
-                    var server_properties = conn.rx_buffer.readTable();
-                    const mechanisms = conn.rx_buffer.readLongString();
-                    const locales = conn.rx_buffer.readLongString();
+                    const version_major = c.conn.rx_buffer.readU8();
+                    const version_minor = c.conn.rx_buffer.readU8();
+                    var server_properties = c.conn.rx_buffer.readTable();
+                    const mechanisms = c.conn.rx_buffer.readLongString();
+                    const locales = c.conn.rx_buffer.readLongString();
                     try start(
-                        conn,
+                        c,
                         version_major,
                         version_minor,
                         &server_properties,
@@ -29,12 +29,12 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                 // start_ok
                 11 => {
                     const start_ok = CONNECTION_IMPL.start_ok orelse return error.MethodNotImplemented;
-                    var client_properties = conn.rx_buffer.readTable();
-                    const mechanism = conn.rx_buffer.readShortString();
-                    const response = conn.rx_buffer.readLongString();
-                    const locale = conn.rx_buffer.readShortString();
+                    var client_properties = c.conn.rx_buffer.readTable();
+                    const mechanism = c.conn.rx_buffer.readShortString();
+                    const response = c.conn.rx_buffer.readLongString();
+                    const locale = c.conn.rx_buffer.readShortString();
                     try start_ok(
-                        conn,
+                        c,
                         &client_properties,
                         mechanism,
                         response,
@@ -44,29 +44,29 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                 // secure
                 20 => {
                     const secure = CONNECTION_IMPL.secure orelse return error.MethodNotImplemented;
-                    const challenge = conn.rx_buffer.readLongString();
+                    const challenge = c.conn.rx_buffer.readLongString();
                     try secure(
-                        conn,
+                        c,
                         challenge,
                     );
                 },
                 // secure_ok
                 21 => {
                     const secure_ok = CONNECTION_IMPL.secure_ok orelse return error.MethodNotImplemented;
-                    const response = conn.rx_buffer.readLongString();
+                    const response = c.conn.rx_buffer.readLongString();
                     try secure_ok(
-                        conn,
+                        c,
                         response,
                     );
                 },
                 // tune
                 30 => {
                     const tune = CONNECTION_IMPL.tune orelse return error.MethodNotImplemented;
-                    const channel_max = conn.rx_buffer.readU16();
-                    const frame_max = conn.rx_buffer.readU32();
-                    const heartbeat = conn.rx_buffer.readU16();
+                    const channel_max = c.conn.rx_buffer.readU16();
+                    const frame_max = c.conn.rx_buffer.readU32();
+                    const heartbeat = c.conn.rx_buffer.readU16();
                     try tune(
-                        conn,
+                        c,
                         channel_max,
                         frame_max,
                         heartbeat,
@@ -75,11 +75,11 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                 // tune_ok
                 31 => {
                     const tune_ok = CONNECTION_IMPL.tune_ok orelse return error.MethodNotImplemented;
-                    const channel_max = conn.rx_buffer.readU16();
-                    const frame_max = conn.rx_buffer.readU32();
-                    const heartbeat = conn.rx_buffer.readU16();
+                    const channel_max = c.conn.rx_buffer.readU16();
+                    const frame_max = c.conn.rx_buffer.readU32();
+                    const heartbeat = c.conn.rx_buffer.readU16();
                     try tune_ok(
-                        conn,
+                        c,
                         channel_max,
                         frame_max,
                         heartbeat,
@@ -88,31 +88,31 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                 // open
                 40 => {
                     const open = CONNECTION_IMPL.open orelse return error.MethodNotImplemented;
-                    const virtual_host = conn.rx_buffer.readShortString();
-                    const reserved_1 = conn.rx_buffer.readShortString();
-                    const reserved_2 = conn.rx_buffer.readBool();
+                    const virtual_host = c.conn.rx_buffer.readShortString();
+                    const reserved_1 = c.conn.rx_buffer.readShortString();
+                    const reserved_2 = c.conn.rx_buffer.readBool();
                     try open(
-                        conn,
+                        c,
                         virtual_host,
                     );
                 },
                 // open_ok
                 41 => {
                     const open_ok = CONNECTION_IMPL.open_ok orelse return error.MethodNotImplemented;
-                    const reserved_1 = conn.rx_buffer.readShortString();
+                    const reserved_1 = c.conn.rx_buffer.readShortString();
                     try open_ok(
-                        conn,
+                        c,
                     );
                 },
                 // close
                 50 => {
                     const close = CONNECTION_IMPL.close orelse return error.MethodNotImplemented;
-                    const reply_code = conn.rx_buffer.readU16();
-                    const reply_text = conn.rx_buffer.readArrayU8();
-                    const class_id = conn.rx_buffer.readU16();
-                    const method_id = conn.rx_buffer.readU16();
+                    const reply_code = c.conn.rx_buffer.readU16();
+                    const reply_text = c.conn.rx_buffer.readArrayU8();
+                    const class_id = c.conn.rx_buffer.readU16();
+                    const method_id = c.conn.rx_buffer.readU16();
                     try close(
-                        conn,
+                        c,
                         reply_code,
                         reply_text,
                         class_id,
@@ -123,15 +123,15 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                 51 => {
                     const close_ok = CONNECTION_IMPL.close_ok orelse return error.MethodNotImplemented;
                     try close_ok(
-                        conn,
+                        c,
                     );
                 },
                 // blocked
                 60 => {
                     const blocked = CONNECTION_IMPL.blocked orelse return error.MethodNotImplemented;
-                    const reason = conn.rx_buffer.readShortString();
+                    const reason = c.conn.rx_buffer.readShortString();
                     try blocked(
-                        conn,
+                        c,
                         reason,
                     );
                 },
@@ -139,7 +139,7 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                 61 => {
                     const unblocked = CONNECTION_IMPL.unblocked orelse return error.MethodNotImplemented;
                     try unblocked(
-                        conn,
+                        c,
                     );
                 },
                 else => return error.UnknownMethod,
@@ -151,46 +151,46 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                 // open
                 10 => {
                     const open = CHANNEL_IMPL.open orelse return error.MethodNotImplemented;
-                    const reserved_1 = conn.rx_buffer.readShortString();
+                    const reserved_1 = c.conn.rx_buffer.readShortString();
                     try open(
-                        conn,
+                        c,
                     );
                 },
                 // open_ok
                 11 => {
                     const open_ok = CHANNEL_IMPL.open_ok orelse return error.MethodNotImplemented;
-                    const reserved_1 = conn.rx_buffer.readLongString();
+                    const reserved_1 = c.conn.rx_buffer.readLongString();
                     try open_ok(
-                        conn,
+                        c,
                     );
                 },
                 // flow
                 20 => {
                     const flow = CHANNEL_IMPL.flow orelse return error.MethodNotImplemented;
-                    const active = conn.rx_buffer.readBool();
+                    const active = c.conn.rx_buffer.readBool();
                     try flow(
-                        conn,
+                        c,
                         active,
                     );
                 },
                 // flow_ok
                 21 => {
                     const flow_ok = CHANNEL_IMPL.flow_ok orelse return error.MethodNotImplemented;
-                    const active = conn.rx_buffer.readBool();
+                    const active = c.conn.rx_buffer.readBool();
                     try flow_ok(
-                        conn,
+                        c,
                         active,
                     );
                 },
                 // close
                 40 => {
                     const close = CHANNEL_IMPL.close orelse return error.MethodNotImplemented;
-                    const reply_code = conn.rx_buffer.readU16();
-                    const reply_text = conn.rx_buffer.readArrayU8();
-                    const class_id = conn.rx_buffer.readU16();
-                    const method_id = conn.rx_buffer.readU16();
+                    const reply_code = c.conn.rx_buffer.readU16();
+                    const reply_text = c.conn.rx_buffer.readArrayU8();
+                    const class_id = c.conn.rx_buffer.readU16();
+                    const method_id = c.conn.rx_buffer.readU16();
                     try close(
-                        conn,
+                        c,
                         reply_code,
                         reply_text,
                         class_id,
@@ -201,7 +201,7 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                 41 => {
                     const close_ok = CHANNEL_IMPL.close_ok orelse return error.MethodNotImplemented;
                     try close_ok(
-                        conn,
+                        c,
                     );
                 },
                 else => return error.UnknownMethod,
@@ -213,17 +213,17 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                 // declare
                 10 => {
                     const declare = EXCHANGE_IMPL.declare orelse return error.MethodNotImplemented;
-                    const reserved_1 = conn.rx_buffer.readU16();
-                    const exchange = conn.rx_buffer.readArray128U8();
-                    const tipe = conn.rx_buffer.readShortString();
-                    const passive = conn.rx_buffer.readBool();
-                    const durable = conn.rx_buffer.readBool();
-                    const reserved_2 = conn.rx_buffer.readBool();
-                    const reserved_3 = conn.rx_buffer.readBool();
-                    const no_wait = conn.rx_buffer.readBool();
-                    var arguments = conn.rx_buffer.readTable();
+                    const reserved_1 = c.conn.rx_buffer.readU16();
+                    const exchange = c.conn.rx_buffer.readArray128U8();
+                    const tipe = c.conn.rx_buffer.readShortString();
+                    const passive = c.conn.rx_buffer.readBool();
+                    const durable = c.conn.rx_buffer.readBool();
+                    const reserved_2 = c.conn.rx_buffer.readBool();
+                    const reserved_3 = c.conn.rx_buffer.readBool();
+                    const no_wait = c.conn.rx_buffer.readBool();
+                    var arguments = c.conn.rx_buffer.readTable();
                     try declare(
-                        conn,
+                        c,
                         exchange,
                         tipe,
                         passive,
@@ -236,18 +236,18 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                 11 => {
                     const declare_ok = EXCHANGE_IMPL.declare_ok orelse return error.MethodNotImplemented;
                     try declare_ok(
-                        conn,
+                        c,
                     );
                 },
                 // delete
                 20 => {
                     const delete = EXCHANGE_IMPL.delete orelse return error.MethodNotImplemented;
-                    const reserved_1 = conn.rx_buffer.readU16();
-                    const exchange = conn.rx_buffer.readArray128U8();
-                    const if_unused = conn.rx_buffer.readBool();
-                    const no_wait = conn.rx_buffer.readBool();
+                    const reserved_1 = c.conn.rx_buffer.readU16();
+                    const exchange = c.conn.rx_buffer.readArray128U8();
+                    const if_unused = c.conn.rx_buffer.readBool();
+                    const no_wait = c.conn.rx_buffer.readBool();
                     try delete(
-                        conn,
+                        c,
                         exchange,
                         if_unused,
                         no_wait,
@@ -257,7 +257,7 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                 21 => {
                     const delete_ok = EXCHANGE_IMPL.delete_ok orelse return error.MethodNotImplemented;
                     try delete_ok(
-                        conn,
+                        c,
                     );
                 },
                 else => return error.UnknownMethod,
@@ -269,16 +269,16 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                 // declare
                 10 => {
                     const declare = QUEUE_IMPL.declare orelse return error.MethodNotImplemented;
-                    const reserved_1 = conn.rx_buffer.readU16();
-                    const queue = conn.rx_buffer.readArray128U8();
-                    const passive = conn.rx_buffer.readBool();
-                    const durable = conn.rx_buffer.readBool();
-                    const exclusive = conn.rx_buffer.readBool();
-                    const auto_delete = conn.rx_buffer.readBool();
-                    const no_wait = conn.rx_buffer.readBool();
-                    var arguments = conn.rx_buffer.readTable();
+                    const reserved_1 = c.conn.rx_buffer.readU16();
+                    const queue = c.conn.rx_buffer.readArray128U8();
+                    const passive = c.conn.rx_buffer.readBool();
+                    const durable = c.conn.rx_buffer.readBool();
+                    const exclusive = c.conn.rx_buffer.readBool();
+                    const auto_delete = c.conn.rx_buffer.readBool();
+                    const no_wait = c.conn.rx_buffer.readBool();
+                    var arguments = c.conn.rx_buffer.readTable();
                     try declare(
-                        conn,
+                        c,
                         queue,
                         passive,
                         durable,
@@ -291,11 +291,11 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                 // declare_ok
                 11 => {
                     const declare_ok = QUEUE_IMPL.declare_ok orelse return error.MethodNotImplemented;
-                    const queue = conn.rx_buffer.readArray128U8();
-                    const message_count = conn.rx_buffer.readU32();
-                    const consumer_count = conn.rx_buffer.readU32();
+                    const queue = c.conn.rx_buffer.readArray128U8();
+                    const message_count = c.conn.rx_buffer.readU32();
+                    const consumer_count = c.conn.rx_buffer.readU32();
                     try declare_ok(
-                        conn,
+                        c,
                         queue,
                         message_count,
                         consumer_count,
@@ -304,14 +304,14 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                 // bind
                 20 => {
                     const bind = QUEUE_IMPL.bind orelse return error.MethodNotImplemented;
-                    const reserved_1 = conn.rx_buffer.readU16();
-                    const queue = conn.rx_buffer.readArray128U8();
-                    const exchange = conn.rx_buffer.readArray128U8();
-                    const routing_key = conn.rx_buffer.readShortString();
-                    const no_wait = conn.rx_buffer.readBool();
-                    var arguments = conn.rx_buffer.readTable();
+                    const reserved_1 = c.conn.rx_buffer.readU16();
+                    const queue = c.conn.rx_buffer.readArray128U8();
+                    const exchange = c.conn.rx_buffer.readArray128U8();
+                    const routing_key = c.conn.rx_buffer.readShortString();
+                    const no_wait = c.conn.rx_buffer.readBool();
+                    var arguments = c.conn.rx_buffer.readTable();
                     try bind(
-                        conn,
+                        c,
                         queue,
                         exchange,
                         routing_key,
@@ -323,19 +323,19 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                 21 => {
                     const bind_ok = QUEUE_IMPL.bind_ok orelse return error.MethodNotImplemented;
                     try bind_ok(
-                        conn,
+                        c,
                     );
                 },
                 // unbind
                 50 => {
                     const unbind = QUEUE_IMPL.unbind orelse return error.MethodNotImplemented;
-                    const reserved_1 = conn.rx_buffer.readU16();
-                    const queue = conn.rx_buffer.readArray128U8();
-                    const exchange = conn.rx_buffer.readArray128U8();
-                    const routing_key = conn.rx_buffer.readShortString();
-                    var arguments = conn.rx_buffer.readTable();
+                    const reserved_1 = c.conn.rx_buffer.readU16();
+                    const queue = c.conn.rx_buffer.readArray128U8();
+                    const exchange = c.conn.rx_buffer.readArray128U8();
+                    const routing_key = c.conn.rx_buffer.readShortString();
+                    var arguments = c.conn.rx_buffer.readTable();
                     try unbind(
-                        conn,
+                        c,
                         queue,
                         exchange,
                         routing_key,
@@ -346,17 +346,17 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                 51 => {
                     const unbind_ok = QUEUE_IMPL.unbind_ok orelse return error.MethodNotImplemented;
                     try unbind_ok(
-                        conn,
+                        c,
                     );
                 },
                 // purge
                 30 => {
                     const purge = QUEUE_IMPL.purge orelse return error.MethodNotImplemented;
-                    const reserved_1 = conn.rx_buffer.readU16();
-                    const queue = conn.rx_buffer.readArray128U8();
-                    const no_wait = conn.rx_buffer.readBool();
+                    const reserved_1 = c.conn.rx_buffer.readU16();
+                    const queue = c.conn.rx_buffer.readArray128U8();
+                    const no_wait = c.conn.rx_buffer.readBool();
                     try purge(
-                        conn,
+                        c,
                         queue,
                         no_wait,
                     );
@@ -364,22 +364,22 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                 // purge_ok
                 31 => {
                     const purge_ok = QUEUE_IMPL.purge_ok orelse return error.MethodNotImplemented;
-                    const message_count = conn.rx_buffer.readU32();
+                    const message_count = c.conn.rx_buffer.readU32();
                     try purge_ok(
-                        conn,
+                        c,
                         message_count,
                     );
                 },
                 // delete
                 40 => {
                     const delete = QUEUE_IMPL.delete orelse return error.MethodNotImplemented;
-                    const reserved_1 = conn.rx_buffer.readU16();
-                    const queue = conn.rx_buffer.readArray128U8();
-                    const if_unused = conn.rx_buffer.readBool();
-                    const if_empty = conn.rx_buffer.readBool();
-                    const no_wait = conn.rx_buffer.readBool();
+                    const reserved_1 = c.conn.rx_buffer.readU16();
+                    const queue = c.conn.rx_buffer.readArray128U8();
+                    const if_unused = c.conn.rx_buffer.readBool();
+                    const if_empty = c.conn.rx_buffer.readBool();
+                    const no_wait = c.conn.rx_buffer.readBool();
                     try delete(
-                        conn,
+                        c,
                         queue,
                         if_unused,
                         if_empty,
@@ -389,9 +389,9 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                 // delete_ok
                 41 => {
                     const delete_ok = QUEUE_IMPL.delete_ok orelse return error.MethodNotImplemented;
-                    const message_count = conn.rx_buffer.readU32();
+                    const message_count = c.conn.rx_buffer.readU32();
                     try delete_ok(
-                        conn,
+                        c,
                         message_count,
                     );
                 },
@@ -404,11 +404,11 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                 // qos
                 10 => {
                     const qos = BASIC_IMPL.qos orelse return error.MethodNotImplemented;
-                    const prefetch_size = conn.rx_buffer.readU32();
-                    const prefetch_count = conn.rx_buffer.readU16();
-                    const global = conn.rx_buffer.readBool();
+                    const prefetch_size = c.conn.rx_buffer.readU32();
+                    const prefetch_count = c.conn.rx_buffer.readU16();
+                    const global = c.conn.rx_buffer.readBool();
                     try qos(
-                        conn,
+                        c,
                         prefetch_size,
                         prefetch_count,
                         global,
@@ -418,22 +418,22 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                 11 => {
                     const qos_ok = BASIC_IMPL.qos_ok orelse return error.MethodNotImplemented;
                     try qos_ok(
-                        conn,
+                        c,
                     );
                 },
                 // consume
                 20 => {
                     const consume = BASIC_IMPL.consume orelse return error.MethodNotImplemented;
-                    const reserved_1 = conn.rx_buffer.readU16();
-                    const queue = conn.rx_buffer.readArray128U8();
-                    const consumer_tag = conn.rx_buffer.readArrayU8();
-                    const no_local = conn.rx_buffer.readBool();
-                    const no_ack = conn.rx_buffer.readBool();
-                    const exclusive = conn.rx_buffer.readBool();
-                    const no_wait = conn.rx_buffer.readBool();
-                    var arguments = conn.rx_buffer.readTable();
+                    const reserved_1 = c.conn.rx_buffer.readU16();
+                    const queue = c.conn.rx_buffer.readArray128U8();
+                    const consumer_tag = c.conn.rx_buffer.readArrayU8();
+                    const no_local = c.conn.rx_buffer.readBool();
+                    const no_ack = c.conn.rx_buffer.readBool();
+                    const exclusive = c.conn.rx_buffer.readBool();
+                    const no_wait = c.conn.rx_buffer.readBool();
+                    var arguments = c.conn.rx_buffer.readTable();
                     try consume(
-                        conn,
+                        c,
                         queue,
                         consumer_tag,
                         no_local,
@@ -446,19 +446,19 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                 // consume_ok
                 21 => {
                     const consume_ok = BASIC_IMPL.consume_ok orelse return error.MethodNotImplemented;
-                    const consumer_tag = conn.rx_buffer.readArrayU8();
+                    const consumer_tag = c.conn.rx_buffer.readArrayU8();
                     try consume_ok(
-                        conn,
+                        c,
                         consumer_tag,
                     );
                 },
                 // cancel
                 30 => {
                     const cancel = BASIC_IMPL.cancel orelse return error.MethodNotImplemented;
-                    const consumer_tag = conn.rx_buffer.readArrayU8();
-                    const no_wait = conn.rx_buffer.readBool();
+                    const consumer_tag = c.conn.rx_buffer.readArrayU8();
+                    const no_wait = c.conn.rx_buffer.readBool();
                     try cancel(
-                        conn,
+                        c,
                         consumer_tag,
                         no_wait,
                     );
@@ -466,22 +466,22 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                 // cancel_ok
                 31 => {
                     const cancel_ok = BASIC_IMPL.cancel_ok orelse return error.MethodNotImplemented;
-                    const consumer_tag = conn.rx_buffer.readArrayU8();
+                    const consumer_tag = c.conn.rx_buffer.readArrayU8();
                     try cancel_ok(
-                        conn,
+                        c,
                         consumer_tag,
                     );
                 },
                 // publish
                 40 => {
                     const publish = BASIC_IMPL.publish orelse return error.MethodNotImplemented;
-                    const reserved_1 = conn.rx_buffer.readU16();
-                    const exchange = conn.rx_buffer.readArray128U8();
-                    const routing_key = conn.rx_buffer.readShortString();
-                    const mandatory = conn.rx_buffer.readBool();
-                    const immediate = conn.rx_buffer.readBool();
+                    const reserved_1 = c.conn.rx_buffer.readU16();
+                    const exchange = c.conn.rx_buffer.readArray128U8();
+                    const routing_key = c.conn.rx_buffer.readShortString();
+                    const mandatory = c.conn.rx_buffer.readBool();
+                    const immediate = c.conn.rx_buffer.readBool();
                     try publish(
-                        conn,
+                        c,
                         exchange,
                         routing_key,
                         mandatory,
@@ -491,12 +491,12 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                 // @"return"
                 50 => {
                     const @"return" = BASIC_IMPL.@"return" orelse return error.MethodNotImplemented;
-                    const reply_code = conn.rx_buffer.readU16();
-                    const reply_text = conn.rx_buffer.readArrayU8();
-                    const exchange = conn.rx_buffer.readArray128U8();
-                    const routing_key = conn.rx_buffer.readShortString();
+                    const reply_code = c.conn.rx_buffer.readU16();
+                    const reply_text = c.conn.rx_buffer.readArrayU8();
+                    const exchange = c.conn.rx_buffer.readArray128U8();
+                    const routing_key = c.conn.rx_buffer.readShortString();
                     try @"return"(
-                        conn,
+                        c,
                         reply_code,
                         reply_text,
                         exchange,
@@ -506,13 +506,13 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                 // deliver
                 60 => {
                     const deliver = BASIC_IMPL.deliver orelse return error.MethodNotImplemented;
-                    const consumer_tag = conn.rx_buffer.readArrayU8();
-                    const delivery_tag = conn.rx_buffer.readU64();
-                    const redelivered = conn.rx_buffer.readBool();
-                    const exchange = conn.rx_buffer.readArray128U8();
-                    const routing_key = conn.rx_buffer.readShortString();
+                    const consumer_tag = c.conn.rx_buffer.readArrayU8();
+                    const delivery_tag = c.conn.rx_buffer.readU64();
+                    const redelivered = c.conn.rx_buffer.readBool();
+                    const exchange = c.conn.rx_buffer.readArray128U8();
+                    const routing_key = c.conn.rx_buffer.readShortString();
                     try deliver(
-                        conn,
+                        c,
                         consumer_tag,
                         delivery_tag,
                         redelivered,
@@ -523,11 +523,11 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                 // get
                 70 => {
                     const get = BASIC_IMPL.get orelse return error.MethodNotImplemented;
-                    const reserved_1 = conn.rx_buffer.readU16();
-                    const queue = conn.rx_buffer.readArray128U8();
-                    const no_ack = conn.rx_buffer.readBool();
+                    const reserved_1 = c.conn.rx_buffer.readU16();
+                    const queue = c.conn.rx_buffer.readArray128U8();
+                    const no_ack = c.conn.rx_buffer.readBool();
                     try get(
-                        conn,
+                        c,
                         queue,
                         no_ack,
                     );
@@ -535,13 +535,13 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                 // get_ok
                 71 => {
                     const get_ok = BASIC_IMPL.get_ok orelse return error.MethodNotImplemented;
-                    const delivery_tag = conn.rx_buffer.readU64();
-                    const redelivered = conn.rx_buffer.readBool();
-                    const exchange = conn.rx_buffer.readArray128U8();
-                    const routing_key = conn.rx_buffer.readShortString();
-                    const message_count = conn.rx_buffer.readU32();
+                    const delivery_tag = c.conn.rx_buffer.readU64();
+                    const redelivered = c.conn.rx_buffer.readBool();
+                    const exchange = c.conn.rx_buffer.readArray128U8();
+                    const routing_key = c.conn.rx_buffer.readShortString();
+                    const message_count = c.conn.rx_buffer.readU32();
                     try get_ok(
-                        conn,
+                        c,
                         delivery_tag,
                         redelivered,
                         exchange,
@@ -552,18 +552,18 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                 // get_empty
                 72 => {
                     const get_empty = BASIC_IMPL.get_empty orelse return error.MethodNotImplemented;
-                    const reserved_1 = conn.rx_buffer.readShortString();
+                    const reserved_1 = c.conn.rx_buffer.readShortString();
                     try get_empty(
-                        conn,
+                        c,
                     );
                 },
                 // ack
                 80 => {
                     const ack = BASIC_IMPL.ack orelse return error.MethodNotImplemented;
-                    const delivery_tag = conn.rx_buffer.readU64();
-                    const multiple = conn.rx_buffer.readBool();
+                    const delivery_tag = c.conn.rx_buffer.readU64();
+                    const multiple = c.conn.rx_buffer.readBool();
                     try ack(
-                        conn,
+                        c,
                         delivery_tag,
                         multiple,
                     );
@@ -571,10 +571,10 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                 // reject
                 90 => {
                     const reject = BASIC_IMPL.reject orelse return error.MethodNotImplemented;
-                    const delivery_tag = conn.rx_buffer.readU64();
-                    const requeue = conn.rx_buffer.readBool();
+                    const delivery_tag = c.conn.rx_buffer.readU64();
+                    const requeue = c.conn.rx_buffer.readBool();
                     try reject(
-                        conn,
+                        c,
                         delivery_tag,
                         requeue,
                     );
@@ -582,18 +582,18 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                 // recover_async
                 100 => {
                     const recover_async = BASIC_IMPL.recover_async orelse return error.MethodNotImplemented;
-                    const requeue = conn.rx_buffer.readBool();
+                    const requeue = c.conn.rx_buffer.readBool();
                     try recover_async(
-                        conn,
+                        c,
                         requeue,
                     );
                 },
                 // recover
                 110 => {
                     const recover = BASIC_IMPL.recover orelse return error.MethodNotImplemented;
-                    const requeue = conn.rx_buffer.readBool();
+                    const requeue = c.conn.rx_buffer.readBool();
                     try recover(
-                        conn,
+                        c,
                         requeue,
                     );
                 },
@@ -601,7 +601,7 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                 111 => {
                     const recover_ok = BASIC_IMPL.recover_ok orelse return error.MethodNotImplemented;
                     try recover_ok(
-                        conn,
+                        c,
                     );
                 },
                 else => return error.UnknownMethod,
@@ -614,42 +614,42 @@ pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
                 10 => {
                     const select = TX_IMPL.select orelse return error.MethodNotImplemented;
                     try select(
-                        conn,
+                        c,
                     );
                 },
                 // select_ok
                 11 => {
                     const select_ok = TX_IMPL.select_ok orelse return error.MethodNotImplemented;
                     try select_ok(
-                        conn,
+                        c,
                     );
                 },
                 // commit
                 20 => {
                     const commit = TX_IMPL.commit orelse return error.MethodNotImplemented;
                     try commit(
-                        conn,
+                        c,
                     );
                 },
                 // commit_ok
                 21 => {
                     const commit_ok = TX_IMPL.commit_ok orelse return error.MethodNotImplemented;
                     try commit_ok(
-                        conn,
+                        c,
                     );
                 },
                 // rollback
                 30 => {
                     const rollback = TX_IMPL.rollback orelse return error.MethodNotImplemented;
                     try rollback(
-                        conn,
+                        c,
                     );
                 },
                 // rollback_ok
                 31 => {
                     const rollback_ok = TX_IMPL.rollback_ok orelse return error.MethodNotImplemented;
                     try rollback_ok(
-                        conn,
+                        c,
                     );
                 },
                 else => return error.UnknownMethod,
@@ -945,7 +945,7 @@ const not_implemented: u16 = 540;
 const internal_error: u16 = 541;
 pub const connection_interface = struct {
     start: ?fn (
-        *Conn,
+        *Connection,
         version_major: u8,
         version_minor: u8,
         server_properties: *Table,
@@ -953,55 +953,55 @@ pub const connection_interface = struct {
         locales: []const u8,
     ) anyerror!void,
     start_ok: ?fn (
-        *Conn,
+        *Connection,
         client_properties: *Table,
         mechanism: []const u8,
         response: []const u8,
         locale: []const u8,
     ) anyerror!void,
     secure: ?fn (
-        *Conn,
+        *Connection,
         challenge: []const u8,
     ) anyerror!void,
     secure_ok: ?fn (
-        *Conn,
+        *Connection,
         response: []const u8,
     ) anyerror!void,
     tune: ?fn (
-        *Conn,
+        *Connection,
         channel_max: u16,
         frame_max: u32,
         heartbeat: u16,
     ) anyerror!void,
     tune_ok: ?fn (
-        *Conn,
+        *Connection,
         channel_max: u16,
         frame_max: u32,
         heartbeat: u16,
     ) anyerror!void,
     open: ?fn (
-        *Conn,
+        *Connection,
         virtual_host: []const u8,
     ) anyerror!void,
     open_ok: ?fn (
-        *Conn,
+        *Connection,
     ) anyerror!void,
     close: ?fn (
-        *Conn,
+        *Connection,
         reply_code: u16,
         reply_text: []const u8,
         class_id: u16,
         method_id: u16,
     ) anyerror!void,
     close_ok: ?fn (
-        *Conn,
+        *Connection,
     ) anyerror!void,
     blocked: ?fn (
-        *Conn,
+        *Connection,
         reason: []const u8,
     ) anyerror!void,
     unblocked: ?fn (
-        *Conn,
+        *Connection,
     ) anyerror!void,
 };
 
@@ -1022,7 +1022,7 @@ pub var CONNECTION_IMPL = connection_interface{
 
 pub const CONNECTION_CLASS = 10; // CLASS
 pub const Connection = struct {
-    conn: *Conn,
+    conn: Conn,
     const Self = @This();
     // METHOD =============================
     pub const START_METHOD = 10;
@@ -1165,28 +1165,28 @@ pub const Connection = struct {
 };
 pub const channel_interface = struct {
     open: ?fn (
-        *Conn,
+        *Connection,
     ) anyerror!void,
     open_ok: ?fn (
-        *Conn,
+        *Connection,
     ) anyerror!void,
     flow: ?fn (
-        *Conn,
+        *Connection,
         active: bool,
     ) anyerror!void,
     flow_ok: ?fn (
-        *Conn,
+        *Connection,
         active: bool,
     ) anyerror!void,
     close: ?fn (
-        *Conn,
+        *Connection,
         reply_code: u16,
         reply_text: []const u8,
         class_id: u16,
         method_id: u16,
     ) anyerror!void,
     close_ok: ?fn (
-        *Conn,
+        *Connection,
     ) anyerror!void,
 };
 
@@ -1201,7 +1201,7 @@ pub var CHANNEL_IMPL = channel_interface{
 
 pub const CHANNEL_CLASS = 20; // CLASS
 pub const Channel = struct {
-    conn: *Conn,
+    conn: Conn,
     const Self = @This();
     // METHOD =============================
     pub const OPEN_METHOD = 10;
@@ -1292,7 +1292,7 @@ pub const Channel = struct {
 };
 pub const exchange_interface = struct {
     declare: ?fn (
-        *Conn,
+        *Connection,
         exchange: []u8,
         tipe: []const u8,
         passive: bool,
@@ -1301,16 +1301,16 @@ pub const exchange_interface = struct {
         arguments: *Table,
     ) anyerror!void,
     declare_ok: ?fn (
-        *Conn,
+        *Connection,
     ) anyerror!void,
     delete: ?fn (
-        *Conn,
+        *Connection,
         exchange: []u8,
         if_unused: bool,
         no_wait: bool,
     ) anyerror!void,
     delete_ok: ?fn (
-        *Conn,
+        *Connection,
     ) anyerror!void,
 };
 
@@ -1323,7 +1323,7 @@ pub var EXCHANGE_IMPL = exchange_interface{
 
 pub const EXCHANGE_CLASS = 40; // CLASS
 pub const Exchange = struct {
-    conn: *Conn,
+    conn: Conn,
     const Self = @This();
     // METHOD =============================
     pub const DECLARE_METHOD = 10;
@@ -1390,7 +1390,7 @@ pub const Exchange = struct {
 };
 pub const queue_interface = struct {
     declare: ?fn (
-        *Conn,
+        *Connection,
         queue: []u8,
         passive: bool,
         durable: bool,
@@ -1400,13 +1400,13 @@ pub const queue_interface = struct {
         arguments: *Table,
     ) anyerror!void,
     declare_ok: ?fn (
-        *Conn,
+        *Connection,
         queue: []u8,
         message_count: u32,
         consumer_count: u32,
     ) anyerror!void,
     bind: ?fn (
-        *Conn,
+        *Connection,
         queue: []u8,
         exchange: []u8,
         routing_key: []const u8,
@@ -1414,36 +1414,36 @@ pub const queue_interface = struct {
         arguments: *Table,
     ) anyerror!void,
     bind_ok: ?fn (
-        *Conn,
+        *Connection,
     ) anyerror!void,
     unbind: ?fn (
-        *Conn,
+        *Connection,
         queue: []u8,
         exchange: []u8,
         routing_key: []const u8,
         arguments: *Table,
     ) anyerror!void,
     unbind_ok: ?fn (
-        *Conn,
+        *Connection,
     ) anyerror!void,
     purge: ?fn (
-        *Conn,
+        *Connection,
         queue: []u8,
         no_wait: bool,
     ) anyerror!void,
     purge_ok: ?fn (
-        *Conn,
+        *Connection,
         message_count: u32,
     ) anyerror!void,
     delete: ?fn (
-        *Conn,
+        *Connection,
         queue: []u8,
         if_unused: bool,
         if_empty: bool,
         no_wait: bool,
     ) anyerror!void,
     delete_ok: ?fn (
-        *Conn,
+        *Connection,
         message_count: u32,
     ) anyerror!void,
 };
@@ -1463,7 +1463,7 @@ pub var QUEUE_IMPL = queue_interface{
 
 pub const QUEUE_CLASS = 50; // CLASS
 pub const Queue = struct {
-    conn: *Conn,
+    conn: Conn,
     const Self = @This();
     // METHOD =============================
     pub const DECLARE_METHOD = 10;
@@ -1612,16 +1612,16 @@ pub const Queue = struct {
 };
 pub const basic_interface = struct {
     qos: ?fn (
-        *Conn,
+        *Connection,
         prefetch_size: u32,
         prefetch_count: u16,
         global: bool,
     ) anyerror!void,
     qos_ok: ?fn (
-        *Conn,
+        *Connection,
     ) anyerror!void,
     consume: ?fn (
-        *Conn,
+        *Connection,
         queue: []u8,
         consumer_tag: []const u8,
         no_local: bool,
@@ -1631,34 +1631,34 @@ pub const basic_interface = struct {
         arguments: *Table,
     ) anyerror!void,
     consume_ok: ?fn (
-        *Conn,
+        *Connection,
         consumer_tag: []const u8,
     ) anyerror!void,
     cancel: ?fn (
-        *Conn,
+        *Connection,
         consumer_tag: []const u8,
         no_wait: bool,
     ) anyerror!void,
     cancel_ok: ?fn (
-        *Conn,
+        *Connection,
         consumer_tag: []const u8,
     ) anyerror!void,
     publish: ?fn (
-        *Conn,
+        *Connection,
         exchange: []u8,
         routing_key: []const u8,
         mandatory: bool,
         immediate: bool,
     ) anyerror!void,
     @"return": ?fn (
-        *Conn,
+        *Connection,
         reply_code: u16,
         reply_text: []const u8,
         exchange: []u8,
         routing_key: []const u8,
     ) anyerror!void,
     deliver: ?fn (
-        *Conn,
+        *Connection,
         consumer_tag: []const u8,
         delivery_tag: u64,
         redelivered: bool,
@@ -1666,12 +1666,12 @@ pub const basic_interface = struct {
         routing_key: []const u8,
     ) anyerror!void,
     get: ?fn (
-        *Conn,
+        *Connection,
         queue: []u8,
         no_ack: bool,
     ) anyerror!void,
     get_ok: ?fn (
-        *Conn,
+        *Connection,
         delivery_tag: u64,
         redelivered: bool,
         exchange: []u8,
@@ -1679,28 +1679,28 @@ pub const basic_interface = struct {
         message_count: u32,
     ) anyerror!void,
     get_empty: ?fn (
-        *Conn,
+        *Connection,
     ) anyerror!void,
     ack: ?fn (
-        *Conn,
+        *Connection,
         delivery_tag: u64,
         multiple: bool,
     ) anyerror!void,
     reject: ?fn (
-        *Conn,
+        *Connection,
         delivery_tag: u64,
         requeue: bool,
     ) anyerror!void,
     recover_async: ?fn (
-        *Conn,
+        *Connection,
         requeue: bool,
     ) anyerror!void,
     recover: ?fn (
-        *Conn,
+        *Connection,
         requeue: bool,
     ) anyerror!void,
     recover_ok: ?fn (
-        *Conn,
+        *Connection,
     ) anyerror!void,
 };
 
@@ -1726,7 +1726,7 @@ pub var BASIC_IMPL = basic_interface{
 
 pub const BASIC_CLASS = 60; // CLASS
 pub const Basic = struct {
-    conn: *Conn,
+    conn: Conn,
     const Self = @This();
     // METHOD =============================
     pub const QOS_METHOD = 10;
@@ -1920,22 +1920,22 @@ pub const Basic = struct {
 };
 pub const tx_interface = struct {
     select: ?fn (
-        *Conn,
+        *Connection,
     ) anyerror!void,
     select_ok: ?fn (
-        *Conn,
+        *Connection,
     ) anyerror!void,
     commit: ?fn (
-        *Conn,
+        *Connection,
     ) anyerror!void,
     commit_ok: ?fn (
-        *Conn,
+        *Connection,
     ) anyerror!void,
     rollback: ?fn (
-        *Conn,
+        *Connection,
     ) anyerror!void,
     rollback_ok: ?fn (
-        *Conn,
+        *Connection,
     ) anyerror!void,
 };
 
@@ -1950,7 +1950,7 @@ pub var TX_IMPL = tx_interface{
 
 pub const TX_CLASS = 90; // CLASS
 pub const Tx = struct {
-    conn: *Conn,
+    conn: Conn,
     const Self = @This();
     // METHOD =============================
     pub const SELECT_METHOD = 10;

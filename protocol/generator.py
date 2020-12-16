@@ -23,7 +23,7 @@ def generate(file):
                 generateClass(child)
 
 def generateLookup(amqp):
-    print(f"pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {{")
+    print(f"pub fn dispatchCallback(c: *Connection, class: u16, method: u16) !void {{")
     print(f"switch (class) {{")
     for child in amqp:
         if child.tag == "class":
@@ -50,8 +50,8 @@ def generateLookupMethod(klass):
             for child in method:
                 if child.tag == 'field':
                     field = child
-                    print(f"{fieldConstness(field)} {nameClean(field)} = conn.rx_buffer.{generateRead(field)}(); ")
-            print(f"try {method_name}(conn, ")
+                    print(f"{fieldConstness(field)} {nameClean(field)} = c.conn.rx_buffer.{generateRead(field)}(); ")
+            print(f"try {method_name}(c, ")
             for child in method:
                 if child.tag == 'field':
                     field = child
@@ -105,7 +105,7 @@ def generateInterface(klass):
 
 def generateInterfaceMethod(method):
     method_name = nameClean(method)
-    print(f"{method_name}: ?fn(*Conn, ")
+    print(f"{method_name}: ?fn(*Connection, ")
     for child in method:
         if child.tag == 'field':
             field = child
@@ -128,7 +128,7 @@ def generateClass(c):
     # print(f"pub const {nameClean(c)} = struct {{")
     print(f"pub const {nameCleanUpper(c)}_CLASS = {c.attrib['index']}; // CLASS")
     print(f"pub const {nameCleanCap(c)} = struct {{")
-    print(f"conn: *Conn,")
+    print(f"conn: Conn,")
     print(f"const Self = @This();")
     for child in c:
         if child.tag == "method":

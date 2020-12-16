@@ -1,7 +1,6 @@
 const std = @import("std");
 const os = std.os;
 const amqp = @import("amqp");
-// const channel = @import("channel.zig");
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 var allocator = &gpa.allocator;
@@ -10,8 +9,8 @@ pub fn main() !void {
     defer _ = gpa.deinit();
     const stdout = &std.io.getStdOut().outStream();
 
-    var conn = try amqp.Conn.open(allocator, null, null);
-    defer conn.deinit();
+    var conn = try amqp.connect(allocator, null, null);
+    // defer conn.deinit();
     std.debug.warn("Connected!\n", .{});
 
     // var ch = try channel.open(conn);
@@ -21,7 +20,7 @@ pub fn main() !void {
         // defer arena.deinit();
         // const allocator = &arena.allocator;
 
-        const ret = conn.dispatch(null) catch |err| {
+        const ret = conn.conn.dispatch(null) catch |err| {
             switch (err) {
                 error.ConnectionResetByPeer => return err,
                 else => {
