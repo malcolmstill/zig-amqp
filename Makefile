@@ -3,11 +3,11 @@ build-example:
 	zig build-exe --single-threaded src/example.zig
 
 build-example-small:
-	zig build-exe --release-small --single-threaded --strip src/example.zig
+	zig build-exe -O ReleaseFast --single-threaded --strip src/example.zig
 	strip example
 
 build-example-small-compressed:
-	zig build-exe --release-small --single-threaded --strip src/example.zig
+	zig build-exe -O ReleaseFast --single-threaded --strip src/example.zig
 	strip example
 	upx example
 

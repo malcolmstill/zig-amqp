@@ -17,7 +17,7 @@ pub fn main() !void {
         defer arena.deinit();
         const allocator = &arena.allocator;
 
-        const ret = conn.dispatch(allocator, null) catch |err| {
+        const ret = conn.dispatch(null) catch |err| {
             switch (err) {
                 error.ConnectionResetByPeer => return err,
                 else => {

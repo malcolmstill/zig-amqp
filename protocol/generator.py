@@ -4,6 +4,7 @@ import sys
 def generate(file):
     print(f'const std = @import("std");')
     print(f'const Conn = @import("connection.zig").Conn;')
+    print(f'const ClassMethod = @import("connection.zig").ClassMethod;')
     print(f'const WireBuffer = @import("wire.zig").WireBuffer;')
     print(f'const Table = @import("table.zig").Table;')
 
@@ -135,7 +136,7 @@ def generateClass(c):
             print(f"// METHOD =============================")
             print(f"pub const {nameCleanUpper(method)}_METHOD = {method.attrib['index']};")
             if isClientInitiatedRequest(method):
-                generateClientInitiatedRequest(method)
+                generateClientInitiatedRequest(method, nameCleanCap(c), nameCleanUpper(c))
             if isClientResponse(method):
                 generateClientResponse(method, c.attrib['index'], method.attrib['index'])
 
@@ -161,15 +162,27 @@ def isClientResponse(method):
             expectsResponse = True
     return isRequestSentToServer and not expectsResponse
 
-def generateClientInitiatedRequest(method):
+def generateClientInitiatedRequest(method, klass_cap, klass_upper):
+    # print(method)
+    method_name = nameCleanUpper(method)
+    reply_method = nameCleanUpper(method) + '_OK'
     print(f"pub fn {nameClean(method)}_sync(self: *Self,")
     for method_child in method:
         if method_child.tag == 'field' and not ('reserved' in method_child.attrib and method_child.attrib['reserved'] == '1'):
             print(f"{nameClean(method_child)}: {generateArg(method_child)}, ", end = '')
     print(f") !void {{")
     # Send message
-    print(f"const n = try std.os.write(self.conn.file.handle, self.conn.tx_memory[0..]);")
-    print(f"while (true) {{ const message = try self.conn.dispatch(allocator, null); }}")
+    print(f"self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);")
+    print(f"self.conn.tx_buffer.writeMethodHeader({klass_upper}_CLASS, {klass_cap}.{method_name}_METHOD);")
+    # Generate writes
+    for method_child in method:
+        if method_child.tag == 'field' and not ('reserved' in method_child.attrib and method_child.attrib['reserved'] == '1'):
+            print(f"self.conn.tx_buffer.{generateWrite(method_child, nameClean(method_child))};")
+    # Send message
+    print(f"self.conn.tx_buffer.updateFrameLength();");
+    print(f"const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());")
+    print(f"self.conn.tx_buffer.reset();");
+    print(f"var received_response = false; while (!received_response) {{ const expecting: ClassMethod = .{{ .class = {klass_upper}_CLASS, .method = {klass_cap}.{reply_method}_METHOD }}; received_response = try self.conn.dispatch(expecting); }}")
     print(f"}}")
 
 def generateClientResponse(method, class_index, method_index):
@@ -190,6 +203,7 @@ def generateClientResponse(method, class_index, method_index):
     # print(f"std.debug.warn(\"{{}}\\n\", .{{self.conn.tx_buffer.extent()}});")
     # print(f"std.debug.warn(\"{{x}}\\n\", .{{self.conn.tx_buffer.extent()}});")
     print(f"const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());")
+    print(f"self.conn.tx_buffer.reset();");
     print(f"}}")
 
 def addressOf(field):

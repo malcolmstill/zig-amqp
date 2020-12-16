@@ -31,8 +31,19 @@ pub const Conn = struct {
         var received_response = false;
         while (!received_response) {
             const expecting: ClassMethod = .{ .class = proto.CONNECTION_CLASS, .method = proto.Connection.START_METHOD };
-            received_response = try conn.dispatch(allocator, expecting);
+            received_response = try conn.dispatch(expecting);
         }
+
+        // Await tune
+        received_response = false;
+        while (!received_response) {
+            const expecting: ClassMethod = .{ .class = proto.CONNECTION_CLASS, .method = proto.Connection.TUNE_METHOD };
+            received_response = try conn.dispatch(expecting);
+            if (received_response) std.debug.warn("Received tune\n", .{});
+        }
+
+        var connection: proto.Connection = proto.Connection { .conn = &conn };
+        try connection.open_sync("/");
 
         return conn;
     }
@@ -48,7 +59,7 @@ pub const Conn = struct {
     // dispatch and return true. In the case
     // (expected_response supplied), if we receive an asynchronous response we dispatch it
     // but return true.
-    pub fn dispatch(self: *Self, allocator: *mem.Allocator, expected_response: ?ClassMethod) !bool {
+    pub fn dispatch(self: *Self, expected_response: ?ClassMethod) !bool {
         const n = try os.read(self.file.handle, self.rx_memory[0..]);
         self.rx_buffer = WireBuffer.init(self.rx_memory[0..n]);
         self.tx_buffer = WireBuffer.init(self.tx_memory[0..]);
@@ -75,10 +86,14 @@ pub const Conn = struct {
                     const is_synchronous = try proto.isSynchronous(class, method);
                     
                     if (is_synchronous) {
-                        if (class != expected.class) return error.UnexpectedResponseClass;
-                        if (method != expected.method) return error.UnexpectedResponseClass;
+                        if (class == expected.class and method == expected.method) {
+                            sync_resp_ok = true;
+                        } else {
+                            sync_resp_ok = false;
+                        }
+                    } else {
+                        sync_resp_ok = true;
                     }
-                    sync_resp_ok = true;
                 }
 
                 // 4a. Finally dispatch the class / method
@@ -96,7 +111,7 @@ pub const Conn = struct {
     }
 };
 
-const ClassMethod = struct {
+pub const ClassMethod = struct {
     class: u16 = 0,
     method: u16 = 0,
 };
