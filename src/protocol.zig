@@ -948,23 +948,23 @@ pub const connection_interface = struct {
         version_major: u8,
         version_minor: u8,
         server_properties: *Table,
-        mechanisms: []u8,
-        locales: []u8,
+        mechanisms: []const u8,
+        locales: []const u8,
     ) anyerror!void,
     start_ok: ?fn (
         *Conn,
         client_properties: *Table,
-        mechanism: []u8,
-        response: []u8,
-        locale: []u8,
+        mechanism: []const u8,
+        response: []const u8,
+        locale: []const u8,
     ) anyerror!void,
     secure: ?fn (
         *Conn,
-        challenge: []u8,
+        challenge: []const u8,
     ) anyerror!void,
     secure_ok: ?fn (
         *Conn,
-        response: []u8,
+        response: []const u8,
     ) anyerror!void,
     tune: ?fn (
         *Conn,
@@ -980,7 +980,7 @@ pub const connection_interface = struct {
     ) anyerror!void,
     open: ?fn (
         *Conn,
-        virtual_host: []u8,
+        virtual_host: []const u8,
     ) anyerror!void,
     open_ok: ?fn (
         *Conn,
@@ -988,7 +988,7 @@ pub const connection_interface = struct {
     close: ?fn (
         *Conn,
         reply_code: u16,
-        reply_text: []u8,
+        reply_text: []const u8,
         class_id: u16,
         method_id: u16,
     ) anyerror!void,
@@ -997,7 +997,7 @@ pub const connection_interface = struct {
     ) anyerror!void,
     blocked: ?fn (
         *Conn,
-        reason: []u8,
+        reason: []const u8,
     ) anyerror!void,
     unblocked: ?fn (
         *Conn,
@@ -1030,9 +1030,9 @@ pub const Connection = struct {
     pub fn start_ok_resp(
         self: *Self,
         client_properties: *Table,
-        mechanism: []u8,
-        response: []u8,
-        locale: []u8,
+        mechanism: []const u8,
+        response: []const u8,
+        locale: []const u8,
     ) !void {
         self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
         self.conn.tx_buffer.writeMethodHeader(10, 11);
@@ -1054,7 +1054,7 @@ pub const Connection = struct {
     pub const SECURE_OK_METHOD = 21;
     pub fn secure_ok_resp(
         self: *Self,
-        response: []u8,
+        response: []const u8,
     ) !void {
         self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
         self.conn.tx_buffer.writeMethodHeader(10, 21);
@@ -1094,7 +1094,7 @@ pub const Connection = struct {
     pub const OPEN_METHOD = 40;
     pub fn open_sync(
         self: *Self,
-        virtual_host: []u8,
+        virtual_host: []const u8,
     ) !void {
         const n = try std.os.write(self.conn.file.handle, self.conn.tx_memory[0..]);
         while (true) {
@@ -1108,7 +1108,7 @@ pub const Connection = struct {
     pub fn close_sync(
         self: *Self,
         reply_code: u16,
-        reply_text: []u8,
+        reply_text: []const u8,
         class_id: u16,
         method_id: u16,
     ) !void {
@@ -1136,7 +1136,7 @@ pub const Connection = struct {
     pub const BLOCKED_METHOD = 60;
     pub fn blocked_resp(
         self: *Self,
-        reason: []u8,
+        reason: []const u8,
     ) !void {
         self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
         self.conn.tx_buffer.writeMethodHeader(10, 60);
@@ -1183,7 +1183,7 @@ pub const channel_interface = struct {
     close: ?fn (
         *Conn,
         reply_code: u16,
-        reply_text: []u8,
+        reply_text: []const u8,
         class_id: u16,
         method_id: u16,
     ) anyerror!void,
@@ -1250,7 +1250,7 @@ pub const Channel = struct {
     pub fn close_sync(
         self: *Self,
         reply_code: u16,
-        reply_text: []u8,
+        reply_text: []const u8,
         class_id: u16,
         method_id: u16,
     ) !void {
@@ -1279,7 +1279,7 @@ pub const exchange_interface = struct {
     declare: ?fn (
         *Conn,
         exchange: []u8,
-        tipe: []u8,
+        tipe: []const u8,
         passive: bool,
         durable: bool,
         no_wait: bool,
@@ -1315,7 +1315,7 @@ pub const Exchange = struct {
     pub fn declare_sync(
         self: *Self,
         exchange: []u8,
-        tipe: []u8,
+        tipe: []const u8,
         passive: bool,
         durable: bool,
         no_wait: bool,
@@ -1365,7 +1365,7 @@ pub const queue_interface = struct {
         *Conn,
         queue: []u8,
         exchange: []u8,
-        routing_key: []u8,
+        routing_key: []const u8,
         no_wait: bool,
         arguments: *Table,
     ) anyerror!void,
@@ -1376,7 +1376,7 @@ pub const queue_interface = struct {
         *Conn,
         queue: []u8,
         exchange: []u8,
-        routing_key: []u8,
+        routing_key: []const u8,
         arguments: *Table,
     ) anyerror!void,
     unbind_ok: ?fn (
@@ -1446,7 +1446,7 @@ pub const Queue = struct {
         self: *Self,
         queue: []u8,
         exchange: []u8,
-        routing_key: []u8,
+        routing_key: []const u8,
         no_wait: bool,
         arguments: *Table,
     ) !void {
@@ -1463,7 +1463,7 @@ pub const Queue = struct {
         self: *Self,
         queue: []u8,
         exchange: []u8,
-        routing_key: []u8,
+        routing_key: []const u8,
         arguments: *Table,
     ) !void {
         const n = try std.os.write(self.conn.file.handle, self.conn.tx_memory[0..]);
@@ -1517,7 +1517,7 @@ pub const basic_interface = struct {
     consume: ?fn (
         *Conn,
         queue: []u8,
-        consumer_tag: []u8,
+        consumer_tag: []const u8,
         no_local: bool,
         no_ack: bool,
         exclusive: bool,
@@ -1526,38 +1526,38 @@ pub const basic_interface = struct {
     ) anyerror!void,
     consume_ok: ?fn (
         *Conn,
-        consumer_tag: []u8,
+        consumer_tag: []const u8,
     ) anyerror!void,
     cancel: ?fn (
         *Conn,
-        consumer_tag: []u8,
+        consumer_tag: []const u8,
         no_wait: bool,
     ) anyerror!void,
     cancel_ok: ?fn (
         *Conn,
-        consumer_tag: []u8,
+        consumer_tag: []const u8,
     ) anyerror!void,
     publish: ?fn (
         *Conn,
         exchange: []u8,
-        routing_key: []u8,
+        routing_key: []const u8,
         mandatory: bool,
         immediate: bool,
     ) anyerror!void,
     @"return": ?fn (
         *Conn,
         reply_code: u16,
-        reply_text: []u8,
+        reply_text: []const u8,
         exchange: []u8,
-        routing_key: []u8,
+        routing_key: []const u8,
     ) anyerror!void,
     deliver: ?fn (
         *Conn,
-        consumer_tag: []u8,
+        consumer_tag: []const u8,
         delivery_tag: u64,
         redelivered: bool,
         exchange: []u8,
-        routing_key: []u8,
+        routing_key: []const u8,
     ) anyerror!void,
     get: ?fn (
         *Conn,
@@ -1569,7 +1569,7 @@ pub const basic_interface = struct {
         delivery_tag: u64,
         redelivered: bool,
         exchange: []u8,
-        routing_key: []u8,
+        routing_key: []const u8,
         message_count: u32,
     ) anyerror!void,
     get_empty: ?fn (
@@ -1642,7 +1642,7 @@ pub const Basic = struct {
     pub fn consume_sync(
         self: *Self,
         queue: []u8,
-        consumer_tag: []u8,
+        consumer_tag: []const u8,
         no_local: bool,
         no_ack: bool,
         exclusive: bool,
@@ -1660,7 +1660,7 @@ pub const Basic = struct {
     pub const CANCEL_METHOD = 30;
     pub fn cancel_sync(
         self: *Self,
-        consumer_tag: []u8,
+        consumer_tag: []const u8,
         no_wait: bool,
     ) !void {
         const n = try std.os.write(self.conn.file.handle, self.conn.tx_memory[0..]);
@@ -1675,7 +1675,7 @@ pub const Basic = struct {
     pub fn publish_resp(
         self: *Self,
         exchange: []u8,
-        routing_key: []u8,
+        routing_key: []const u8,
         mandatory: bool,
         immediate: bool,
     ) !void {

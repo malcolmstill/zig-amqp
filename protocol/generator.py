@@ -281,9 +281,9 @@ def generateArg(field):
     if field_type in ['queue-name', 'exchange-name']:
         return '[]u8'
     if field_type in ['path', 'shortstr']:
-        return '[]u8'        
+        return '[]const u8'        
     if field_type in ['consumer-tag', 'reply-text', 'longstr']:
-        return '[]u8'
+        return '[]const u8'
     if field_type in ['peer-properties', 'table']:
         return '*Table'
     return 'void'

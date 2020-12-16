@@ -139,7 +139,7 @@ pub const WireBuffer = struct {
         return array;
     }
 
-    pub fn writeShortString(self: *Self, string: []u8) void {
+    pub fn writeShortString(self: *Self, string: []const u8) void {
         self.writeU8(@intCast(u8, string.len));
         std.mem.copy(u8, self.mem[self.head..], string);
         self.head += string.len;
@@ -152,7 +152,7 @@ pub const WireBuffer = struct {
         return array;
     }
 
-    pub fn writeLongString(self: *Self, string: []u8) void {
+    pub fn writeLongString(self: *Self, string: []const u8) void {
         self.writeU32(@intCast(u32, string.len));
         std.mem.copy(u8, self.mem[self.head..], string);
         self.head += string.len;

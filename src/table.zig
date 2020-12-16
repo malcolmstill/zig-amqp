@@ -62,28 +62,31 @@ pub const Table = struct {
         return null;
     }
 
-    pub fn insertTable(self: *Self, key: []u8, table: Table) void {
+    pub fn insertTable(self: *Self, key: []const u8, table: *Table) void {
         self.buf.writeShortString(key);
         self.buf.writeU8('F');
-        self.buf.writeTable(table);
+        self.buf.writeTable(table.buf.extent());
         self.updateLength();
     }
 
-    pub fn insertBool(self: *Self, key: []u8, boolean: bool) void {
+    pub fn insertBool(self: *Self, key: []const u8, boolean: bool) void {
         self.buf.writeShortString(key);
         self.buf.writeU8('t');
         self.buf.writeBool(boolean);
         self.updateLength();
     }
 
-    pub fn insertShortString(self: *Self, key: []u8, string: []u8) void {
-        self.buf.writeShortString(key);
-        self.buf.writeU8('s');
-        self.buf.writeShortString(string);
-        self.updateLength();
-    }
+    // Apparently actual implementations don't use 's' for short string
+    // (and therefore) I assume they don't use short strings (in tables)
+    // at all
+    // pub fn insertShortString(self: *Self, key: []u8, string: []u8) void {
+    //     self.buf.writeShortString(key);
+    //     self.buf.writeU8('s');
+    //     self.buf.writeShortString(string);
+    //     self.updateLength();
+    // }
 
-    pub fn insertLongString(self: *Self, key: []u8, string: []u8) void {
+    pub fn insertLongString(self: *Self, key: []const u8, string: []const u8) void {
         self.buf.writeShortString(key);
         self.buf.writeU8('S');
         self.buf.writeLongString(string);
