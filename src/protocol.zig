@@ -3,7 +3,7 @@ const Conn = @import("connection.zig").Conn;
 const WireBuffer = @import("wire.zig").WireBuffer;
 const Table = @import("table.zig").Table;
 // amqp
-pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {
+pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
     switch (class) {
         // connection
         10 => {
@@ -11,12 +11,13 @@ pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {
                 // start
                 10 => {
                     const start = CONNECTION_IMPL.start orelse return error.MethodNotImplemented;
-                    const version_major = buf.readU8();
-                    const version_minor = buf.readU8();
-                    var server_properties = buf.readTable();
-                    const mechanisms = buf.readLongString();
-                    const locales = buf.readLongString();
+                    const version_major = conn.rx_buffer.readU8();
+                    const version_minor = conn.rx_buffer.readU8();
+                    var server_properties = conn.rx_buffer.readTable();
+                    const mechanisms = conn.rx_buffer.readLongString();
+                    const locales = conn.rx_buffer.readLongString();
                     try start(
+                        conn,
                         version_major,
                         version_minor,
                         &server_properties,
@@ -27,11 +28,12 @@ pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {
                 // start_ok
                 11 => {
                     const start_ok = CONNECTION_IMPL.start_ok orelse return error.MethodNotImplemented;
-                    var client_properties = buf.readTable();
-                    const mechanism = buf.readLongString();
-                    const response = buf.readLongString();
-                    const locale = buf.readLongString();
+                    var client_properties = conn.rx_buffer.readTable();
+                    const mechanism = conn.rx_buffer.readLongString();
+                    const response = conn.rx_buffer.readLongString();
+                    const locale = conn.rx_buffer.readLongString();
                     try start_ok(
+                        conn,
                         &client_properties,
                         mechanism,
                         response,
@@ -41,26 +43,29 @@ pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {
                 // secure
                 20 => {
                     const secure = CONNECTION_IMPL.secure orelse return error.MethodNotImplemented;
-                    const challenge = buf.readLongString();
+                    const challenge = conn.rx_buffer.readLongString();
                     try secure(
+                        conn,
                         challenge,
                     );
                 },
                 // secure_ok
                 21 => {
                     const secure_ok = CONNECTION_IMPL.secure_ok orelse return error.MethodNotImplemented;
-                    const response = buf.readLongString();
+                    const response = conn.rx_buffer.readLongString();
                     try secure_ok(
+                        conn,
                         response,
                     );
                 },
                 // tune
                 30 => {
                     const tune = CONNECTION_IMPL.tune orelse return error.MethodNotImplemented;
-                    const channel_max = buf.readU16();
-                    const frame_max = buf.readU32();
-                    const heartbeat = buf.readU16();
+                    const channel_max = conn.rx_buffer.readU16();
+                    const frame_max = conn.rx_buffer.readU32();
+                    const heartbeat = conn.rx_buffer.readU16();
                     try tune(
+                        conn,
                         channel_max,
                         frame_max,
                         heartbeat,
@@ -69,10 +74,11 @@ pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {
                 // tune_ok
                 31 => {
                     const tune_ok = CONNECTION_IMPL.tune_ok orelse return error.MethodNotImplemented;
-                    const channel_max = buf.readU16();
-                    const frame_max = buf.readU32();
-                    const heartbeat = buf.readU16();
+                    const channel_max = conn.rx_buffer.readU16();
+                    const frame_max = conn.rx_buffer.readU32();
+                    const heartbeat = conn.rx_buffer.readU16();
                     try tune_ok(
+                        conn,
                         channel_max,
                         frame_max,
                         heartbeat,
@@ -81,27 +87,31 @@ pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {
                 // open
                 40 => {
                     const open = CONNECTION_IMPL.open orelse return error.MethodNotImplemented;
-                    const virtual_host = buf.readLongString();
-                    const reserved_1 = buf.readLongString();
-                    const reserved_2 = buf.readBool();
+                    const virtual_host = conn.rx_buffer.readLongString();
+                    const reserved_1 = conn.rx_buffer.readLongString();
+                    const reserved_2 = conn.rx_buffer.readBool();
                     try open(
+                        conn,
                         virtual_host,
                     );
                 },
                 // open_ok
                 41 => {
                     const open_ok = CONNECTION_IMPL.open_ok orelse return error.MethodNotImplemented;
-                    const reserved_1 = buf.readLongString();
-                    try open_ok();
+                    const reserved_1 = conn.rx_buffer.readLongString();
+                    try open_ok(
+                        conn,
+                    );
                 },
                 // close
                 50 => {
                     const close = CONNECTION_IMPL.close orelse return error.MethodNotImplemented;
-                    const reply_code = buf.readU16();
-                    const reply_text = buf.readArrayU8();
-                    const class_id = buf.readU16();
-                    const method_id = buf.readU16();
+                    const reply_code = conn.rx_buffer.readU16();
+                    const reply_text = conn.rx_buffer.readArrayU8();
+                    const class_id = conn.rx_buffer.readU16();
+                    const method_id = conn.rx_buffer.readU16();
                     try close(
+                        conn,
                         reply_code,
                         reply_text,
                         class_id,
@@ -111,20 +121,25 @@ pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {
                 // close_ok
                 51 => {
                     const close_ok = CONNECTION_IMPL.close_ok orelse return error.MethodNotImplemented;
-                    try close_ok();
+                    try close_ok(
+                        conn,
+                    );
                 },
                 // blocked
                 60 => {
                     const blocked = CONNECTION_IMPL.blocked orelse return error.MethodNotImplemented;
-                    const reason = buf.readLongString();
+                    const reason = conn.rx_buffer.readLongString();
                     try blocked(
+                        conn,
                         reason,
                     );
                 },
                 // unblocked
                 61 => {
                     const unblocked = CONNECTION_IMPL.unblocked orelse return error.MethodNotImplemented;
-                    try unblocked();
+                    try unblocked(
+                        conn,
+                    );
                 },
                 else => return error.UnknownMethod,
             }
@@ -135,39 +150,46 @@ pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {
                 // open
                 10 => {
                     const open = CHANNEL_IMPL.open orelse return error.MethodNotImplemented;
-                    const reserved_1 = buf.readLongString();
-                    try open();
+                    const reserved_1 = conn.rx_buffer.readLongString();
+                    try open(
+                        conn,
+                    );
                 },
                 // open_ok
                 11 => {
                     const open_ok = CHANNEL_IMPL.open_ok orelse return error.MethodNotImplemented;
-                    const reserved_1 = buf.readLongString();
-                    try open_ok();
+                    const reserved_1 = conn.rx_buffer.readLongString();
+                    try open_ok(
+                        conn,
+                    );
                 },
                 // flow
                 20 => {
                     const flow = CHANNEL_IMPL.flow orelse return error.MethodNotImplemented;
-                    const active = buf.readBool();
+                    const active = conn.rx_buffer.readBool();
                     try flow(
+                        conn,
                         active,
                     );
                 },
                 // flow_ok
                 21 => {
                     const flow_ok = CHANNEL_IMPL.flow_ok orelse return error.MethodNotImplemented;
-                    const active = buf.readBool();
+                    const active = conn.rx_buffer.readBool();
                     try flow_ok(
+                        conn,
                         active,
                     );
                 },
                 // close
                 40 => {
                     const close = CHANNEL_IMPL.close orelse return error.MethodNotImplemented;
-                    const reply_code = buf.readU16();
-                    const reply_text = buf.readArrayU8();
-                    const class_id = buf.readU16();
-                    const method_id = buf.readU16();
+                    const reply_code = conn.rx_buffer.readU16();
+                    const reply_text = conn.rx_buffer.readArrayU8();
+                    const class_id = conn.rx_buffer.readU16();
+                    const method_id = conn.rx_buffer.readU16();
                     try close(
+                        conn,
                         reply_code,
                         reply_text,
                         class_id,
@@ -177,7 +199,9 @@ pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {
                 // close_ok
                 41 => {
                     const close_ok = CHANNEL_IMPL.close_ok orelse return error.MethodNotImplemented;
-                    try close_ok();
+                    try close_ok(
+                        conn,
+                    );
                 },
                 else => return error.UnknownMethod,
             }
@@ -188,16 +212,17 @@ pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {
                 // declare
                 10 => {
                     const declare = EXCHANGE_IMPL.declare orelse return error.MethodNotImplemented;
-                    const reserved_1 = buf.readU16();
-                    const exchange = buf.readArray128U8();
-                    const tipe = buf.readLongString();
-                    const passive = buf.readBool();
-                    const durable = buf.readBool();
-                    const reserved_2 = buf.readBool();
-                    const reserved_3 = buf.readBool();
-                    const no_wait = buf.readBool();
-                    var arguments = buf.readTable();
+                    const reserved_1 = conn.rx_buffer.readU16();
+                    const exchange = conn.rx_buffer.readArray128U8();
+                    const tipe = conn.rx_buffer.readLongString();
+                    const passive = conn.rx_buffer.readBool();
+                    const durable = conn.rx_buffer.readBool();
+                    const reserved_2 = conn.rx_buffer.readBool();
+                    const reserved_3 = conn.rx_buffer.readBool();
+                    const no_wait = conn.rx_buffer.readBool();
+                    var arguments = conn.rx_buffer.readTable();
                     try declare(
+                        conn,
                         exchange,
                         tipe,
                         passive,
@@ -209,16 +234,19 @@ pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {
                 // declare_ok
                 11 => {
                     const declare_ok = EXCHANGE_IMPL.declare_ok orelse return error.MethodNotImplemented;
-                    try declare_ok();
+                    try declare_ok(
+                        conn,
+                    );
                 },
                 // delete
                 20 => {
                     const delete = EXCHANGE_IMPL.delete orelse return error.MethodNotImplemented;
-                    const reserved_1 = buf.readU16();
-                    const exchange = buf.readArray128U8();
-                    const if_unused = buf.readBool();
-                    const no_wait = buf.readBool();
+                    const reserved_1 = conn.rx_buffer.readU16();
+                    const exchange = conn.rx_buffer.readArray128U8();
+                    const if_unused = conn.rx_buffer.readBool();
+                    const no_wait = conn.rx_buffer.readBool();
                     try delete(
+                        conn,
                         exchange,
                         if_unused,
                         no_wait,
@@ -227,7 +255,9 @@ pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {
                 // delete_ok
                 21 => {
                     const delete_ok = EXCHANGE_IMPL.delete_ok orelse return error.MethodNotImplemented;
-                    try delete_ok();
+                    try delete_ok(
+                        conn,
+                    );
                 },
                 else => return error.UnknownMethod,
             }
@@ -238,15 +268,16 @@ pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {
                 // declare
                 10 => {
                     const declare = QUEUE_IMPL.declare orelse return error.MethodNotImplemented;
-                    const reserved_1 = buf.readU16();
-                    const queue = buf.readArray128U8();
-                    const passive = buf.readBool();
-                    const durable = buf.readBool();
-                    const exclusive = buf.readBool();
-                    const auto_delete = buf.readBool();
-                    const no_wait = buf.readBool();
-                    var arguments = buf.readTable();
+                    const reserved_1 = conn.rx_buffer.readU16();
+                    const queue = conn.rx_buffer.readArray128U8();
+                    const passive = conn.rx_buffer.readBool();
+                    const durable = conn.rx_buffer.readBool();
+                    const exclusive = conn.rx_buffer.readBool();
+                    const auto_delete = conn.rx_buffer.readBool();
+                    const no_wait = conn.rx_buffer.readBool();
+                    var arguments = conn.rx_buffer.readTable();
                     try declare(
+                        conn,
                         queue,
                         passive,
                         durable,
@@ -259,10 +290,11 @@ pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {
                 // declare_ok
                 11 => {
                     const declare_ok = QUEUE_IMPL.declare_ok orelse return error.MethodNotImplemented;
-                    const queue = buf.readArray128U8();
-                    const message_count = buf.readU32();
-                    const consumer_count = buf.readU32();
+                    const queue = conn.rx_buffer.readArray128U8();
+                    const message_count = conn.rx_buffer.readU32();
+                    const consumer_count = conn.rx_buffer.readU32();
                     try declare_ok(
+                        conn,
                         queue,
                         message_count,
                         consumer_count,
@@ -271,13 +303,14 @@ pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {
                 // bind
                 20 => {
                     const bind = QUEUE_IMPL.bind orelse return error.MethodNotImplemented;
-                    const reserved_1 = buf.readU16();
-                    const queue = buf.readArray128U8();
-                    const exchange = buf.readArray128U8();
-                    const routing_key = buf.readLongString();
-                    const no_wait = buf.readBool();
-                    var arguments = buf.readTable();
+                    const reserved_1 = conn.rx_buffer.readU16();
+                    const queue = conn.rx_buffer.readArray128U8();
+                    const exchange = conn.rx_buffer.readArray128U8();
+                    const routing_key = conn.rx_buffer.readLongString();
+                    const no_wait = conn.rx_buffer.readBool();
+                    var arguments = conn.rx_buffer.readTable();
                     try bind(
+                        conn,
                         queue,
                         exchange,
                         routing_key,
@@ -288,17 +321,20 @@ pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {
                 // bind_ok
                 21 => {
                     const bind_ok = QUEUE_IMPL.bind_ok orelse return error.MethodNotImplemented;
-                    try bind_ok();
+                    try bind_ok(
+                        conn,
+                    );
                 },
                 // unbind
                 50 => {
                     const unbind = QUEUE_IMPL.unbind orelse return error.MethodNotImplemented;
-                    const reserved_1 = buf.readU16();
-                    const queue = buf.readArray128U8();
-                    const exchange = buf.readArray128U8();
-                    const routing_key = buf.readLongString();
-                    var arguments = buf.readTable();
+                    const reserved_1 = conn.rx_buffer.readU16();
+                    const queue = conn.rx_buffer.readArray128U8();
+                    const exchange = conn.rx_buffer.readArray128U8();
+                    const routing_key = conn.rx_buffer.readLongString();
+                    var arguments = conn.rx_buffer.readTable();
                     try unbind(
+                        conn,
                         queue,
                         exchange,
                         routing_key,
@@ -308,15 +344,18 @@ pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {
                 // unbind_ok
                 51 => {
                     const unbind_ok = QUEUE_IMPL.unbind_ok orelse return error.MethodNotImplemented;
-                    try unbind_ok();
+                    try unbind_ok(
+                        conn,
+                    );
                 },
                 // purge
                 30 => {
                     const purge = QUEUE_IMPL.purge orelse return error.MethodNotImplemented;
-                    const reserved_1 = buf.readU16();
-                    const queue = buf.readArray128U8();
-                    const no_wait = buf.readBool();
+                    const reserved_1 = conn.rx_buffer.readU16();
+                    const queue = conn.rx_buffer.readArray128U8();
+                    const no_wait = conn.rx_buffer.readBool();
                     try purge(
+                        conn,
                         queue,
                         no_wait,
                     );
@@ -324,20 +363,22 @@ pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {
                 // purge_ok
                 31 => {
                     const purge_ok = QUEUE_IMPL.purge_ok orelse return error.MethodNotImplemented;
-                    const message_count = buf.readU32();
+                    const message_count = conn.rx_buffer.readU32();
                     try purge_ok(
+                        conn,
                         message_count,
                     );
                 },
                 // delete
                 40 => {
                     const delete = QUEUE_IMPL.delete orelse return error.MethodNotImplemented;
-                    const reserved_1 = buf.readU16();
-                    const queue = buf.readArray128U8();
-                    const if_unused = buf.readBool();
-                    const if_empty = buf.readBool();
-                    const no_wait = buf.readBool();
+                    const reserved_1 = conn.rx_buffer.readU16();
+                    const queue = conn.rx_buffer.readArray128U8();
+                    const if_unused = conn.rx_buffer.readBool();
+                    const if_empty = conn.rx_buffer.readBool();
+                    const no_wait = conn.rx_buffer.readBool();
                     try delete(
+                        conn,
                         queue,
                         if_unused,
                         if_empty,
@@ -347,8 +388,9 @@ pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {
                 // delete_ok
                 41 => {
                     const delete_ok = QUEUE_IMPL.delete_ok orelse return error.MethodNotImplemented;
-                    const message_count = buf.readU32();
+                    const message_count = conn.rx_buffer.readU32();
                     try delete_ok(
+                        conn,
                         message_count,
                     );
                 },
@@ -361,10 +403,11 @@ pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {
                 // qos
                 10 => {
                     const qos = BASIC_IMPL.qos orelse return error.MethodNotImplemented;
-                    const prefetch_size = buf.readU32();
-                    const prefetch_count = buf.readU16();
-                    const global = buf.readBool();
+                    const prefetch_size = conn.rx_buffer.readU32();
+                    const prefetch_count = conn.rx_buffer.readU16();
+                    const global = conn.rx_buffer.readBool();
                     try qos(
+                        conn,
                         prefetch_size,
                         prefetch_count,
                         global,
@@ -373,20 +416,23 @@ pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {
                 // qos_ok
                 11 => {
                     const qos_ok = BASIC_IMPL.qos_ok orelse return error.MethodNotImplemented;
-                    try qos_ok();
+                    try qos_ok(
+                        conn,
+                    );
                 },
                 // consume
                 20 => {
                     const consume = BASIC_IMPL.consume orelse return error.MethodNotImplemented;
-                    const reserved_1 = buf.readU16();
-                    const queue = buf.readArray128U8();
-                    const consumer_tag = buf.readArrayU8();
-                    const no_local = buf.readBool();
-                    const no_ack = buf.readBool();
-                    const exclusive = buf.readBool();
-                    const no_wait = buf.readBool();
-                    var arguments = buf.readTable();
+                    const reserved_1 = conn.rx_buffer.readU16();
+                    const queue = conn.rx_buffer.readArray128U8();
+                    const consumer_tag = conn.rx_buffer.readArrayU8();
+                    const no_local = conn.rx_buffer.readBool();
+                    const no_ack = conn.rx_buffer.readBool();
+                    const exclusive = conn.rx_buffer.readBool();
+                    const no_wait = conn.rx_buffer.readBool();
+                    var arguments = conn.rx_buffer.readTable();
                     try consume(
+                        conn,
                         queue,
                         consumer_tag,
                         no_local,
@@ -399,17 +445,19 @@ pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {
                 // consume_ok
                 21 => {
                     const consume_ok = BASIC_IMPL.consume_ok orelse return error.MethodNotImplemented;
-                    const consumer_tag = buf.readArrayU8();
+                    const consumer_tag = conn.rx_buffer.readArrayU8();
                     try consume_ok(
+                        conn,
                         consumer_tag,
                     );
                 },
                 // cancel
                 30 => {
                     const cancel = BASIC_IMPL.cancel orelse return error.MethodNotImplemented;
-                    const consumer_tag = buf.readArrayU8();
-                    const no_wait = buf.readBool();
+                    const consumer_tag = conn.rx_buffer.readArrayU8();
+                    const no_wait = conn.rx_buffer.readBool();
                     try cancel(
+                        conn,
                         consumer_tag,
                         no_wait,
                     );
@@ -417,20 +465,22 @@ pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {
                 // cancel_ok
                 31 => {
                     const cancel_ok = BASIC_IMPL.cancel_ok orelse return error.MethodNotImplemented;
-                    const consumer_tag = buf.readArrayU8();
+                    const consumer_tag = conn.rx_buffer.readArrayU8();
                     try cancel_ok(
+                        conn,
                         consumer_tag,
                     );
                 },
                 // publish
                 40 => {
                     const publish = BASIC_IMPL.publish orelse return error.MethodNotImplemented;
-                    const reserved_1 = buf.readU16();
-                    const exchange = buf.readArray128U8();
-                    const routing_key = buf.readLongString();
-                    const mandatory = buf.readBool();
-                    const immediate = buf.readBool();
+                    const reserved_1 = conn.rx_buffer.readU16();
+                    const exchange = conn.rx_buffer.readArray128U8();
+                    const routing_key = conn.rx_buffer.readLongString();
+                    const mandatory = conn.rx_buffer.readBool();
+                    const immediate = conn.rx_buffer.readBool();
                     try publish(
+                        conn,
                         exchange,
                         routing_key,
                         mandatory,
@@ -440,11 +490,12 @@ pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {
                 // @"return"
                 50 => {
                     const @"return" = BASIC_IMPL.@"return" orelse return error.MethodNotImplemented;
-                    const reply_code = buf.readU16();
-                    const reply_text = buf.readArrayU8();
-                    const exchange = buf.readArray128U8();
-                    const routing_key = buf.readLongString();
+                    const reply_code = conn.rx_buffer.readU16();
+                    const reply_text = conn.rx_buffer.readArrayU8();
+                    const exchange = conn.rx_buffer.readArray128U8();
+                    const routing_key = conn.rx_buffer.readLongString();
                     try @"return"(
+                        conn,
                         reply_code,
                         reply_text,
                         exchange,
@@ -454,12 +505,13 @@ pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {
                 // deliver
                 60 => {
                     const deliver = BASIC_IMPL.deliver orelse return error.MethodNotImplemented;
-                    const consumer_tag = buf.readArrayU8();
-                    const delivery_tag = buf.readU64();
-                    const redelivered = buf.readBool();
-                    const exchange = buf.readArray128U8();
-                    const routing_key = buf.readLongString();
+                    const consumer_tag = conn.rx_buffer.readArrayU8();
+                    const delivery_tag = conn.rx_buffer.readU64();
+                    const redelivered = conn.rx_buffer.readBool();
+                    const exchange = conn.rx_buffer.readArray128U8();
+                    const routing_key = conn.rx_buffer.readLongString();
                     try deliver(
+                        conn,
                         consumer_tag,
                         delivery_tag,
                         redelivered,
@@ -470,10 +522,11 @@ pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {
                 // get
                 70 => {
                     const get = BASIC_IMPL.get orelse return error.MethodNotImplemented;
-                    const reserved_1 = buf.readU16();
-                    const queue = buf.readArray128U8();
-                    const no_ack = buf.readBool();
+                    const reserved_1 = conn.rx_buffer.readU16();
+                    const queue = conn.rx_buffer.readArray128U8();
+                    const no_ack = conn.rx_buffer.readBool();
                     try get(
+                        conn,
                         queue,
                         no_ack,
                     );
@@ -481,12 +534,13 @@ pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {
                 // get_ok
                 71 => {
                     const get_ok = BASIC_IMPL.get_ok orelse return error.MethodNotImplemented;
-                    const delivery_tag = buf.readU64();
-                    const redelivered = buf.readBool();
-                    const exchange = buf.readArray128U8();
-                    const routing_key = buf.readLongString();
-                    const message_count = buf.readU32();
+                    const delivery_tag = conn.rx_buffer.readU64();
+                    const redelivered = conn.rx_buffer.readBool();
+                    const exchange = conn.rx_buffer.readArray128U8();
+                    const routing_key = conn.rx_buffer.readLongString();
+                    const message_count = conn.rx_buffer.readU32();
                     try get_ok(
+                        conn,
                         delivery_tag,
                         redelivered,
                         exchange,
@@ -497,15 +551,18 @@ pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {
                 // get_empty
                 72 => {
                     const get_empty = BASIC_IMPL.get_empty orelse return error.MethodNotImplemented;
-                    const reserved_1 = buf.readLongString();
-                    try get_empty();
+                    const reserved_1 = conn.rx_buffer.readLongString();
+                    try get_empty(
+                        conn,
+                    );
                 },
                 // ack
                 80 => {
                     const ack = BASIC_IMPL.ack orelse return error.MethodNotImplemented;
-                    const delivery_tag = buf.readU64();
-                    const multiple = buf.readBool();
+                    const delivery_tag = conn.rx_buffer.readU64();
+                    const multiple = conn.rx_buffer.readBool();
                     try ack(
+                        conn,
                         delivery_tag,
                         multiple,
                     );
@@ -513,9 +570,10 @@ pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {
                 // reject
                 90 => {
                     const reject = BASIC_IMPL.reject orelse return error.MethodNotImplemented;
-                    const delivery_tag = buf.readU64();
-                    const requeue = buf.readBool();
+                    const delivery_tag = conn.rx_buffer.readU64();
+                    const requeue = conn.rx_buffer.readBool();
                     try reject(
+                        conn,
                         delivery_tag,
                         requeue,
                     );
@@ -523,23 +581,27 @@ pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {
                 // recover_async
                 100 => {
                     const recover_async = BASIC_IMPL.recover_async orelse return error.MethodNotImplemented;
-                    const requeue = buf.readBool();
+                    const requeue = conn.rx_buffer.readBool();
                     try recover_async(
+                        conn,
                         requeue,
                     );
                 },
                 // recover
                 110 => {
                     const recover = BASIC_IMPL.recover orelse return error.MethodNotImplemented;
-                    const requeue = buf.readBool();
+                    const requeue = conn.rx_buffer.readBool();
                     try recover(
+                        conn,
                         requeue,
                     );
                 },
                 // recover_ok
                 111 => {
                     const recover_ok = BASIC_IMPL.recover_ok orelse return error.MethodNotImplemented;
-                    try recover_ok();
+                    try recover_ok(
+                        conn,
+                    );
                 },
                 else => return error.UnknownMethod,
             }
@@ -550,32 +612,44 @@ pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {
                 // select
                 10 => {
                     const select = TX_IMPL.select orelse return error.MethodNotImplemented;
-                    try select();
+                    try select(
+                        conn,
+                    );
                 },
                 // select_ok
                 11 => {
                     const select_ok = TX_IMPL.select_ok orelse return error.MethodNotImplemented;
-                    try select_ok();
+                    try select_ok(
+                        conn,
+                    );
                 },
                 // commit
                 20 => {
                     const commit = TX_IMPL.commit orelse return error.MethodNotImplemented;
-                    try commit();
+                    try commit(
+                        conn,
+                    );
                 },
                 // commit_ok
                 21 => {
                     const commit_ok = TX_IMPL.commit_ok orelse return error.MethodNotImplemented;
-                    try commit_ok();
+                    try commit_ok(
+                        conn,
+                    );
                 },
                 // rollback
                 30 => {
                     const rollback = TX_IMPL.rollback orelse return error.MethodNotImplemented;
-                    try rollback();
+                    try rollback(
+                        conn,
+                    );
                 },
                 // rollback_ok
                 31 => {
                     const rollback_ok = TX_IMPL.rollback_ok orelse return error.MethodNotImplemented;
-                    try rollback_ok();
+                    try rollback_ok(
+                        conn,
+                    );
                 },
                 else => return error.UnknownMethod,
             }
@@ -870,6 +944,7 @@ const not_implemented: u16 = 540;
 const internal_error: u16 = 541;
 pub const connection_interface = struct {
     start: ?fn (
+        *Conn,
         version_major: u8,
         version_minor: u8,
         server_properties: *Table,
@@ -877,42 +952,56 @@ pub const connection_interface = struct {
         locales: []u8,
     ) anyerror!void,
     start_ok: ?fn (
+        *Conn,
         client_properties: *Table,
-        mechanism: ?[]u8,
+        mechanism: []u8,
         response: []u8,
-        locale: ?[]u8,
+        locale: []u8,
     ) anyerror!void,
     secure: ?fn (
+        *Conn,
         challenge: []u8,
     ) anyerror!void,
     secure_ok: ?fn (
+        *Conn,
         response: []u8,
     ) anyerror!void,
     tune: ?fn (
+        *Conn,
         channel_max: u16,
         frame_max: u32,
         heartbeat: u16,
     ) anyerror!void,
     tune_ok: ?fn (
+        *Conn,
         channel_max: u16,
         frame_max: u32,
         heartbeat: u16,
     ) anyerror!void,
     open: ?fn (
-        virtual_host: ?[]u8,
+        *Conn,
+        virtual_host: []u8,
     ) anyerror!void,
-    open_ok: ?fn () anyerror!void,
+    open_ok: ?fn (
+        *Conn,
+    ) anyerror!void,
     close: ?fn (
+        *Conn,
         reply_code: u16,
         reply_text: []u8,
         class_id: u16,
         method_id: u16,
     ) anyerror!void,
-    close_ok: ?fn () anyerror!void,
-    blocked: ?fn (
-        reason: ?[]u8,
+    close_ok: ?fn (
+        *Conn,
     ) anyerror!void,
-    unblocked: ?fn () anyerror!void,
+    blocked: ?fn (
+        *Conn,
+        reason: []u8,
+    ) anyerror!void,
+    unblocked: ?fn (
+        *Conn,
+    ) anyerror!void,
 };
 
 pub var CONNECTION_IMPL = connection_interface{
@@ -941,11 +1030,23 @@ pub const Connection = struct {
     pub fn start_ok_resp(
         self: *Self,
         client_properties: *Table,
-        mechanism: ?[]u8,
+        mechanism: []u8,
         response: []u8,
-        locale: ?[]u8,
-    ) void {
-        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+        locale: []u8,
+    ) !void {
+        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
+        self.conn.tx_buffer.writeMethodHeader(10, 11);
+        self.conn.tx_buffer.writeTable(client_properties.buf.mem[0..client_properties.buf.head]);
+        self.conn.tx_buffer.writeShortString(mechanism);
+        self.conn.tx_buffer.writeLongString(response);
+        self.conn.tx_buffer.writeShortString(locale);
+        self.conn.tx_buffer.updateFrameLength();
+        for (self.conn.tx_buffer.extent()) |x| {
+            std.debug.warn("0x{x:0>2} ", .{x});
+        }
+        std.debug.warn("{}\n", .{self.conn.tx_buffer.extent()});
+        std.debug.warn("{x}\n", .{self.conn.tx_buffer.extent()});
+        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
     }
     // METHOD =============================
     pub const SECURE_METHOD = 20;
@@ -954,8 +1055,17 @@ pub const Connection = struct {
     pub fn secure_ok_resp(
         self: *Self,
         response: []u8,
-    ) void {
-        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    ) !void {
+        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
+        self.conn.tx_buffer.writeMethodHeader(10, 21);
+        self.conn.tx_buffer.writeLongString(response);
+        self.conn.tx_buffer.updateFrameLength();
+        for (self.conn.tx_buffer.extent()) |x| {
+            std.debug.warn("0x{x:0>2} ", .{x});
+        }
+        std.debug.warn("{}\n", .{self.conn.tx_buffer.extent()});
+        std.debug.warn("{x}\n", .{self.conn.tx_buffer.extent()});
+        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
     }
     // METHOD =============================
     pub const TUNE_METHOD = 30;
@@ -966,16 +1076,27 @@ pub const Connection = struct {
         channel_max: u16,
         frame_max: u32,
         heartbeat: u16,
-    ) void {
-        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    ) !void {
+        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
+        self.conn.tx_buffer.writeMethodHeader(10, 31);
+        self.conn.tx_buffer.writeU16(channel_max);
+        self.conn.tx_buffer.writeU32(frame_max);
+        self.conn.tx_buffer.writeU16(heartbeat);
+        self.conn.tx_buffer.updateFrameLength();
+        for (self.conn.tx_buffer.extent()) |x| {
+            std.debug.warn("0x{x:0>2} ", .{x});
+        }
+        std.debug.warn("{}\n", .{self.conn.tx_buffer.extent()});
+        std.debug.warn("{x}\n", .{self.conn.tx_buffer.extent()});
+        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
     }
     // METHOD =============================
     pub const OPEN_METHOD = 40;
     pub fn open_sync(
         self: *Self,
-        virtual_host: ?[]u8,
-    ) void {
-        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+        virtual_host: []u8,
+    ) !void {
+        const n = try std.os.write(self.conn.file.handle, self.conn.tx_memory[0..]);
         while (true) {
             const message = try self.conn.dispatch(allocator, null);
         }
@@ -990,8 +1111,8 @@ pub const Connection = struct {
         reply_text: []u8,
         class_id: u16,
         method_id: u16,
-    ) void {
-        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    ) !void {
+        const n = try std.os.write(self.conn.file.handle, self.conn.tx_memory[0..]);
         while (true) {
             const message = try self.conn.dispatch(allocator, null);
         }
@@ -1000,41 +1121,75 @@ pub const Connection = struct {
     pub const CLOSE_OK_METHOD = 51;
     pub fn close_ok_resp(
         self: *Self,
-    ) void {
-        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    ) !void {
+        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
+        self.conn.tx_buffer.writeMethodHeader(10, 51);
+        self.conn.tx_buffer.updateFrameLength();
+        for (self.conn.tx_buffer.extent()) |x| {
+            std.debug.warn("0x{x:0>2} ", .{x});
+        }
+        std.debug.warn("{}\n", .{self.conn.tx_buffer.extent()});
+        std.debug.warn("{x}\n", .{self.conn.tx_buffer.extent()});
+        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
     }
     // METHOD =============================
     pub const BLOCKED_METHOD = 60;
     pub fn blocked_resp(
         self: *Self,
-        reason: ?[]u8,
-    ) void {
-        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+        reason: []u8,
+    ) !void {
+        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
+        self.conn.tx_buffer.writeMethodHeader(10, 60);
+        self.conn.tx_buffer.writeShortString(reason);
+        self.conn.tx_buffer.updateFrameLength();
+        for (self.conn.tx_buffer.extent()) |x| {
+            std.debug.warn("0x{x:0>2} ", .{x});
+        }
+        std.debug.warn("{}\n", .{self.conn.tx_buffer.extent()});
+        std.debug.warn("{x}\n", .{self.conn.tx_buffer.extent()});
+        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
     }
     // METHOD =============================
     pub const UNBLOCKED_METHOD = 61;
     pub fn unblocked_resp(
         self: *Self,
-    ) void {
-        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    ) !void {
+        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
+        self.conn.tx_buffer.writeMethodHeader(10, 61);
+        self.conn.tx_buffer.updateFrameLength();
+        for (self.conn.tx_buffer.extent()) |x| {
+            std.debug.warn("0x{x:0>2} ", .{x});
+        }
+        std.debug.warn("{}\n", .{self.conn.tx_buffer.extent()});
+        std.debug.warn("{x}\n", .{self.conn.tx_buffer.extent()});
+        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
     }
 };
 pub const channel_interface = struct {
-    open: ?fn () anyerror!void,
-    open_ok: ?fn () anyerror!void,
+    open: ?fn (
+        *Conn,
+    ) anyerror!void,
+    open_ok: ?fn (
+        *Conn,
+    ) anyerror!void,
     flow: ?fn (
+        *Conn,
         active: bool,
     ) anyerror!void,
     flow_ok: ?fn (
+        *Conn,
         active: bool,
     ) anyerror!void,
     close: ?fn (
+        *Conn,
         reply_code: u16,
         reply_text: []u8,
         class_id: u16,
         method_id: u16,
     ) anyerror!void,
-    close_ok: ?fn () anyerror!void,
+    close_ok: ?fn (
+        *Conn,
+    ) anyerror!void,
 };
 
 pub var CHANNEL_IMPL = channel_interface{
@@ -1054,8 +1209,8 @@ pub const Channel = struct {
     pub const OPEN_METHOD = 10;
     pub fn open_sync(
         self: *Self,
-    ) void {
-        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    ) !void {
+        const n = try std.os.write(self.conn.file.handle, self.conn.tx_memory[0..]);
         while (true) {
             const message = try self.conn.dispatch(allocator, null);
         }
@@ -1067,8 +1222,8 @@ pub const Channel = struct {
     pub fn flow_sync(
         self: *Self,
         active: bool,
-    ) void {
-        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    ) !void {
+        const n = try std.os.write(self.conn.file.handle, self.conn.tx_memory[0..]);
         while (true) {
             const message = try self.conn.dispatch(allocator, null);
         }
@@ -1078,8 +1233,17 @@ pub const Channel = struct {
     pub fn flow_ok_resp(
         self: *Self,
         active: bool,
-    ) void {
-        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    ) !void {
+        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
+        self.conn.tx_buffer.writeMethodHeader(20, 21);
+        self.conn.tx_buffer.writeBool(active);
+        self.conn.tx_buffer.updateFrameLength();
+        for (self.conn.tx_buffer.extent()) |x| {
+            std.debug.warn("0x{x:0>2} ", .{x});
+        }
+        std.debug.warn("{}\n", .{self.conn.tx_buffer.extent()});
+        std.debug.warn("{x}\n", .{self.conn.tx_buffer.extent()});
+        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
     }
     // METHOD =============================
     pub const CLOSE_METHOD = 40;
@@ -1089,8 +1253,8 @@ pub const Channel = struct {
         reply_text: []u8,
         class_id: u16,
         method_id: u16,
-    ) void {
-        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    ) !void {
+        const n = try std.os.write(self.conn.file.handle, self.conn.tx_memory[0..]);
         while (true) {
             const message = try self.conn.dispatch(allocator, null);
         }
@@ -1099,26 +1263,40 @@ pub const Channel = struct {
     pub const CLOSE_OK_METHOD = 41;
     pub fn close_ok_resp(
         self: *Self,
-    ) void {
-        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    ) !void {
+        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
+        self.conn.tx_buffer.writeMethodHeader(20, 41);
+        self.conn.tx_buffer.updateFrameLength();
+        for (self.conn.tx_buffer.extent()) |x| {
+            std.debug.warn("0x{x:0>2} ", .{x});
+        }
+        std.debug.warn("{}\n", .{self.conn.tx_buffer.extent()});
+        std.debug.warn("{x}\n", .{self.conn.tx_buffer.extent()});
+        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
     }
 };
 pub const exchange_interface = struct {
     declare: ?fn (
+        *Conn,
         exchange: []u8,
-        tipe: ?[]u8,
+        tipe: []u8,
         passive: bool,
         durable: bool,
         no_wait: bool,
         arguments: *Table,
     ) anyerror!void,
-    declare_ok: ?fn () anyerror!void,
+    declare_ok: ?fn (
+        *Conn,
+    ) anyerror!void,
     delete: ?fn (
+        *Conn,
         exchange: []u8,
         if_unused: bool,
         no_wait: bool,
     ) anyerror!void,
-    delete_ok: ?fn () anyerror!void,
+    delete_ok: ?fn (
+        *Conn,
+    ) anyerror!void,
 };
 
 pub var EXCHANGE_IMPL = exchange_interface{
@@ -1137,13 +1315,13 @@ pub const Exchange = struct {
     pub fn declare_sync(
         self: *Self,
         exchange: []u8,
-        tipe: ?[]u8,
+        tipe: []u8,
         passive: bool,
         durable: bool,
         no_wait: bool,
         arguments: *Table,
-    ) void {
-        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    ) !void {
+        const n = try std.os.write(self.conn.file.handle, self.conn.tx_memory[0..]);
         while (true) {
             const message = try self.conn.dispatch(allocator, null);
         }
@@ -1157,8 +1335,8 @@ pub const Exchange = struct {
         exchange: []u8,
         if_unused: bool,
         no_wait: bool,
-    ) void {
-        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    ) !void {
+        const n = try std.os.write(self.conn.file.handle, self.conn.tx_memory[0..]);
         while (true) {
             const message = try self.conn.dispatch(allocator, null);
         }
@@ -1168,6 +1346,7 @@ pub const Exchange = struct {
 };
 pub const queue_interface = struct {
     declare: ?fn (
+        *Conn,
         queue: []u8,
         passive: bool,
         durable: bool,
@@ -1177,39 +1356,50 @@ pub const queue_interface = struct {
         arguments: *Table,
     ) anyerror!void,
     declare_ok: ?fn (
+        *Conn,
         queue: []u8,
         message_count: u32,
         consumer_count: u32,
     ) anyerror!void,
     bind: ?fn (
+        *Conn,
         queue: []u8,
         exchange: []u8,
-        routing_key: ?[]u8,
+        routing_key: []u8,
         no_wait: bool,
         arguments: *Table,
     ) anyerror!void,
-    bind_ok: ?fn () anyerror!void,
+    bind_ok: ?fn (
+        *Conn,
+    ) anyerror!void,
     unbind: ?fn (
+        *Conn,
         queue: []u8,
         exchange: []u8,
-        routing_key: ?[]u8,
+        routing_key: []u8,
         arguments: *Table,
     ) anyerror!void,
-    unbind_ok: ?fn () anyerror!void,
+    unbind_ok: ?fn (
+        *Conn,
+    ) anyerror!void,
     purge: ?fn (
+        *Conn,
         queue: []u8,
         no_wait: bool,
     ) anyerror!void,
     purge_ok: ?fn (
+        *Conn,
         message_count: u32,
     ) anyerror!void,
     delete: ?fn (
+        *Conn,
         queue: []u8,
         if_unused: bool,
         if_empty: bool,
         no_wait: bool,
     ) anyerror!void,
     delete_ok: ?fn (
+        *Conn,
         message_count: u32,
     ) anyerror!void,
 };
@@ -1242,8 +1432,8 @@ pub const Queue = struct {
         auto_delete: bool,
         no_wait: bool,
         arguments: *Table,
-    ) void {
-        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    ) !void {
+        const n = try std.os.write(self.conn.file.handle, self.conn.tx_memory[0..]);
         while (true) {
             const message = try self.conn.dispatch(allocator, null);
         }
@@ -1256,11 +1446,11 @@ pub const Queue = struct {
         self: *Self,
         queue: []u8,
         exchange: []u8,
-        routing_key: ?[]u8,
+        routing_key: []u8,
         no_wait: bool,
         arguments: *Table,
-    ) void {
-        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    ) !void {
+        const n = try std.os.write(self.conn.file.handle, self.conn.tx_memory[0..]);
         while (true) {
             const message = try self.conn.dispatch(allocator, null);
         }
@@ -1273,10 +1463,10 @@ pub const Queue = struct {
         self: *Self,
         queue: []u8,
         exchange: []u8,
-        routing_key: ?[]u8,
+        routing_key: []u8,
         arguments: *Table,
-    ) void {
-        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    ) !void {
+        const n = try std.os.write(self.conn.file.handle, self.conn.tx_memory[0..]);
         while (true) {
             const message = try self.conn.dispatch(allocator, null);
         }
@@ -1289,8 +1479,8 @@ pub const Queue = struct {
         self: *Self,
         queue: []u8,
         no_wait: bool,
-    ) void {
-        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    ) !void {
+        const n = try std.os.write(self.conn.file.handle, self.conn.tx_memory[0..]);
         while (true) {
             const message = try self.conn.dispatch(allocator, null);
         }
@@ -1305,8 +1495,8 @@ pub const Queue = struct {
         if_unused: bool,
         if_empty: bool,
         no_wait: bool,
-    ) void {
-        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    ) !void {
+        const n = try std.os.write(self.conn.file.handle, self.conn.tx_memory[0..]);
         while (true) {
             const message = try self.conn.dispatch(allocator, null);
         }
@@ -1316,12 +1506,16 @@ pub const Queue = struct {
 };
 pub const basic_interface = struct {
     qos: ?fn (
+        *Conn,
         prefetch_size: u32,
         prefetch_count: u16,
         global: bool,
     ) anyerror!void,
-    qos_ok: ?fn () anyerror!void,
+    qos_ok: ?fn (
+        *Conn,
+    ) anyerror!void,
     consume: ?fn (
+        *Conn,
         queue: []u8,
         consumer_tag: []u8,
         no_local: bool,
@@ -1331,61 +1525,77 @@ pub const basic_interface = struct {
         arguments: *Table,
     ) anyerror!void,
     consume_ok: ?fn (
+        *Conn,
         consumer_tag: []u8,
     ) anyerror!void,
     cancel: ?fn (
+        *Conn,
         consumer_tag: []u8,
         no_wait: bool,
     ) anyerror!void,
     cancel_ok: ?fn (
+        *Conn,
         consumer_tag: []u8,
     ) anyerror!void,
     publish: ?fn (
+        *Conn,
         exchange: []u8,
-        routing_key: ?[]u8,
+        routing_key: []u8,
         mandatory: bool,
         immediate: bool,
     ) anyerror!void,
     @"return": ?fn (
+        *Conn,
         reply_code: u16,
         reply_text: []u8,
         exchange: []u8,
-        routing_key: ?[]u8,
+        routing_key: []u8,
     ) anyerror!void,
     deliver: ?fn (
+        *Conn,
         consumer_tag: []u8,
         delivery_tag: u64,
         redelivered: bool,
         exchange: []u8,
-        routing_key: ?[]u8,
+        routing_key: []u8,
     ) anyerror!void,
     get: ?fn (
+        *Conn,
         queue: []u8,
         no_ack: bool,
     ) anyerror!void,
     get_ok: ?fn (
+        *Conn,
         delivery_tag: u64,
         redelivered: bool,
         exchange: []u8,
-        routing_key: ?[]u8,
+        routing_key: []u8,
         message_count: u32,
     ) anyerror!void,
-    get_empty: ?fn () anyerror!void,
+    get_empty: ?fn (
+        *Conn,
+    ) anyerror!void,
     ack: ?fn (
+        *Conn,
         delivery_tag: u64,
         multiple: bool,
     ) anyerror!void,
     reject: ?fn (
+        *Conn,
         delivery_tag: u64,
         requeue: bool,
     ) anyerror!void,
     recover_async: ?fn (
+        *Conn,
         requeue: bool,
     ) anyerror!void,
     recover: ?fn (
+        *Conn,
         requeue: bool,
     ) anyerror!void,
-    recover_ok: ?fn () anyerror!void,
+    recover_ok: ?fn (
+        *Conn,
+    ) anyerror!void,
 };
 
 pub var BASIC_IMPL = basic_interface{
@@ -1419,8 +1629,8 @@ pub const Basic = struct {
         prefetch_size: u32,
         prefetch_count: u16,
         global: bool,
-    ) void {
-        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    ) !void {
+        const n = try std.os.write(self.conn.file.handle, self.conn.tx_memory[0..]);
         while (true) {
             const message = try self.conn.dispatch(allocator, null);
         }
@@ -1438,8 +1648,8 @@ pub const Basic = struct {
         exclusive: bool,
         no_wait: bool,
         arguments: *Table,
-    ) void {
-        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    ) !void {
+        const n = try std.os.write(self.conn.file.handle, self.conn.tx_memory[0..]);
         while (true) {
             const message = try self.conn.dispatch(allocator, null);
         }
@@ -1452,8 +1662,8 @@ pub const Basic = struct {
         self: *Self,
         consumer_tag: []u8,
         no_wait: bool,
-    ) void {
-        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    ) !void {
+        const n = try std.os.write(self.conn.file.handle, self.conn.tx_memory[0..]);
         while (true) {
             const message = try self.conn.dispatch(allocator, null);
         }
@@ -1465,11 +1675,23 @@ pub const Basic = struct {
     pub fn publish_resp(
         self: *Self,
         exchange: []u8,
-        routing_key: ?[]u8,
+        routing_key: []u8,
         mandatory: bool,
         immediate: bool,
-    ) void {
-        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    ) !void {
+        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
+        self.conn.tx_buffer.writeMethodHeader(60, 40);
+        self.conn.tx_buffer.writeArray128U8(exchange);
+        self.conn.tx_buffer.writeShortString(routing_key);
+        self.conn.tx_buffer.writeBool(mandatory);
+        self.conn.tx_buffer.writeBool(immediate);
+        self.conn.tx_buffer.updateFrameLength();
+        for (self.conn.tx_buffer.extent()) |x| {
+            std.debug.warn("0x{x:0>2} ", .{x});
+        }
+        std.debug.warn("{}\n", .{self.conn.tx_buffer.extent()});
+        std.debug.warn("{x}\n", .{self.conn.tx_buffer.extent()});
+        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
     }
     // METHOD =============================
     pub const RETURN_METHOD = 50;
@@ -1481,8 +1703,8 @@ pub const Basic = struct {
         self: *Self,
         queue: []u8,
         no_ack: bool,
-    ) void {
-        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    ) !void {
+        const n = try std.os.write(self.conn.file.handle, self.conn.tx_memory[0..]);
         while (true) {
             const message = try self.conn.dispatch(allocator, null);
         }
@@ -1497,8 +1719,18 @@ pub const Basic = struct {
         self: *Self,
         delivery_tag: u64,
         multiple: bool,
-    ) void {
-        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    ) !void {
+        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
+        self.conn.tx_buffer.writeMethodHeader(60, 80);
+        self.conn.tx_buffer.writeU64(delivery_tag);
+        self.conn.tx_buffer.writeBool(multiple);
+        self.conn.tx_buffer.updateFrameLength();
+        for (self.conn.tx_buffer.extent()) |x| {
+            std.debug.warn("0x{x:0>2} ", .{x});
+        }
+        std.debug.warn("{}\n", .{self.conn.tx_buffer.extent()});
+        std.debug.warn("{x}\n", .{self.conn.tx_buffer.extent()});
+        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
     }
     // METHOD =============================
     pub const REJECT_METHOD = 90;
@@ -1506,35 +1738,75 @@ pub const Basic = struct {
         self: *Self,
         delivery_tag: u64,
         requeue: bool,
-    ) void {
-        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    ) !void {
+        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
+        self.conn.tx_buffer.writeMethodHeader(60, 90);
+        self.conn.tx_buffer.writeU64(delivery_tag);
+        self.conn.tx_buffer.writeBool(requeue);
+        self.conn.tx_buffer.updateFrameLength();
+        for (self.conn.tx_buffer.extent()) |x| {
+            std.debug.warn("0x{x:0>2} ", .{x});
+        }
+        std.debug.warn("{}\n", .{self.conn.tx_buffer.extent()});
+        std.debug.warn("{x}\n", .{self.conn.tx_buffer.extent()});
+        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
     }
     // METHOD =============================
     pub const RECOVER_ASYNC_METHOD = 100;
     pub fn recover_async_resp(
         self: *Self,
         requeue: bool,
-    ) void {
-        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    ) !void {
+        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
+        self.conn.tx_buffer.writeMethodHeader(60, 100);
+        self.conn.tx_buffer.writeBool(requeue);
+        self.conn.tx_buffer.updateFrameLength();
+        for (self.conn.tx_buffer.extent()) |x| {
+            std.debug.warn("0x{x:0>2} ", .{x});
+        }
+        std.debug.warn("{}\n", .{self.conn.tx_buffer.extent()});
+        std.debug.warn("{x}\n", .{self.conn.tx_buffer.extent()});
+        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
     }
     // METHOD =============================
     pub const RECOVER_METHOD = 110;
     pub fn recover_resp(
         self: *Self,
         requeue: bool,
-    ) void {
-        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    ) !void {
+        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
+        self.conn.tx_buffer.writeMethodHeader(60, 110);
+        self.conn.tx_buffer.writeBool(requeue);
+        self.conn.tx_buffer.updateFrameLength();
+        for (self.conn.tx_buffer.extent()) |x| {
+            std.debug.warn("0x{x:0>2} ", .{x});
+        }
+        std.debug.warn("{}\n", .{self.conn.tx_buffer.extent()});
+        std.debug.warn("{x}\n", .{self.conn.tx_buffer.extent()});
+        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
     }
     // METHOD =============================
     pub const RECOVER_OK_METHOD = 111;
 };
 pub const tx_interface = struct {
-    select: ?fn () anyerror!void,
-    select_ok: ?fn () anyerror!void,
-    commit: ?fn () anyerror!void,
-    commit_ok: ?fn () anyerror!void,
-    rollback: ?fn () anyerror!void,
-    rollback_ok: ?fn () anyerror!void,
+    select: ?fn (
+        *Conn,
+    ) anyerror!void,
+    select_ok: ?fn (
+        *Conn,
+    ) anyerror!void,
+    commit: ?fn (
+        *Conn,
+    ) anyerror!void,
+    commit_ok: ?fn (
+        *Conn,
+    ) anyerror!void,
+    rollback: ?fn (
+        *Conn,
+    ) anyerror!void,
+    rollback_ok: ?fn (
+        *Conn,
+    ) anyerror!void,
 };
 
 pub var TX_IMPL = tx_interface{
@@ -1554,8 +1826,8 @@ pub const Tx = struct {
     pub const SELECT_METHOD = 10;
     pub fn select_sync(
         self: *Self,
-    ) void {
-        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    ) !void {
+        const n = try std.os.write(self.conn.file.handle, self.conn.tx_memory[0..]);
         while (true) {
             const message = try self.conn.dispatch(allocator, null);
         }
@@ -1566,8 +1838,8 @@ pub const Tx = struct {
     pub const COMMIT_METHOD = 20;
     pub fn commit_sync(
         self: *Self,
-    ) void {
-        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    ) !void {
+        const n = try std.os.write(self.conn.file.handle, self.conn.tx_memory[0..]);
         while (true) {
             const message = try self.conn.dispatch(allocator, null);
         }
@@ -1578,8 +1850,8 @@ pub const Tx = struct {
     pub const ROLLBACK_METHOD = 30;
     pub fn rollback_sync(
         self: *Self,
-    ) void {
-        const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);
+    ) !void {
+        const n = try std.os.write(self.conn.file.handle, self.conn.tx_memory[0..]);
         while (true) {
             const message = try self.conn.dispatch(allocator, null);
         }

@@ -22,6 +22,10 @@ pub const WireBuffer = struct {
         self.head = 0;
     }
 
+    pub fn extent(self: *Self) []u8 {
+        return self.mem[0..self.head];
+    }
+
     pub fn is_more_data(self: *Self) bool {
         return self.head < self.mem.len;
     }
@@ -39,6 +43,25 @@ pub const WireBuffer = struct {
         };
     }
 
+    pub fn writeFrameHeader(self: *Self, frame_type: FrameType, channel: u16, size: u32) void {
+        self.writeU8(@enumToInt(frame_type));
+        self.writeU16(channel);
+        self.writeU32(size); // This will be overwritten later
+    }
+
+
+    pub fn updateFrameLength(self: *Self) void {
+        const head = self.head;
+        self.head = 3;
+        self.writeU32(@intCast(u32, head));
+        self.head = head;
+        self.writeFrameEnd();
+    }
+
+    fn writeFrameEnd(self: *Self) void {
+        self.writeU8(0xCE);
+    }
+
     pub fn readMethodHeader(self: *Self) !MethodHeader {
         if (self.mem.len - self.head < @sizeOf(MethodHeader)) return error.MethodHeaderReadFailure;
         const class = self.readU16();
@@ -50,10 +73,20 @@ pub const WireBuffer = struct {
         };
     }
 
+    pub fn writeMethodHeader(self: *Self, class: u16, method: u16) void {
+        self.writeU16(class);
+        self.writeU16(method);
+    }
+
     pub fn readU8(self: *Self) u8 {
         const r = @ptrCast(u8, self.mem[self.head]);
         self.head += 1;
         return r;
+    }
+
+    pub fn writeU8(self: *Self, byte: u8) void {
+        std.mem.writeInt(u8, &self.mem[self.head], byte, .Big);
+        self.head += 1;
     }
 
     pub fn readU16(self: *Self) u16 {
@@ -62,11 +95,21 @@ pub const WireBuffer = struct {
         return r;
     }
 
+    pub fn writeU16(self: *Self, short: u16) void {
+        std.mem.writeInt(u16, @ptrCast(*[@sizeOf(u16)]u8, &self.mem[self.head]), short, .Big);
+        self.head += 2;
+    }
+
     pub fn readU32(self: *Self) u32 {
         const r = std.mem.readInt(u32, @ptrCast(*const [@sizeOf(u32)]u8, &self.mem[self.head]), .Big);
         self.head += @sizeOf(u32);
         return r;
     }
+
+    pub fn writeU32(self: *Self, number: u32) void {
+        std.mem.writeInt(u32, @ptrCast(*[@sizeOf(u32)]u8, &self.mem[self.head]), number, .Big);
+        self.head += @sizeOf(u32);
+    }    
 
     pub fn readU64(self: *Self) u64 {
         const r = std.mem.readInt(u64, @ptrCast(*const [@sizeOf(u64)]u8, &self.mem[self.head]), .Big);
@@ -74,10 +117,19 @@ pub const WireBuffer = struct {
         return r;
     }
 
+    pub fn writeU64(self: *Self, number: u64) void {
+        std.mem.writeInt(u64, @ptrCast(*[@sizeOf(u64)]u8, &self.mem[self.head]), number, .Big);
+        self.head += @sizeOf(u64);
+    }
+
     pub fn readBool(self: *Self) bool {
         const r = self.readU8();
         if (r == 0) return false;
         return true;
+    }
+
+    pub fn writeBool(self: *Self, boolean: bool) void {
+        self.writeU8(if (boolean) 1 else 0);
     }
 
     pub fn readShortString(self: *Self) []u8 {
@@ -87,6 +139,12 @@ pub const WireBuffer = struct {
         return array;
     }
 
+    pub fn writeShortString(self: *Self, string: []u8) void {
+        self.writeU8(@intCast(u8, string.len));
+        std.mem.copy(u8, self.mem[self.head..], string);
+        self.head += string.len;
+    }
+
     pub fn readLongString(self: *Self) []u8 {
         const length = self.readU32();
         const array = self.mem[self.head..self.head+length];
@@ -94,7 +152,19 @@ pub const WireBuffer = struct {
         return array;
     }
 
+    pub fn writeLongString(self: *Self, string: []u8) void {
+        self.writeU32(@intCast(u32, string.len));
+        std.mem.copy(u8, self.mem[self.head..], string);
+        self.head += string.len;
+    }
+
     // TODO: this is purely incrementing the read_head without returning anything useful
+    // 1. Save the current read head
+    // 2. Read the length (u32) of the table (the length of data after the u32 length)
+    // 3. Until we've reached the end of the table
+    //      3a. Read a table key
+    //      3b. Read the value type for the key
+    //      3c. Read that type
     pub fn readTable(self: *Self) Table {
         const saved_read_head = self.head;
         const length = self.readU32();
@@ -127,6 +197,14 @@ pub const WireBuffer = struct {
         return Table {
             .buf = WireBuffer.init(self.mem[saved_read_head..self.head]),
         };
+    }
+
+    pub fn writeTable(self: *Self, string: []u8) void {
+        // 1. Skip the length (4 bytes) as we don't know it yet 
+
+        // self.writeU32(@intCast(u32, string.len));
+        std.mem.copy(u8, self.mem[self.head..], string);
+        self.head += string.len;
     }
 
     // Not sure if all of the following are required

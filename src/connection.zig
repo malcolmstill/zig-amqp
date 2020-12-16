@@ -11,8 +11,10 @@ const WireBuffer = @import("wire.zig").WireBuffer;
 
 pub const Conn = struct {
     file: fs.File,
-    rx_buffer: [4096]u8 = undefined,
-    tx_buffer: [4096]u8 = undefined,
+    rx_memory: [4096]u8 = undefined,
+    tx_memory: [4096]u8 = undefined,
+    rx_buffer: WireBuffer = undefined,
+    tx_buffer: WireBuffer = undefined,
 
     const Self = @This();
 
@@ -47,19 +49,28 @@ pub const Conn = struct {
     // (expected_response supplied), if we receive an asynchronous response we dispatch it
     // but return true.
     pub fn dispatch(self: *Self, allocator: *mem.Allocator, expected_response: ?ClassMethod) !bool {
-        const n = try os.read(self.file.handle, self.rx_buffer[0..]);
-        var buf = WireBuffer.init(self.rx_buffer[0..n]);
+        const n = try os.read(self.file.handle, self.rx_memory[0..]);
+        self.rx_buffer = WireBuffer.init(self.rx_memory[0..n]);
+        self.tx_buffer = WireBuffer.init(self.tx_memory[0..]);
 
-        const header = try buf.readFrameHeader();
+        // 1. Attempt to read a frame header
+        const header = try self.rx_buffer.readFrameHeader();
 
         switch (header.@"type") {
             .Method => {
-                const method_header = try buf.readMethodHeader();
+                // 2a. The frame header says this is a method, attempt to read
+                // the method header
+                const method_header = try self.rx_buffer.readMethodHeader();
                 const class = method_header.class;
                 const method = method_header.method;
 
                 var sync_resp_ok = false;
                 
+                // 3a. If this is a synchronous call, we expect expected_response to be 
+                // non-null and to provide the expected class and method of the response
+                // that we're waiting on. That class and method is checked for being
+                // a synchronous response and then we compare the class / method from the
+                // header with expected_response and error if they don't match.
                 if (expected_response) |expected| {
                     const is_synchronous = try proto.isSynchronous(class, method);
                     
@@ -70,7 +81,8 @@ pub const Conn = struct {
                     sync_resp_ok = true;
                 }
 
-                try proto.dispatchCallback(&buf, class, method);
+                // 4a. Finally dispatch the class / method
+                try proto.dispatchCallback(self, class, method);
                 return sync_resp_ok;
             },
             .Heartbeat => {
