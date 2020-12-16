@@ -4,6 +4,7 @@ import sys
 def generate(file):
     print(f'const std = @import("std");')
     print(f'const Conn = @import("connection.zig").Conn;')
+    print(f'const ClassMethod = @import("connection.zig").ClassMethod;')
     print(f'const WireBuffer = @import("wire.zig").WireBuffer;')
     print(f'const Table = @import("table.zig").Table;')
 
@@ -22,7 +23,7 @@ def generate(file):
                 generateClass(child)
 
 def generateLookup(amqp):
-    print(f"pub fn dispatchCallback(buf: *WireBuffer, class: u16, method: u16) !void {{")
+    print(f"pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {{")
     print(f"switch (class) {{")
     for child in amqp:
         if child.tag == "class":
@@ -49,8 +50,8 @@ def generateLookupMethod(klass):
             for child in method:
                 if child.tag == 'field':
                     field = child
-                    print(f"{fieldConstness(field)} {nameClean(field)} = buf.{generateRead(field)}(); ")
-            print(f"try {method_name}(")
+                    print(f"{fieldConstness(field)} {nameClean(field)} = conn.rx_buffer.{generateRead(field)}(); ")
+            print(f"try {method_name}(conn, ")
             for child in method:
                 if child.tag == 'field':
                     field = child
@@ -104,7 +105,7 @@ def generateInterface(klass):
 
 def generateInterfaceMethod(method):
     method_name = nameClean(method)
-    print(f"{method_name}: ?fn(")
+    print(f"{method_name}: ?fn(*Conn, ")
     for child in method:
         if child.tag == 'field':
             field = child
@@ -135,9 +136,9 @@ def generateClass(c):
             print(f"// METHOD =============================")
             print(f"pub const {nameCleanUpper(method)}_METHOD = {method.attrib['index']};")
             if isClientInitiatedRequest(method):
-                generateClientInitiatedRequest(method)
+                generateClientInitiatedRequest(method, nameCleanCap(c), nameCleanUpper(c))
             if isClientResponse(method):
-                generateClientResponse(method)
+                generateClientResponse(method, c.attrib['index'], method.attrib['index'])
 
     print(f"}};")
 
@@ -161,25 +162,52 @@ def isClientResponse(method):
             expectsResponse = True
     return isRequestSentToServer and not expectsResponse
 
-def generateClientInitiatedRequest(method):
+def generateClientInitiatedRequest(method, klass_cap, klass_upper):
+    # print(method)
+    method_name = nameCleanUpper(method)
+    reply_method = nameCleanUpper(method) + '_OK'
     print(f"pub fn {nameClean(method)}_sync(self: *Self,")
     for method_child in method:
         if method_child.tag == 'field' and not ('reserved' in method_child.attrib and method_child.attrib['reserved'] == '1'):
             print(f"{nameClean(method_child)}: {generateArg(method_child)}, ", end = '')
-    print(f") void {{")
+    print(f") !void {{")
     # Send message
-    print(f"const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);")
-    print(f"while (true) {{ const message = try self.conn.dispatch(allocator, null); }}")
+    print(f"self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);")
+    print(f"self.conn.tx_buffer.writeMethodHeader({klass_upper}_CLASS, {klass_cap}.{method_name}_METHOD);")
+    # Generate writes
+    for method_child in method:
+        if method_child.tag == 'field':
+            if ('reserved' in method_child.attrib and method_child.attrib['reserved'] == '1'):
+                print(f"const {nameClean(method_child)} = {generateReserved(method_child)};")
+            print(f"self.conn.tx_buffer.{generateWrite(method_child, nameClean(method_child))};")
+    # Send message
+    print(f"self.conn.tx_buffer.updateFrameLength();");
+    print(f"const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());")
+    print(f"self.conn.tx_buffer.reset();");
+    print(f"var received_response = false; while (!received_response) {{ const expecting: ClassMethod = .{{ .class = {klass_upper}_CLASS, .method = {klass_cap}.{reply_method}_METHOD }}; received_response = try self.conn.dispatch(expecting); }}")
     print(f"}}")
 
-def generateClientResponse(method):
+def generateClientResponse(method, class_index, method_index):
     print(f"pub fn {nameClean(method)}_resp(self: *Self,")
     for method_child in method:
         if method_child.tag == 'field' and not ('reserved' in method_child.attrib and method_child.attrib['reserved'] == '1'):
             print(f"{nameClean(method_child)}: {generateArg(method_child)}, ", end = '')
-    print(f") void {{")
+    print(f") !void {{")
+    print(f"self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);")
+    print(f"self.conn.tx_buffer.writeMethodHeader({class_index}, {method_index});")
+    # Generate writes
+    for method_child in method:
+        if method_child.tag == 'field':
+            if ('reserved' in method_child.attrib and method_child.attrib['reserved'] == '1'):
+                print(f"const {nameClean(method_child)} = {generateReserved(method_child)};")
+            print(f"self.conn.tx_buffer.{generateWrite(method_child, nameClean(method_child))};")
     # Send message
-    print(f"const n = try os.write(self.conn.file, self.conn.tx_buffer[0..]);")
+    print(f"self.conn.tx_buffer.updateFrameLength();");
+    # print(f"for (self.conn.tx_buffer.extent()) |x| {{ std.debug.warn(\"0x{{x:0>2}} \", .{{x}}); }}")
+    # print(f"std.debug.warn(\"{{}}\\n\", .{{self.conn.tx_buffer.extent()}});")
+    # print(f"std.debug.warn(\"{{x}}\\n\", .{{self.conn.tx_buffer.extent()}});")
+    print(f"const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());")
+    print(f"self.conn.tx_buffer.reset();");
     print(f"}}")
 
 def addressOf(field):
@@ -215,12 +243,41 @@ def generateRead(field):
     if field_type in ['consumer-tag', 'reply-text']:
         return 'readArrayU8'
     if field_type in ['shortstr', 'path']:
-        return 'readLongString'
+        return 'readShortString'
     if field_type in ['longstr']:
         return 'readLongString'
     if field_type in ['peer-properties', 'table']:
         return 'readTable'
     return 'void'
+
+def generateWrite(field, name):
+    field_type = None
+    if 'domain' in field.attrib:
+        field_type = field.attrib['domain']
+    if 'type' in field.attrib:
+        field_type = field.attrib['type']
+
+    if field_type == 'octet':
+        return 'writeU8(' + name + ')'
+    if field_type in ['longlong', 'delivery-tag']:
+        return 'writeU64(' + name + ')'
+    if field_type in ['long', 'message-count']:
+        return 'writeU32(' + name + ')'
+    if field_type in ['short', 'class-id', 'method-id', 'reply-code']:
+        return 'writeU16(' + name + ')'
+    if field_type in ['bit', 'no-ack', 'no-local', 'no-wait', 'redelivered']:
+        return 'writeBool(' + name + ')'
+    if field_type in ['queue-name', 'exchange-name']:
+        return 'writeArray128U8(' + name + ')'
+    if field_type in ['consumer-tag', 'reply-text']:
+        return 'writeArrayU8(' + name + ')'
+    if field_type in ['shortstr', 'path']:
+        return 'writeShortString(' + name + ')'
+    if field_type in ['longstr']:
+        return 'writeLongString(' + name + ')'
+    if field_type in ['peer-properties', 'table']:
+        return f"writeTable({name}.buf.mem[0..{name}.buf.head])"
+    return 'void'    
 
 def generateArg(field):
     field_type = None
@@ -242,11 +299,40 @@ def generateArg(field):
     if field_type in ['queue-name', 'exchange-name']:
         return '[]u8'
     if field_type in ['path', 'shortstr']:
-        return '?[]u8'        
+        return '[]const u8'        
     if field_type in ['consumer-tag', 'reply-text', 'longstr']:
-        return '[]u8'
+        return '[]const u8'
     if field_type in ['peer-properties', 'table']:
         return '*Table'
+    return 'void'
+
+def generateReserved(field):
+    field_type = None
+    if 'domain' in field.attrib:
+        field_type = field.attrib['domain']
+    if 'type' in field.attrib:
+        field_type = field.attrib['type']
+
+    if field_type == 'octet':
+        return '0'
+    if field_type in ['longlong', 'delivery-tag']:
+        return '0'
+    if field_type in ['long', 'message-count']:
+        return '0'
+    if field_type in ['short', 'class-id', 'method-id', 'reply-code']:
+        return '0'
+    if field_type in ['bit', 'no-ack', 'no-local', 'no-wait', 'redelivered']:
+        return 'false'
+    if field_type in ['queue-name', 'exchange-name']:
+        return ''
+    if field_type in ['consumer-tag', 'reply-text']:
+        return ''
+    if field_type in ['shortstr', 'path']:
+        return '""'
+    if field_type in ['longstr']:
+        return '""'
+    if field_type in ['peer-properties', 'table']:
+        return ''
     return 'void'
 
 def fieldConstness(field):

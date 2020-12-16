@@ -3,18 +3,23 @@
 // map. For small tables (I assume we'll only see smallish tables)
 // this should be fine performance-wise.
 const std = @import("std");
+const mem = std.mem;
 const WireBuffer = @import("wire.zig").WireBuffer;
 
 pub const Table = struct {
     // a slice of our rx_buffer
     buf: WireBuffer = undefined,
+    len: usize = 0,
 
     const Self = @This();
 
     pub fn init(wire_buffer: WireBuffer) Table {
-        return Table {
-            .buffer = wire_buffer,
+        var t = Table {
+            .buf = wire_buffer,
+            .len = 0,
         };
+        t.buf.writeU32(0);
+        return t;
     }
 
     // Lookup a value in the table. Note we need to know the type
@@ -55,5 +60,53 @@ pub const Table = struct {
         }
 
         return null;
+    }
+
+    pub fn insertTable(self: *Self, key: []const u8, table: *Table) void {
+        self.buf.writeShortString(key);
+        self.buf.writeU8('F');
+        self.buf.writeTable(table.buf.extent());
+        self.updateLength();
+    }
+
+    pub fn insertBool(self: *Self, key: []const u8, boolean: bool) void {
+        self.buf.writeShortString(key);
+        self.buf.writeU8('t');
+        self.buf.writeBool(boolean);
+        self.updateLength();
+    }
+
+    // Apparently actual implementations don't use 's' for short string
+    // (and therefore) I assume they don't use short strings (in tables)
+    // at all
+    // pub fn insertShortString(self: *Self, key: []u8, string: []u8) void {
+    //     self.buf.writeShortString(key);
+    //     self.buf.writeU8('s');
+    //     self.buf.writeShortString(string);
+    //     self.updateLength();
+    // }
+
+    pub fn insertLongString(self: *Self, key: []const u8, string: []const u8) void {
+        self.buf.writeShortString(key);
+        self.buf.writeU8('S');
+        self.buf.writeLongString(string);
+        self.updateLength();
+    }
+
+    fn updateLength(self: *Self) void {
+        mem.writeInt(
+            u32,
+            @ptrCast(*[@sizeOf(u32)]u8,
+            &self.buf.mem[0]),
+            @intCast(u32, self.buf.head - @sizeOf(u32)),
+            .Big
+        );
+    }
+
+    pub fn print(self: *Self) void {
+        for (self.buf.mem[0..self.buf.head]) |x| {
+            std.debug.warn("0x{x:0>2} ", .{x});
+        }
+        std.debug.warn("\n", .{});
     }
 };
