@@ -9,6 +9,7 @@ pub fn main() !void {
 
     var conn = try Conn.open(heap.page_allocator, null, null);
     defer conn.deinit();
+    std.debug.warn("Connected!\n", .{});
 
     var ch = try channel.open(conn);
 

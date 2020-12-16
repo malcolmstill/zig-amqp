@@ -39,7 +39,7 @@ pub const Conn = struct {
         while (!received_response) {
             const expecting: ClassMethod = .{ .class = proto.CONNECTION_CLASS, .method = proto.Connection.TUNE_METHOD };
             received_response = try conn.dispatch(expecting);
-            if (received_response) std.debug.warn("Received tune\n", .{});
+            // if (received_response) std.debug.warn("Received tune\n", .{});
         }
 
         var connection: proto.Connection = proto.Connection { .conn = &conn };
@@ -105,7 +105,7 @@ pub const Conn = struct {
                 return sync_resp_ok;
             },
             .Heartbeat => {
-                if (std.builtin.mode = .Debug) std.debug.warn("Got heartbeat\n", .{});
+                if (std.builtin.mode == .Debug) std.debug.warn("Got heartbeat\n", .{});
                 return false;
             },
             else => {

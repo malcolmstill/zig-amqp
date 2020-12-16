@@ -12,7 +12,7 @@ build-example-small-compressed:
 	upx example
 
 release:
-	zig build-exe --release-safe --single-threaded --strip src/example.zig
+	zig build-exe -O ReleaseSafe --single-threaded --strip src/example.zig
 	strip example
 
 generate:
