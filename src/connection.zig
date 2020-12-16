@@ -9,45 +9,48 @@ const init = @import("init.zig");
 const wire = @import("wire.zig");
 const WireBuffer = @import("wire.zig").WireBuffer;
 
-pub const Conn = struct {
+pub const Connection = struct {
     file: fs.File,
     rx_memory: [4096]u8 = undefined,
     tx_memory: [4096]u8 = undefined,
     rx_buffer: WireBuffer = undefined,
     tx_buffer: WireBuffer = undefined,
+    connection: proto.Connection = undefined,
 
     const Self = @This();
 
     // TODO: This should return Connection instead of Conn
-    pub fn open(allocator: *mem.Allocator, host: ?[]u8, port: ?u16) !proto.Connection {
+    pub fn open(allocator: *mem.Allocator, host: ?[]u8, port: ?u16) !Connection {
         init.init();
 
         const file = try net.tcpConnectToHost(allocator, host orelse "127.0.0.1", port orelse 5672);
         const n = try file.write("AMQP\x00\x00\x09\x01");
 
-        var connection: proto.Connection = proto.Connection {
-            .conn = Conn {
-                .file = file,
-            }
+        var connection: Connection = Connection {
+            .file = file,
         };
+
+        // Just no
+        connection.connection.connection = &connection;
 
         // TODO: I think we want something like an await_start_ok()
         // We asynchronously process incoming messages (calling callbacks )
         var received_response = false;
         while (!received_response) {
             const expecting: ClassMethod = .{ .class = proto.CONNECTION_CLASS, .method = proto.Connection.START_METHOD };
-            received_response = try connection.conn.dispatch(expecting);
+            received_response = try connection.dispatch(expecting);
         }
 
         // Await tune
         received_response = false;
         while (!received_response) {
             const expecting: ClassMethod = .{ .class = proto.CONNECTION_CLASS, .method = proto.Connection.TUNE_METHOD };
-            received_response = try connection.conn.dispatch(expecting);
+            received_response = try connection.dispatch(expecting);
             // if (received_response) std.debug.warn("Received tune\n", .{});
         }
 
-        try connection.open_sync("/");
+        std.debug.warn("ptr: {*}\n", .{&connection});
+        try connection.connection.open_sync("/");
 
         return connection;
     }
@@ -105,8 +108,8 @@ pub const Conn = struct {
                 }
 
                 // 4a. Finally dispatch the class / method
-                const connection: *proto.Connection = @fieldParentPtr(proto.Connection, "conn", self);
-                try proto.dispatchCallback(connection, class, method);
+                // const connection: *proto.Connection = @fieldParentPtr(proto.Connection, "conn", self);
+                try proto.dispatchCallback(self, class, method);
                 return sync_resp_ok;
             },
             .Heartbeat => {

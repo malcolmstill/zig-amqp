@@ -3,7 +3,7 @@ import sys
 
 def generate(file):
     print(f'const std = @import("std");')
-    print(f'const Conn = @import("connection.zig").Conn;')
+    print(f'const connection = @import("connection.zig");')
     print(f'const ClassMethod = @import("connection.zig").ClassMethod;')
     print(f'const WireBuffer = @import("wire.zig").WireBuffer;')
     print(f'const Table = @import("table.zig").Table;')
@@ -23,7 +23,7 @@ def generate(file):
                 generateClass(child)
 
 def generateLookup(amqp):
-    print(f"pub fn dispatchCallback(c: *Connection, class: u16, method: u16) !void {{")
+    print(f"pub fn dispatchCallback(conn: *connection.Connection, class: u16, method: u16) !void {{")
     print(f"switch (class) {{")
     for child in amqp:
         if child.tag == "class":
@@ -50,8 +50,8 @@ def generateLookupMethod(klass):
             for child in method:
                 if child.tag == 'field':
                     field = child
-                    print(f"{fieldConstness(field)} {nameClean(field)} = c.conn.rx_buffer.{generateRead(field)}(); ")
-            print(f"try {method_name}(c, ")
+                    print(f"{fieldConstness(field)} {nameClean(field)} = conn.rx_buffer.{generateRead(field)}(); ")
+            print(f"try {method_name}(conn, ")
             for child in method:
                 if child.tag == 'field':
                     field = child
@@ -105,7 +105,7 @@ def generateInterface(klass):
 
 def generateInterfaceMethod(method):
     method_name = nameClean(method)
-    print(f"{method_name}: ?fn(*Connection, ")
+    print(f"{method_name}: ?fn(*connection.Connection, ")
     for child in method:
         if child.tag == 'field':
             field = child
@@ -128,7 +128,8 @@ def generateClass(c):
     # print(f"pub const {nameClean(c)} = struct {{")
     print(f"pub const {nameCleanUpper(c)}_CLASS = {c.attrib['index']}; // CLASS")
     print(f"pub const {nameCleanCap(c)} = struct {{")
-    print(f"conn: Conn,")
+    # print(f"conn: Conn,")
+    print(f"connection: *connection.Connection,")
     print(f"const Self = @This();")
     for child in c:
         if child.tag == "method":
@@ -172,19 +173,19 @@ def generateClientInitiatedRequest(method, klass_cap, klass_upper):
             print(f"{nameClean(method_child)}: {generateArg(method_child)}, ", end = '')
     print(f") !void {{")
     # Send message
-    print(f"self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);")
-    print(f"self.conn.tx_buffer.writeMethodHeader({klass_upper}_CLASS, {klass_cap}.{method_name}_METHOD);")
+    print(f"self.connection.tx_buffer.writeFrameHeader(.Method, 0, 0);")
+    print(f"self.connection.tx_buffer.writeMethodHeader({klass_upper}_CLASS, {klass_cap}.{method_name}_METHOD);")
     # Generate writes
     for method_child in method:
         if method_child.tag == 'field':
             if ('reserved' in method_child.attrib and method_child.attrib['reserved'] == '1'):
                 print(f"const {nameClean(method_child)} = {generateReserved(method_child)};")
-            print(f"self.conn.tx_buffer.{generateWrite(method_child, nameClean(method_child))};")
+            print(f"self.connection.tx_buffer.{generateWrite(method_child, nameClean(method_child))};")
     # Send message
-    print(f"self.conn.tx_buffer.updateFrameLength();")
-    print(f"const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());")
-    print(f"self.conn.tx_buffer.reset();")
-    print(f"var received_response = false; while (!received_response) {{ const expecting: ClassMethod = .{{ .class = {klass_upper}_CLASS, .method = {klass_cap}.{reply_method}_METHOD }}; received_response = try self.conn.dispatch(expecting); }}")
+    print(f"self.connection.tx_buffer.updateFrameLength();")
+    print(f"const n = try std.os.write(self.connection.file.handle, self.connection.tx_buffer.extent());")
+    print(f"self.connection.tx_buffer.reset();")
+    print(f"var received_response = false; while (!received_response) {{ const expecting: ClassMethod = .{{ .class = {klass_upper}_CLASS, .method = {klass_cap}.{reply_method}_METHOD }}; received_response = try self.connection.dispatch(expecting); }}")
     print(f"}}")
 
 def generateClientResponse(method, klass_cap, klass_upper):
@@ -194,21 +195,21 @@ def generateClientResponse(method, klass_cap, klass_upper):
         if method_child.tag == 'field' and not ('reserved' in method_child.attrib and method_child.attrib['reserved'] == '1'):
             print(f"{nameClean(method_child)}: {generateArg(method_child)}, ", end = '')
     print(f") !void {{")
-    print(f"self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);")
-    print(f"self.conn.tx_buffer.writeMethodHeader({klass_upper}_CLASS, {klass_cap}.{method_name}_METHOD);")
+    print(f"self.connection.tx_buffer.writeFrameHeader(.Method, 0, 0);")
+    print(f"self.connection.tx_buffer.writeMethodHeader({klass_upper}_CLASS, {klass_cap}.{method_name}_METHOD);")
     # Generate writes
     for method_child in method:
         if method_child.tag == 'field':
             if ('reserved' in method_child.attrib and method_child.attrib['reserved'] == '1'):
                 print(f"const {nameClean(method_child)} = {generateReserved(method_child)};")
-            print(f"self.conn.tx_buffer.{generateWrite(method_child, nameClean(method_child))};")
+            print(f"self.connection.tx_buffer.{generateWrite(method_child, nameClean(method_child))};")
     # Send message
-    print(f"self.conn.tx_buffer.updateFrameLength();");
-    # print(f"for (self.conn.tx_buffer.extent()) |x| {{ std.debug.warn(\"0x{{x:0>2}} \", .{{x}}); }}")
-    # print(f"std.debug.warn(\"{{}}\\n\", .{{self.conn.tx_buffer.extent()}});")
-    # print(f"std.debug.warn(\"{{x}}\\n\", .{{self.conn.tx_buffer.extent()}});")
-    print(f"const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());")
-    print(f"self.conn.tx_buffer.reset();");
+    print(f"self.connection.tx_buffer.updateFrameLength();");
+    # print(f"for (self.connection.tx_buffer.extent()) |x| {{ std.debug.warn(\"0x{{x:0>2}} \", .{{x}}); }}")
+    # print(f"std.debug.warn(\"{{}}\\n\", .{{self.connection.tx_buffer.extent()}});")
+    # print(f"std.debug.warn(\"{{x}}\\n\", .{{self.connection.tx_buffer.extent()}});")
+    print(f"const n = try std.os.write(self.connection.file.handle, self.connection.tx_buffer.extent());")
+    print(f"self.connection.tx_buffer.reset();");
     print(f"}}")
 
 def addressOf(field):

@@ -10,9 +10,11 @@ pub fn main() !void {
     const stdout = &std.io.getStdOut().outStream();
 
     var conn = try amqp.connect(allocator, null, null);
+    std.debug.warn("ptr: {*}\n", .{&conn});
     // defer conn.deinit();
     std.debug.warn("Connected!\n", .{});
 
+    try conn.connection.blocked_resp("derp");
     // var ch = try channel.open(conn);
 
     while(true) {
@@ -20,7 +22,7 @@ pub fn main() !void {
         // defer arena.deinit();
         // const allocator = &arena.allocator;
 
-        const ret = conn.conn.dispatch(null) catch |err| {
+        const ret = conn.dispatch(null) catch |err| {
             switch (err) {
                 error.ConnectionResetByPeer => return err,
                 else => {
