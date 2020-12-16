@@ -1036,7 +1036,7 @@ pub const Connection = struct {
         locale: []const u8,
     ) !void {
         self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(10, 11);
+        self.conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.START_OK_METHOD);
         self.conn.tx_buffer.writeTable(client_properties.buf.mem[0..client_properties.buf.head]);
         self.conn.tx_buffer.writeShortString(mechanism);
         self.conn.tx_buffer.writeLongString(response);
@@ -1054,7 +1054,7 @@ pub const Connection = struct {
         response: []const u8,
     ) !void {
         self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(10, 21);
+        self.conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.SECURE_OK_METHOD);
         self.conn.tx_buffer.writeLongString(response);
         self.conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
@@ -1071,7 +1071,7 @@ pub const Connection = struct {
         heartbeat: u16,
     ) !void {
         self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(10, 31);
+        self.conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.TUNE_OK_METHOD);
         self.conn.tx_buffer.writeU16(channel_max);
         self.conn.tx_buffer.writeU32(frame_max);
         self.conn.tx_buffer.writeU16(heartbeat);
@@ -1133,7 +1133,7 @@ pub const Connection = struct {
         self: *Self,
     ) !void {
         self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(10, 51);
+        self.conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.CLOSE_OK_METHOD);
         self.conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
         self.conn.tx_buffer.reset();
@@ -1145,7 +1145,7 @@ pub const Connection = struct {
         reason: []const u8,
     ) !void {
         self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(10, 60);
+        self.conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.BLOCKED_METHOD);
         self.conn.tx_buffer.writeShortString(reason);
         self.conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
@@ -1157,7 +1157,7 @@ pub const Connection = struct {
         self: *Self,
     ) !void {
         self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(10, 61);
+        self.conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.UNBLOCKED_METHOD);
         self.conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
         self.conn.tx_buffer.reset();
@@ -1248,7 +1248,7 @@ pub const Channel = struct {
         active: bool,
     ) !void {
         self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(20, 21);
+        self.conn.tx_buffer.writeMethodHeader(CHANNEL_CLASS, Channel.FLOW_OK_METHOD);
         self.conn.tx_buffer.writeBool(active);
         self.conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
@@ -1284,7 +1284,7 @@ pub const Channel = struct {
         self: *Self,
     ) !void {
         self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(20, 41);
+        self.conn.tx_buffer.writeMethodHeader(CHANNEL_CLASS, Channel.CLOSE_OK_METHOD);
         self.conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
         self.conn.tx_buffer.reset();
@@ -1818,7 +1818,7 @@ pub const Basic = struct {
         immediate: bool,
     ) !void {
         self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(60, 40);
+        self.conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.PUBLISH_METHOD);
         const reserved_1 = 0;
         self.conn.tx_buffer.writeU16(reserved_1);
         self.conn.tx_buffer.writeArray128U8(exchange);
@@ -1867,7 +1867,7 @@ pub const Basic = struct {
         multiple: bool,
     ) !void {
         self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(60, 80);
+        self.conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.ACK_METHOD);
         self.conn.tx_buffer.writeU64(delivery_tag);
         self.conn.tx_buffer.writeBool(multiple);
         self.conn.tx_buffer.updateFrameLength();
@@ -1882,7 +1882,7 @@ pub const Basic = struct {
         requeue: bool,
     ) !void {
         self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(60, 90);
+        self.conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.REJECT_METHOD);
         self.conn.tx_buffer.writeU64(delivery_tag);
         self.conn.tx_buffer.writeBool(requeue);
         self.conn.tx_buffer.updateFrameLength();
@@ -1896,7 +1896,7 @@ pub const Basic = struct {
         requeue: bool,
     ) !void {
         self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(60, 100);
+        self.conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.RECOVER_ASYNC_METHOD);
         self.conn.tx_buffer.writeBool(requeue);
         self.conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
@@ -1909,7 +1909,7 @@ pub const Basic = struct {
         requeue: bool,
     ) !void {
         self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(60, 110);
+        self.conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.RECOVER_METHOD);
         self.conn.tx_buffer.writeBool(requeue);
         self.conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());

@@ -138,7 +138,7 @@ def generateClass(c):
             if isClientInitiatedRequest(method):
                 generateClientInitiatedRequest(method, nameCleanCap(c), nameCleanUpper(c))
             if isClientResponse(method):
-                generateClientResponse(method, c.attrib['index'], method.attrib['index'])
+                generateClientResponse(method, nameCleanCap(c), nameCleanUpper(c))
 
     print(f"}};")
 
@@ -187,14 +187,15 @@ def generateClientInitiatedRequest(method, klass_cap, klass_upper):
     print(f"var received_response = false; while (!received_response) {{ const expecting: ClassMethod = .{{ .class = {klass_upper}_CLASS, .method = {klass_cap}.{reply_method}_METHOD }}; received_response = try self.conn.dispatch(expecting); }}")
     print(f"}}")
 
-def generateClientResponse(method, class_index, method_index):
+def generateClientResponse(method, klass_cap, klass_upper):
+    method_name = nameCleanUpper(method)
     print(f"pub fn {nameClean(method)}_resp(self: *Self,")
     for method_child in method:
         if method_child.tag == 'field' and not ('reserved' in method_child.attrib and method_child.attrib['reserved'] == '1'):
             print(f"{nameClean(method_child)}: {generateArg(method_child)}, ", end = '')
     print(f") !void {{")
     print(f"self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);")
-    print(f"self.conn.tx_buffer.writeMethodHeader({class_index}, {method_index});")
+    print(f"self.conn.tx_buffer.writeMethodHeader({klass_upper}_CLASS, {klass_cap}.{method_name}_METHOD);")
     # Generate writes
     for method_child in method:
         if method_child.tag == 'field':
