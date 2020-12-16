@@ -1,7 +1,7 @@
 const std = @import("std");
 const os = std.os;
 const heap = std.heap;
-const Conn = @import("connection.zig").Conn;
+const Conn = @import("connection").Conn;
 const channel = @import("channel.zig");
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};

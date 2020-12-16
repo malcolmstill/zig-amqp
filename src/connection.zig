@@ -27,6 +27,8 @@ pub const Conn = struct {
         var conn = Conn {
             .file = file,
         };
+
+        // TODO: I think we want something like an await_start_ok()
         // We asynchronously process incoming messages (calling callbacks )
         var received_response = false;
         while (!received_response) {
