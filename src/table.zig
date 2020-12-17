@@ -13,9 +13,9 @@ pub const Table = struct {
 
     const Self = @This();
 
-    pub fn init(wire_buffer: WireBuffer) Table {
+    pub fn init(buffer: []u8) Table {
         var t = Table {
-            .buf = wire_buffer,
+            .buf = WireBuffer.init(buffer),
             .len = 0,
         };
         t.buf.writeU32(0);
@@ -65,7 +65,7 @@ pub const Table = struct {
     pub fn insertTable(self: *Self, key: []const u8, table: *Table) void {
         self.buf.writeShortString(key);
         self.buf.writeU8('F');
-        self.buf.writeTable(table.buf.extent());
+        self.buf.writeTable(table);
         self.updateLength();
     }
 

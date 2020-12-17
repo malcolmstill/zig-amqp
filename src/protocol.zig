@@ -215,7 +215,7 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 10 => {
                     const declare = EXCHANGE_IMPL.declare orelse return error.MethodNotImplemented;
                     const reserved_1 = conn.rx_buffer.readU16();
-                    const exchange = conn.rx_buffer.readArray128U8();
+                    const exchange = conn.rx_buffer.readShortString();
                     const tipe = conn.rx_buffer.readShortString();
                     const passive = conn.rx_buffer.readBool();
                     const durable = conn.rx_buffer.readBool();
@@ -244,7 +244,7 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 20 => {
                     const delete = EXCHANGE_IMPL.delete orelse return error.MethodNotImplemented;
                     const reserved_1 = conn.rx_buffer.readU16();
-                    const exchange = conn.rx_buffer.readArray128U8();
+                    const exchange = conn.rx_buffer.readShortString();
                     const if_unused = conn.rx_buffer.readBool();
                     const no_wait = conn.rx_buffer.readBool();
                     try delete(
@@ -271,7 +271,7 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 10 => {
                     const declare = QUEUE_IMPL.declare orelse return error.MethodNotImplemented;
                     const reserved_1 = conn.rx_buffer.readU16();
-                    const queue = conn.rx_buffer.readArray128U8();
+                    const queue = conn.rx_buffer.readShortString();
                     const passive = conn.rx_buffer.readBool();
                     const durable = conn.rx_buffer.readBool();
                     const exclusive = conn.rx_buffer.readBool();
@@ -292,7 +292,7 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 // declare_ok
                 11 => {
                     const declare_ok = QUEUE_IMPL.declare_ok orelse return error.MethodNotImplemented;
-                    const queue = conn.rx_buffer.readArray128U8();
+                    const queue = conn.rx_buffer.readShortString();
                     const message_count = conn.rx_buffer.readU32();
                     const consumer_count = conn.rx_buffer.readU32();
                     try declare_ok(
@@ -306,8 +306,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 20 => {
                     const bind = QUEUE_IMPL.bind orelse return error.MethodNotImplemented;
                     const reserved_1 = conn.rx_buffer.readU16();
-                    const queue = conn.rx_buffer.readArray128U8();
-                    const exchange = conn.rx_buffer.readArray128U8();
+                    const queue = conn.rx_buffer.readShortString();
+                    const exchange = conn.rx_buffer.readShortString();
                     const routing_key = conn.rx_buffer.readShortString();
                     const no_wait = conn.rx_buffer.readBool();
                     var arguments = conn.rx_buffer.readTable();
@@ -331,8 +331,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 50 => {
                     const unbind = QUEUE_IMPL.unbind orelse return error.MethodNotImplemented;
                     const reserved_1 = conn.rx_buffer.readU16();
-                    const queue = conn.rx_buffer.readArray128U8();
-                    const exchange = conn.rx_buffer.readArray128U8();
+                    const queue = conn.rx_buffer.readShortString();
+                    const exchange = conn.rx_buffer.readShortString();
                     const routing_key = conn.rx_buffer.readShortString();
                     var arguments = conn.rx_buffer.readTable();
                     try unbind(
@@ -354,7 +354,7 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 30 => {
                     const purge = QUEUE_IMPL.purge orelse return error.MethodNotImplemented;
                     const reserved_1 = conn.rx_buffer.readU16();
-                    const queue = conn.rx_buffer.readArray128U8();
+                    const queue = conn.rx_buffer.readShortString();
                     const no_wait = conn.rx_buffer.readBool();
                     try purge(
                         conn,
@@ -375,7 +375,7 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 40 => {
                     const delete = QUEUE_IMPL.delete orelse return error.MethodNotImplemented;
                     const reserved_1 = conn.rx_buffer.readU16();
-                    const queue = conn.rx_buffer.readArray128U8();
+                    const queue = conn.rx_buffer.readShortString();
                     const if_unused = conn.rx_buffer.readBool();
                     const if_empty = conn.rx_buffer.readBool();
                     const no_wait = conn.rx_buffer.readBool();
@@ -426,7 +426,7 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 20 => {
                     const consume = BASIC_IMPL.consume orelse return error.MethodNotImplemented;
                     const reserved_1 = conn.rx_buffer.readU16();
-                    const queue = conn.rx_buffer.readArray128U8();
+                    const queue = conn.rx_buffer.readShortString();
                     const consumer_tag = conn.rx_buffer.readArrayU8();
                     const no_local = conn.rx_buffer.readBool();
                     const no_ack = conn.rx_buffer.readBool();
@@ -477,7 +477,7 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 40 => {
                     const publish = BASIC_IMPL.publish orelse return error.MethodNotImplemented;
                     const reserved_1 = conn.rx_buffer.readU16();
-                    const exchange = conn.rx_buffer.readArray128U8();
+                    const exchange = conn.rx_buffer.readShortString();
                     const routing_key = conn.rx_buffer.readShortString();
                     const mandatory = conn.rx_buffer.readBool();
                     const immediate = conn.rx_buffer.readBool();
@@ -494,7 +494,7 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const @"return" = BASIC_IMPL.@"return" orelse return error.MethodNotImplemented;
                     const reply_code = conn.rx_buffer.readU16();
                     const reply_text = conn.rx_buffer.readArrayU8();
-                    const exchange = conn.rx_buffer.readArray128U8();
+                    const exchange = conn.rx_buffer.readShortString();
                     const routing_key = conn.rx_buffer.readShortString();
                     try @"return"(
                         conn,
@@ -510,7 +510,7 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const consumer_tag = conn.rx_buffer.readArrayU8();
                     const delivery_tag = conn.rx_buffer.readU64();
                     const redelivered = conn.rx_buffer.readBool();
-                    const exchange = conn.rx_buffer.readArray128U8();
+                    const exchange = conn.rx_buffer.readShortString();
                     const routing_key = conn.rx_buffer.readShortString();
                     try deliver(
                         conn,
@@ -525,7 +525,7 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 70 => {
                     const get = BASIC_IMPL.get orelse return error.MethodNotImplemented;
                     const reserved_1 = conn.rx_buffer.readU16();
-                    const queue = conn.rx_buffer.readArray128U8();
+                    const queue = conn.rx_buffer.readShortString();
                     const no_ack = conn.rx_buffer.readBool();
                     try get(
                         conn,
@@ -538,7 +538,7 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const get_ok = BASIC_IMPL.get_ok orelse return error.MethodNotImplemented;
                     const delivery_tag = conn.rx_buffer.readU64();
                     const redelivered = conn.rx_buffer.readBool();
-                    const exchange = conn.rx_buffer.readArray128U8();
+                    const exchange = conn.rx_buffer.readShortString();
                     const routing_key = conn.rx_buffer.readShortString();
                     const message_count = conn.rx_buffer.readU32();
                     try get_ok(
@@ -949,13 +949,13 @@ pub const connection_interface = struct {
         *Connector,
         version_major: u8,
         version_minor: u8,
-        server_properties: *Table,
+        server_properties: ?*Table,
         mechanisms: []const u8,
         locales: []const u8,
     ) anyerror!void,
     start_ok: ?fn (
         *Connector,
-        client_properties: *Table,
+        client_properties: ?*Table,
         mechanism: []const u8,
         response: []const u8,
         locale: []const u8,
@@ -1030,14 +1030,14 @@ pub const Connection = struct {
     pub const START_OK_METHOD = 11;
     pub fn start_ok_resp(
         conn: *Connector,
-        client_properties: *Table,
+        client_properties: ?*Table,
         mechanism: []const u8,
         response: []const u8,
         locale: []const u8,
     ) !void {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
         conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.START_OK_METHOD);
-        conn.tx_buffer.writeTable(client_properties.buf.mem[0..client_properties.buf.head]);
+        conn.tx_buffer.writeTable(client_properties);
         conn.tx_buffer.writeShortString(mechanism);
         conn.tx_buffer.writeLongString(response);
         conn.tx_buffer.writeShortString(locale);
@@ -1292,19 +1292,19 @@ pub const Channel = struct {
 pub const exchange_interface = struct {
     declare: ?fn (
         *Connector,
-        exchange: []u8,
+        exchange: []const u8,
         tipe: []const u8,
         passive: bool,
         durable: bool,
         no_wait: bool,
-        arguments: *Table,
+        arguments: ?*Table,
     ) anyerror!void,
     declare_ok: ?fn (
         *Connector,
     ) anyerror!void,
     delete: ?fn (
         *Connector,
-        exchange: []u8,
+        exchange: []const u8,
         if_unused: bool,
         no_wait: bool,
     ) anyerror!void,
@@ -1327,18 +1327,18 @@ pub const Exchange = struct {
     pub const DECLARE_METHOD = 10;
     pub fn declare_sync(
         conn: *Connector,
-        exchange: []u8,
+        exchange: []const u8,
         tipe: []const u8,
         passive: bool,
         durable: bool,
         no_wait: bool,
-        arguments: *Table,
+        arguments: ?*Table,
     ) !void {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
         conn.tx_buffer.writeMethodHeader(EXCHANGE_CLASS, Exchange.DECLARE_METHOD);
         const reserved_1 = 0;
         conn.tx_buffer.writeU16(reserved_1);
-        conn.tx_buffer.writeArray128U8(exchange);
+        conn.tx_buffer.writeShortString(exchange);
         conn.tx_buffer.writeShortString(tipe);
         conn.tx_buffer.writeBool(passive);
         conn.tx_buffer.writeBool(durable);
@@ -1347,7 +1347,7 @@ pub const Exchange = struct {
         const reserved_3 = false;
         conn.tx_buffer.writeBool(reserved_3);
         conn.tx_buffer.writeBool(no_wait);
-        conn.tx_buffer.writeTable(arguments.buf.mem[0..arguments.buf.head]);
+        conn.tx_buffer.writeTable(arguments);
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
@@ -1363,7 +1363,7 @@ pub const Exchange = struct {
     pub const DELETE_METHOD = 20;
     pub fn delete_sync(
         conn: *Connector,
-        exchange: []u8,
+        exchange: []const u8,
         if_unused: bool,
         no_wait: bool,
     ) !void {
@@ -1371,7 +1371,7 @@ pub const Exchange = struct {
         conn.tx_buffer.writeMethodHeader(EXCHANGE_CLASS, Exchange.DELETE_METHOD);
         const reserved_1 = 0;
         conn.tx_buffer.writeU16(reserved_1);
-        conn.tx_buffer.writeArray128U8(exchange);
+        conn.tx_buffer.writeShortString(exchange);
         conn.tx_buffer.writeBool(if_unused);
         conn.tx_buffer.writeBool(no_wait);
         conn.tx_buffer.updateFrameLength();
@@ -1389,44 +1389,44 @@ pub const Exchange = struct {
 pub const queue_interface = struct {
     declare: ?fn (
         *Connector,
-        queue: []u8,
+        queue: []const u8,
         passive: bool,
         durable: bool,
         exclusive: bool,
         auto_delete: bool,
         no_wait: bool,
-        arguments: *Table,
+        arguments: ?*Table,
     ) anyerror!void,
     declare_ok: ?fn (
         *Connector,
-        queue: []u8,
+        queue: []const u8,
         message_count: u32,
         consumer_count: u32,
     ) anyerror!void,
     bind: ?fn (
         *Connector,
-        queue: []u8,
-        exchange: []u8,
+        queue: []const u8,
+        exchange: []const u8,
         routing_key: []const u8,
         no_wait: bool,
-        arguments: *Table,
+        arguments: ?*Table,
     ) anyerror!void,
     bind_ok: ?fn (
         *Connector,
     ) anyerror!void,
     unbind: ?fn (
         *Connector,
-        queue: []u8,
-        exchange: []u8,
+        queue: []const u8,
+        exchange: []const u8,
         routing_key: []const u8,
-        arguments: *Table,
+        arguments: ?*Table,
     ) anyerror!void,
     unbind_ok: ?fn (
         *Connector,
     ) anyerror!void,
     purge: ?fn (
         *Connector,
-        queue: []u8,
+        queue: []const u8,
         no_wait: bool,
     ) anyerror!void,
     purge_ok: ?fn (
@@ -1435,7 +1435,7 @@ pub const queue_interface = struct {
     ) anyerror!void,
     delete: ?fn (
         *Connector,
-        queue: []u8,
+        queue: []const u8,
         if_unused: bool,
         if_empty: bool,
         no_wait: bool,
@@ -1466,25 +1466,25 @@ pub const Queue = struct {
     pub const DECLARE_METHOD = 10;
     pub fn declare_sync(
         conn: *Connector,
-        queue: []u8,
+        queue: []const u8,
         passive: bool,
         durable: bool,
         exclusive: bool,
         auto_delete: bool,
         no_wait: bool,
-        arguments: *Table,
+        arguments: ?*Table,
     ) !void {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
         conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.DECLARE_METHOD);
         const reserved_1 = 0;
         conn.tx_buffer.writeU16(reserved_1);
-        conn.tx_buffer.writeArray128U8(queue);
+        conn.tx_buffer.writeShortString(queue);
         conn.tx_buffer.writeBool(passive);
         conn.tx_buffer.writeBool(durable);
         conn.tx_buffer.writeBool(exclusive);
         conn.tx_buffer.writeBool(auto_delete);
         conn.tx_buffer.writeBool(no_wait);
-        conn.tx_buffer.writeTable(arguments.buf.mem[0..arguments.buf.head]);
+        conn.tx_buffer.writeTable(arguments);
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
@@ -1500,21 +1500,21 @@ pub const Queue = struct {
     pub const BIND_METHOD = 20;
     pub fn bind_sync(
         conn: *Connector,
-        queue: []u8,
-        exchange: []u8,
+        queue: []const u8,
+        exchange: []const u8,
         routing_key: []const u8,
         no_wait: bool,
-        arguments: *Table,
+        arguments: ?*Table,
     ) !void {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
         conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.BIND_METHOD);
         const reserved_1 = 0;
         conn.tx_buffer.writeU16(reserved_1);
-        conn.tx_buffer.writeArray128U8(queue);
-        conn.tx_buffer.writeArray128U8(exchange);
+        conn.tx_buffer.writeShortString(queue);
+        conn.tx_buffer.writeShortString(exchange);
         conn.tx_buffer.writeShortString(routing_key);
         conn.tx_buffer.writeBool(no_wait);
-        conn.tx_buffer.writeTable(arguments.buf.mem[0..arguments.buf.head]);
+        conn.tx_buffer.writeTable(arguments);
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
@@ -1530,19 +1530,19 @@ pub const Queue = struct {
     pub const UNBIND_METHOD = 50;
     pub fn unbind_sync(
         conn: *Connector,
-        queue: []u8,
-        exchange: []u8,
+        queue: []const u8,
+        exchange: []const u8,
         routing_key: []const u8,
-        arguments: *Table,
+        arguments: ?*Table,
     ) !void {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
         conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.UNBIND_METHOD);
         const reserved_1 = 0;
         conn.tx_buffer.writeU16(reserved_1);
-        conn.tx_buffer.writeArray128U8(queue);
-        conn.tx_buffer.writeArray128U8(exchange);
+        conn.tx_buffer.writeShortString(queue);
+        conn.tx_buffer.writeShortString(exchange);
         conn.tx_buffer.writeShortString(routing_key);
-        conn.tx_buffer.writeTable(arguments.buf.mem[0..arguments.buf.head]);
+        conn.tx_buffer.writeTable(arguments);
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
@@ -1558,14 +1558,14 @@ pub const Queue = struct {
     pub const PURGE_METHOD = 30;
     pub fn purge_sync(
         conn: *Connector,
-        queue: []u8,
+        queue: []const u8,
         no_wait: bool,
     ) !void {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
         conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.PURGE_METHOD);
         const reserved_1 = 0;
         conn.tx_buffer.writeU16(reserved_1);
-        conn.tx_buffer.writeArray128U8(queue);
+        conn.tx_buffer.writeShortString(queue);
         conn.tx_buffer.writeBool(no_wait);
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
@@ -1582,7 +1582,7 @@ pub const Queue = struct {
     pub const DELETE_METHOD = 40;
     pub fn delete_sync(
         conn: *Connector,
-        queue: []u8,
+        queue: []const u8,
         if_unused: bool,
         if_empty: bool,
         no_wait: bool,
@@ -1591,7 +1591,7 @@ pub const Queue = struct {
         conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.DELETE_METHOD);
         const reserved_1 = 0;
         conn.tx_buffer.writeU16(reserved_1);
-        conn.tx_buffer.writeArray128U8(queue);
+        conn.tx_buffer.writeShortString(queue);
         conn.tx_buffer.writeBool(if_unused);
         conn.tx_buffer.writeBool(if_empty);
         conn.tx_buffer.writeBool(no_wait);
@@ -1619,13 +1619,13 @@ pub const basic_interface = struct {
     ) anyerror!void,
     consume: ?fn (
         *Connector,
-        queue: []u8,
+        queue: []const u8,
         consumer_tag: []const u8,
         no_local: bool,
         no_ack: bool,
         exclusive: bool,
         no_wait: bool,
-        arguments: *Table,
+        arguments: ?*Table,
     ) anyerror!void,
     consume_ok: ?fn (
         *Connector,
@@ -1642,7 +1642,7 @@ pub const basic_interface = struct {
     ) anyerror!void,
     publish: ?fn (
         *Connector,
-        exchange: []u8,
+        exchange: []const u8,
         routing_key: []const u8,
         mandatory: bool,
         immediate: bool,
@@ -1651,7 +1651,7 @@ pub const basic_interface = struct {
         *Connector,
         reply_code: u16,
         reply_text: []const u8,
-        exchange: []u8,
+        exchange: []const u8,
         routing_key: []const u8,
     ) anyerror!void,
     deliver: ?fn (
@@ -1659,19 +1659,19 @@ pub const basic_interface = struct {
         consumer_tag: []const u8,
         delivery_tag: u64,
         redelivered: bool,
-        exchange: []u8,
+        exchange: []const u8,
         routing_key: []const u8,
     ) anyerror!void,
     get: ?fn (
         *Connector,
-        queue: []u8,
+        queue: []const u8,
         no_ack: bool,
     ) anyerror!void,
     get_ok: ?fn (
         *Connector,
         delivery_tag: u64,
         redelivered: bool,
-        exchange: []u8,
+        exchange: []const u8,
         routing_key: []const u8,
         message_count: u32,
     ) anyerror!void,
@@ -1752,25 +1752,25 @@ pub const Basic = struct {
     pub const CONSUME_METHOD = 20;
     pub fn consume_sync(
         conn: *Connector,
-        queue: []u8,
+        queue: []const u8,
         consumer_tag: []const u8,
         no_local: bool,
         no_ack: bool,
         exclusive: bool,
         no_wait: bool,
-        arguments: *Table,
+        arguments: ?*Table,
     ) !void {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
         conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.CONSUME_METHOD);
         const reserved_1 = 0;
         conn.tx_buffer.writeU16(reserved_1);
-        conn.tx_buffer.writeArray128U8(queue);
+        conn.tx_buffer.writeShortString(queue);
         conn.tx_buffer.writeArrayU8(consumer_tag);
         conn.tx_buffer.writeBool(no_local);
         conn.tx_buffer.writeBool(no_ack);
         conn.tx_buffer.writeBool(exclusive);
         conn.tx_buffer.writeBool(no_wait);
-        conn.tx_buffer.writeTable(arguments.buf.mem[0..arguments.buf.head]);
+        conn.tx_buffer.writeTable(arguments);
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
@@ -1808,7 +1808,7 @@ pub const Basic = struct {
     pub const PUBLISH_METHOD = 40;
     pub fn publish_resp(
         conn: *Connector,
-        exchange: []u8,
+        exchange: []const u8,
         routing_key: []const u8,
         mandatory: bool,
         immediate: bool,
@@ -1817,7 +1817,7 @@ pub const Basic = struct {
         conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.PUBLISH_METHOD);
         const reserved_1 = 0;
         conn.tx_buffer.writeU16(reserved_1);
-        conn.tx_buffer.writeArray128U8(exchange);
+        conn.tx_buffer.writeShortString(exchange);
         conn.tx_buffer.writeShortString(routing_key);
         conn.tx_buffer.writeBool(mandatory);
         conn.tx_buffer.writeBool(immediate);
@@ -1833,14 +1833,14 @@ pub const Basic = struct {
     pub const GET_METHOD = 70;
     pub fn get_sync(
         conn: *Connector,
-        queue: []u8,
+        queue: []const u8,
         no_ack: bool,
     ) !void {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
         conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.GET_METHOD);
         const reserved_1 = 0;
         conn.tx_buffer.writeU16(reserved_1);
-        conn.tx_buffer.writeArray128U8(queue);
+        conn.tx_buffer.writeShortString(queue);
         conn.tx_buffer.writeBool(no_ack);
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());

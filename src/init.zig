@@ -4,8 +4,8 @@ const Table = @import("table.zig").Table;
 const WireBuffer = @import("wire.zig").WireBuffer;
 const Connector = @import("connection.zig").Connector;
 
-fn connection_start (connector: *Connector, version_major: u8, version_minor: u8, server_properties: *Table, mechanisms: []const u8, locales: []const u8) !void {
-    const host = server_properties.lookup([]u8, "cluster_name");
+fn connection_start (connector: *Connector, version_major: u8, version_minor: u8, server_properties: ?*Table, mechanisms: []const u8, locales: []const u8) !void {
+    const host = server_properties.?.lookup([]u8, "cluster_name");
     std.debug.warn("Connected to {} AMQP server (version {}.{})\nmechanisms: {}\nlocale: {}\n", .{
         host,
         version_major,
@@ -15,16 +15,20 @@ fn connection_start (connector: *Connector, version_major: u8, version_minor: u8
     });
 
     var props_buffer: [1024]u8 = undefined;
-    var props_wb: WireBuffer = WireBuffer.init(props_buffer[0..]);
-    var client_properties: Table = Table.init(props_wb);
+    var client_properties: Table = Table.init(props_buffer[0..]);
 
     client_properties.insertLongString("product", "Zig AMQP Library");
     client_properties.insertLongString("platform", "Zig 0.7.0");
 
     // TODO: it's annoying having 3 lines for a single initialisation
+    // UPDATE: thoughts. We can at least get rid of the caps_wb if Table.init
+    //         does its own WireBuffer init from the backing buffer.
+    //         Also, perhaps we can offer a raw slice backed Table.init and,
+    //         say, a Table.initAllocator() that takes an allocator instead.
+    //         This gives users the freedom to decide how they want to deal
+    //         with memory.
     var caps_buf: [1024]u8 = undefined;
-    var caps_wb: WireBuffer = WireBuffer.init(caps_buf[0..]);
-    var capabilities: Table = Table.init(caps_wb);
+    var capabilities: Table = Table.init(caps_buf[0..]);
 
     capabilities.insertBool("authentication_failure_close", true);
     capabilities.insertBool("basic.nack", true);

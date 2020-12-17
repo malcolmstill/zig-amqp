@@ -249,7 +249,7 @@ def generateRead(field):
     if field_type in ['bit', 'no-ack', 'no-local', 'no-wait', 'redelivered']:
         return 'readBool'
     if field_type in ['queue-name', 'exchange-name']:
-        return 'readArray128U8'
+        return 'readShortString'
     if field_type in ['consumer-tag', 'reply-text']:
         return 'readArrayU8'
     if field_type in ['shortstr', 'path']:
@@ -278,7 +278,7 @@ def generateWrite(field, name):
     if field_type in ['bit', 'no-ack', 'no-local', 'no-wait', 'redelivered']:
         return 'writeBool(' + name + ')'
     if field_type in ['queue-name', 'exchange-name']:
-        return 'writeArray128U8(' + name + ')'
+        return 'writeShortString(' + name + ')'
     if field_type in ['consumer-tag', 'reply-text']:
         return 'writeArrayU8(' + name + ')'
     if field_type in ['shortstr', 'path']:
@@ -286,7 +286,7 @@ def generateWrite(field, name):
     if field_type in ['longstr']:
         return 'writeLongString(' + name + ')'
     if field_type in ['peer-properties', 'table']:
-        return f"writeTable({name}.buf.mem[0..{name}.buf.head])"
+        return f"writeTable({name})"
     return 'void'    
 
 def generateArg(field):
@@ -307,13 +307,13 @@ def generateArg(field):
     if field_type in ['bit', 'no-ack', 'no-local', 'no-wait', 'redelivered']:
         return 'bool'
     if field_type in ['queue-name', 'exchange-name']:
-        return '[]u8'
+        return '[]const u8'
     if field_type in ['path', 'shortstr']:
         return '[]const u8'        
     if field_type in ['consumer-tag', 'reply-text', 'longstr']:
         return '[]const u8'
     if field_type in ['peer-properties', 'table']:
-        return '*Table'
+        return '?*Table'
     return 'void'
 
 def generateReserved(field):

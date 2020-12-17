@@ -1,11 +1,9 @@
 const std = @import("std");
-const fs = std.fs;
-const mem = std.mem;
-const os = std.os;
-const builtin = std.builtin;
 const proto = @import("protocol.zig");
 const Connector = @import("connection.zig").Connector;
 const Connection = @import("connection.zig").Connection;
+const Queue = @import("queue.zig").Queue;
+const Table = @import("table.zig").Table;
 
 pub const Channel = struct {
     connector: Connector,
@@ -22,5 +20,20 @@ pub const Channel = struct {
         ch.connector.channel = id;
 
         return ch;
+    }
+
+    pub fn queueDeclare(self: *Self, name: []const u8, options: Queue.Options, args: ?*Table) !Queue {
+        try proto.Queue.declare_sync(
+            &self.connector,
+            name,
+            options.passive,
+            options.durable,
+            options.exclusive,
+            options.auto_delete,
+            options.no_wait,
+            args,
+        );
+
+        return Queue.init(self);
     }
 };

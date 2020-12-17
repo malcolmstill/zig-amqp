@@ -202,12 +202,21 @@ pub const WireBuffer = struct {
         };
     }
 
-    pub fn writeTable(self: *Self, string: []u8) void {
-        // 1. Skip the length (4 bytes) as we don't know it yet 
-
-        // self.writeU32(@intCast(u32, string.len));
-        std.mem.copy(u8, self.mem[self.head..], string);
-        self.head += string.len;
+    // writeTable is making an assumption that we're using a separate
+    // buffer to write all the fields / values separately, then all
+    // we have to do is copy them
+    // TODO: thought: we might have this take *Table instead
+    //       if we did, we could maybe make use of the len field
+    //       in table to avoid provide a backing store for an empty
+    //       table. We would simply chekc that length first, and
+    //       if it's zeroe, manually write the 0 length, otherwise
+    //       do the mem.copy
+    pub fn writeTable(self: *Self, table: ?*Table) void {
+        if (table) |t| {
+            const table_bytes = t.buf.extent();
+            std.mem.copy(u8, self.mem[self.head..], table_bytes);
+            self.head += table_bytes.len;
+        }
     }
 
     // Not sure if all of the following are required
