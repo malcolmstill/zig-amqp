@@ -217,6 +217,8 @@ pub const WireBuffer = struct {
             const table_bytes = t.buf.extent();
             std.mem.copy(u8, self.mem[self.head..], table_bytes);
             self.head += table_bytes.len;
+        } else {
+            self.writeU32(0);
         }
     }
 

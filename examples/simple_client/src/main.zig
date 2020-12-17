@@ -1,5 +1,4 @@
 const std = @import("std");
-const os = std.os;
 const amqp = @import("amqp");
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -7,7 +6,6 @@ var allocator = &gpa.allocator;
 
 pub fn main() !void {
     defer _ = gpa.deinit();
-    const stdout = &std.io.getStdOut().outStream();
 
     var rx_memory: [4096]u8 = undefined;
     var tx_memory: [4096]u8 = undefined;
@@ -25,16 +23,9 @@ pub fn main() !void {
     //     ch = try conn.channel();
     // };
 
-    const q2 = ch.queueDeclare("test2", amqp.Queue.Options{}, null);
+    // const q2 = ch.queueDeclare("test2", amqp.Queue.Options{}, null);
 
-    while(true) {
-        const ret = conn.connector.dispatch(null) catch |err| {
-            switch (err) {
-                error.ConnectionResetByPeer => return err,
-                else => {
-                    return err;
-                },
-            }
-        };
+    while (true) {
+        try ch.basicConsume("test", amqp.Basic.Options{}, null);
     }
 }

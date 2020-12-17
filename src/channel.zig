@@ -3,6 +3,7 @@ const proto = @import("protocol.zig");
 const Connector = @import("connector.zig").Connector;
 const Connection = @import("connection.zig").Connection;
 const Queue = @import("queue.zig").Queue;
+const Basic = @import("basic.zig").Basic;
 const Table = @import("table.zig").Table;
 
 pub const Channel = struct {
@@ -35,5 +36,18 @@ pub const Channel = struct {
         );
 
         return Queue.init(self);
+    }
+
+    pub fn basicConsume(self: *Self, name: []const u8, options: Basic.Options, args: ?*Table) !void {
+        try proto.Basic.consume_sync(
+            &self.connector,
+            name,
+            "ctag1.b21f53e7a21d4dc5a2a6b85deef4aa8d",
+            options.no_local,
+            options.no_ack,
+            options.exclusive,
+            options.no_wait,
+            args,
+        );
     }
 };
