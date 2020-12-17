@@ -65,9 +65,6 @@ fn open_ok(connector: *Connector) anyerror!void {
 }
 
 fn channel_close(connector: *Connector, reply_code: u16, reply_text: []const u8, class_id: u16, method_id: u16) anyerror!void {
-    std.debug.warn("{}, {}\n", .{class_id, method_id});
-    // if (mem.eql(u8, reply_code,))
-
     // TODO: I've made an assumption here that when the class id is greater than zero
     //       that that counts as supplying the client_id and method_id and that it is
     //       a channel error
@@ -79,10 +76,19 @@ fn channel_close(connector: *Connector, reply_code: u16, reply_text: []const u8,
     return error.ChannelClosed;
 }
 
+fn connection_close(connector: *Connector, reply_code: u16, reply_text: []const u8, class_id: u16, method_id: u16) anyerror!void {
+    try proto.Connection.close_ok_resp(connector);
+    if (class_id > 0) {
+        return error.ConnectionError;
+    }
+    return error.ChannelClosed;
+}
+
 pub fn init() void {
     proto.CONNECTION_IMPL.start = connection_start;
     proto.CONNECTION_IMPL.tune = tune;
     proto.CONNECTION_IMPL.open_ok = open_ok;
+    proto.CONNECTION_IMPL.close = connection_close;
     proto.CHANNEL_IMPL.open_ok = open_ok;
     proto.CHANNEL_IMPL.close = channel_close;
 }
