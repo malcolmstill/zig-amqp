@@ -170,10 +170,10 @@ pub const WireBuffer = struct {
     //      3b. Read the value type for the key
     //      3c. Read that type
     pub fn readTable(self: *Self) Table {
-        const saved_read_head = self.head;
+        const table_start = self.head;
         const length = self.readU32();
 
-        while (self.head - saved_read_head < (length+@sizeOf(u32))) {
+        while (self.head - table_start < (length+@sizeOf(u32))) {
             const key = self.readShortString();
             const t = self.readU8();
             // std.debug.warn("{}: ", .{ key });
@@ -199,7 +199,7 @@ pub const WireBuffer = struct {
         }
 
         return Table {
-            .buf = WireBuffer.init(self.mem[saved_read_head..self.head]),
+            .buf = WireBuffer.init(self.mem[table_start..self.head]),
         };
     }
 
