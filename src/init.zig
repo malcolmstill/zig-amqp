@@ -2,9 +2,9 @@ const std = @import("std");
 const proto = @import("protocol.zig");
 const Table = @import("table.zig").Table;
 const WireBuffer = @import("wire.zig").WireBuffer;
-const Connection = @import("connection.zig").Connection;
+const Connector = @import("connection.zig").Connector;
 
-fn connection_start (connection: *Connection, version_major: u8, version_minor: u8, server_properties: *Table, mechanisms: []const u8, locales: []const u8) !void {
+fn connection_start (connector: *Connector, version_major: u8, version_minor: u8, server_properties: *Table, mechanisms: []const u8, locales: []const u8) !void {
     const host = server_properties.lookup([]u8, "cluster_name");
     std.debug.warn("Connected to {} AMQP server (version {}.{})\nmechanisms: {}\nlocale: {}\n", .{
         host,
@@ -36,24 +36,19 @@ fn connection_start (connection: *Connection, version_major: u8, version_minor: 
     client_properties.insertLongString("information", "See https://github.com/malcolmstill/zig-amqp");
     client_properties.insertLongString("version", "0.0.1");
 
-    // TODO: We don't want to have to do this:
-    // var connection: proto.Connection = proto.Connection { .conn = conn };
     // TODO: We want to be able to call start_ok_resp as a function
     //       rather than having to deal with buffers.
     // UPDATE: the above TODO is what we now have, but we require extra
     //         buffers, and how do we size them. It would be nice to
-    //         avoid allocations.    
-    try connection.connection.start_ok_resp(&client_properties, "PLAIN", "\x00guest\x00guest", "en_US");
+    //         avoid allocations.
+    try proto.Connection.start_ok_resp(connector, &client_properties, "PLAIN", "\x00guest\x00guest", "en_US");
 }
 
-fn tune(connection: *Connection, channel_max: u16, frame_max: u32, heartbeat: u16) !void {
-    try connection.connection.tune_ok_resp(channel_max, frame_max, heartbeat);
+fn tune(connector: *Connector, channel_max: u16, frame_max: u32, heartbeat: u16) !void {
+    try proto.Connection.tune_ok_resp(connector, channel_max, frame_max, heartbeat);
 }
 
-fn open_ok(connection: *Connection) anyerror!void {
-    // var connection: proto.Connection = proto.Connection { .conn = conn };
-    // try connection.tune_ok_resp(channel_max, frame_max, heartbeat);
-    // if (true) return error.Noop;
+fn open_ok(connector: *Connector) anyerror!void {
     return;
 }
 
@@ -61,4 +56,5 @@ pub fn init() void {
     proto.CONNECTION_IMPL.start = connection_start;
     proto.CONNECTION_IMPL.tune = tune;
     proto.CONNECTION_IMPL.open_ok = open_ok;
+    proto.CHANNEL_IMPL.open_ok = open_ok;
 }
