@@ -12,11 +12,20 @@ pub fn main() !void {
     var rx_memory: [4096]u8 = undefined;
     var tx_memory: [4096]u8 = undefined;
 
-    var conn = try amqp.connect(rx_memory[0..], tx_memory[0..], allocator, null, null);
-    std.debug.warn("Connected!\n", .{});
+    var conn = amqp.init(rx_memory[0..], tx_memory[0..]);
+    try conn.connect(allocator, null, null);
 
     var ch = try conn.channel();
-    const q = try ch.queueDeclare("test", amqp.Queue.Options{}, null);
+
+    // If queue "test" is already declared and we give the wrong details we
+    // might get a channel error. This shows we can recover:
+    // _ = ch.queueDeclare("test", amqp.Queue.Options{}, null) catch |err| {
+    //     std.debug.warn("{}\n", .{err});
+
+    //     ch = try conn.channel();
+    // };
+
+    const q2 = ch.queueDeclare("test2", amqp.Queue.Options{}, null);
 
     while(true) {
         const ret = conn.connector.dispatch(null) catch |err| {

@@ -1,14 +1,19 @@
 const std = @import("std");
 const os = std.os;
 const fs = std.fs;
-const WireBuffer = @import("wire.zig").WireBuffer;
 const proto = @import("protocol.zig");
+const WireBuffer = @import("wire.zig").WireBuffer;
+const Connection = @import("connection.zig").Connection;
 
 // TODO: think up a better name for this
 pub const Connector = struct {
-    file: fs.File,
+    file: fs.File = undefined,
+    // TODO: we're going to run into trouble real fast if we reallocate the buffers
+    //       and we have a bunch of copies of Connector everywhere. I think we just
+    //       need to store a pointer to the Connection
     rx_buffer: WireBuffer = undefined,
     tx_buffer: WireBuffer = undefined,
+    connection: *Connection = undefined,
     channel: u16,
 
     const Self = @This();
@@ -56,8 +61,15 @@ pub const Connector = struct {
                             //       we should signal a separate error perhaps
 
                             if (class == proto.CHANNEL_CLASS and method == proto.Channel.CLOSE_METHOD) {
-                                std.debug.warn("Likely CHANNEL_ERROR\n", .{});
-                                try proto.dispatchCallback(self, class, method);
+                                proto.dispatchCallback(self, class, method) catch |err| {
+                                    switch (err) {
+                                        error.ChannelError => {
+                                            self.connection.free_channel(self.channel);
+                                            return err;
+                                        },
+                                        else => return err,
+                                    }
+                                };
                                 // TODO: we need to deallocate the channel here. Which means we need
                                 //       access to Connection
                             }
