@@ -69,7 +69,7 @@ pub const Connector = struct {
                                 };
                             }
 
-                            if (class == proto.CONNECTION_CLASS and method == proto.Channel.CLOSE_METHOD) {
+                            if (class == proto.CONNECTION_CLASS and method == proto.Connection.CLOSE_METHOD) {
                                 try proto.dispatchCallback(self, class, method);
                             }
 
