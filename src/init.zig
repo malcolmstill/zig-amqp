@@ -2,7 +2,7 @@ const std = @import("std");
 const proto = @import("protocol.zig");
 const Table = @import("table.zig").Table;
 const WireBuffer = @import("wire.zig").WireBuffer;
-const Connector = @import("connection.zig").Connector;
+const Connector = @import("connector.zig").Connector;
 
 fn connection_start (connector: *Connector, version_major: u8, version_minor: u8, server_properties: ?*Table, mechanisms: []const u8, locales: []const u8) !void {
     const host = server_properties.?.lookup([]u8, "cluster_name");

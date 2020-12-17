@@ -4,8 +4,8 @@ import sys
 def generate(file):
     print(f'const std = @import("std");')
     print(f'const fs = std.fs;')
-    print(f'const Connector = @import("connection.zig").Connector;')
-    print(f'const ClassMethod = @import("connection.zig").ClassMethod;')
+    print(f'const Connector = @import("connector.zig").Connector;')
+    print(f'const ClassMethod = @import("connector.zig").ClassMethod;')
     print(f'const WireBuffer = @import("wire.zig").WireBuffer;')
     print(f'const Table = @import("table.zig").Table;')
 

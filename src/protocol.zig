@@ -1,7 +1,7 @@
 const std = @import("std");
 const fs = std.fs;
-const Connector = @import("connection.zig").Connector;
-const ClassMethod = @import("connection.zig").ClassMethod;
+const Connector = @import("connector.zig").Connector;
+const ClassMethod = @import("connector.zig").ClassMethod;
 const WireBuffer = @import("wire.zig").WireBuffer;
 const Table = @import("table.zig").Table;
 // amqp

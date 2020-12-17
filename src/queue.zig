@@ -1,5 +1,5 @@
 const std = @import("std");
-const Connector = @import("connection.zig").Connector;
+const Connector = @import("connector.zig").Connector;
 const Channel = @import("channel.zig").Channel;
 
 pub const Queue = struct {
