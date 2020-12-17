@@ -3,6 +3,7 @@ const proto = @import("protocol.zig");
 const Table = @import("table.zig").Table;
 const WireBuffer = @import("wire.zig").WireBuffer;
 const Connector = @import("connector.zig").Connector;
+const Connection = @import("connection.zig").Connection;
 
 fn connection_start (connector: *Connector, version_major: u8, version_minor: u8, server_properties: ?*Table, mechanisms: []const u8, locales: []const u8) !void {
     const host = server_properties.?.lookup([]u8, "cluster_name");
@@ -49,6 +50,15 @@ fn connection_start (connector: *Connector, version_major: u8, version_minor: u8
 }
 
 fn tune(connector: *Connector, channel_max: u16, frame_max: u32, heartbeat: u16) !void {
+    // TODO: we have to be careful here, how do we know this connector's parent
+    //       is inside a Connection. It almost certainly will be, but if we
+    //       received a spurious tune whilst some other type was expecting a message
+    //       the connector used to dispatch the call will not be in Connection
+    const connection = @fieldParentPtr(Connection, "connector", connector);
+    connection.max_channels = channel_max;
+
+    std.debug.warn("{}\n", .{connection});
+
     try proto.Connection.tune_ok_resp(connector, channel_max, frame_max, heartbeat);
 }
 

@@ -75,7 +75,7 @@ pub const Connection = struct {
 
     fn next_channel(self: *Self) !u16 {
         var i: u4 = 0;
-        while (i < self.max_channels) : ( i += 1) {
+        while (i < self.max_channels) : ( i += 1 ) {
             const bit: u16 = 1;
             if (self.in_use_channels & (bit << i) == 0) {
                 self.in_use_channels |= (bit << i);
