@@ -5,14 +5,14 @@ const WireBuffer = @import("wire.zig").WireBuffer;
 const Connector = @import("connector.zig").Connector;
 const Connection = @import("connection.zig").Connection;
 
-fn connection_start (connector: *Connector, version_major: u8, version_minor: u8, server_properties: ?*Table, mechanisms: []const u8, locales: []const u8) !void {
+fn connection_start(connector: *Connector, version_major: u8, version_minor: u8, server_properties: ?*Table, mechanisms: []const u8, locales: []const u8) !void {
     const host = server_properties.?.lookup([]u8, "cluster_name");
     std.debug.warn("Connected to {} AMQP server (version {}.{})\nmechanisms: {}\nlocale: {}\n", .{
         host,
         version_major,
         version_minor,
         mechanisms,
-        locales
+        locales,
     });
 
     var props_buffer: [1024]u8 = undefined;
@@ -57,8 +57,6 @@ fn tune(connector: *Connector, channel_max: u16, frame_max: u32, heartbeat: u16)
     const connection = @fieldParentPtr(Connection, "connector", connector);
     connection.max_channels = channel_max;
 
-    std.debug.warn("{}\n", .{connection});
-
     try proto.Connection.tune_ok_resp(connector, channel_max, frame_max, heartbeat);
 }
 
@@ -66,9 +64,23 @@ fn open_ok(connector: *Connector) anyerror!void {
     return;
 }
 
+fn channel_close(connector: *Connector, reply_code: u16, reply_text: []const u8, class_id: u16, method_id: u16) anyerror!void {
+    std.debug.warn("{}, {}\n", .{class_id, method_id});
+    // if (mem.eql(u8, reply_code,))
+
+    // TODO: I've made an assumption here that when the class id is greater than zero
+    //       that that counts as supplying the client_id and method_id and that it is
+    //       a channel error
+    if (class_id > 0) {
+        return error.ChannelError;
+    }
+    return error.ChannelClosed;
+}
+
 pub fn init() void {
     proto.CONNECTION_IMPL.start = connection_start;
     proto.CONNECTION_IMPL.tune = tune;
     proto.CONNECTION_IMPL.open_ok = open_ok;
     proto.CHANNEL_IMPL.open_ok = open_ok;
+    proto.CHANNEL_IMPL.close = channel_close;
 }

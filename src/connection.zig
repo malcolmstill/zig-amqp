@@ -31,7 +31,6 @@ pub const Connection = struct {
         };
     }
 
-    // TODO: This should return Connection instead of Conn
     pub fn open(rx_memory: []u8, tx_memory: []u8, allocator: *mem.Allocator, host: ?[]u8, port: ?u16) !Connection {
         callbacks.init();
 

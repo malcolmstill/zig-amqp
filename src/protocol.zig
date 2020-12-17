@@ -109,7 +109,7 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 50 => {
                     const close = CONNECTION_IMPL.close orelse return error.MethodNotImplemented;
                     const reply_code = conn.rx_buffer.readU16();
-                    const reply_text = conn.rx_buffer.readArrayU8();
+                    const reply_text = conn.rx_buffer.readShortString();
                     const class_id = conn.rx_buffer.readU16();
                     const method_id = conn.rx_buffer.readU16();
                     try close(
@@ -187,7 +187,7 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 40 => {
                     const close = CHANNEL_IMPL.close orelse return error.MethodNotImplemented;
                     const reply_code = conn.rx_buffer.readU16();
-                    const reply_text = conn.rx_buffer.readArrayU8();
+                    const reply_text = conn.rx_buffer.readShortString();
                     const class_id = conn.rx_buffer.readU16();
                     const method_id = conn.rx_buffer.readU16();
                     try close(
@@ -427,7 +427,7 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const consume = BASIC_IMPL.consume orelse return error.MethodNotImplemented;
                     const reserved_1 = conn.rx_buffer.readU16();
                     const queue = conn.rx_buffer.readShortString();
-                    const consumer_tag = conn.rx_buffer.readArrayU8();
+                    const consumer_tag = conn.rx_buffer.readShortString();
                     const no_local = conn.rx_buffer.readBool();
                     const no_ack = conn.rx_buffer.readBool();
                     const exclusive = conn.rx_buffer.readBool();
@@ -447,7 +447,7 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 // consume_ok
                 21 => {
                     const consume_ok = BASIC_IMPL.consume_ok orelse return error.MethodNotImplemented;
-                    const consumer_tag = conn.rx_buffer.readArrayU8();
+                    const consumer_tag = conn.rx_buffer.readShortString();
                     try consume_ok(
                         conn,
                         consumer_tag,
@@ -456,7 +456,7 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 // cancel
                 30 => {
                     const cancel = BASIC_IMPL.cancel orelse return error.MethodNotImplemented;
-                    const consumer_tag = conn.rx_buffer.readArrayU8();
+                    const consumer_tag = conn.rx_buffer.readShortString();
                     const no_wait = conn.rx_buffer.readBool();
                     try cancel(
                         conn,
@@ -467,7 +467,7 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 // cancel_ok
                 31 => {
                     const cancel_ok = BASIC_IMPL.cancel_ok orelse return error.MethodNotImplemented;
-                    const consumer_tag = conn.rx_buffer.readArrayU8();
+                    const consumer_tag = conn.rx_buffer.readShortString();
                     try cancel_ok(
                         conn,
                         consumer_tag,
@@ -493,7 +493,7 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 50 => {
                     const @"return" = BASIC_IMPL.@"return" orelse return error.MethodNotImplemented;
                     const reply_code = conn.rx_buffer.readU16();
-                    const reply_text = conn.rx_buffer.readArrayU8();
+                    const reply_text = conn.rx_buffer.readShortString();
                     const exchange = conn.rx_buffer.readShortString();
                     const routing_key = conn.rx_buffer.readShortString();
                     try @"return"(
@@ -507,7 +507,7 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 // deliver
                 60 => {
                     const deliver = BASIC_IMPL.deliver orelse return error.MethodNotImplemented;
-                    const consumer_tag = conn.rx_buffer.readArrayU8();
+                    const consumer_tag = conn.rx_buffer.readShortString();
                     const delivery_tag = conn.rx_buffer.readU64();
                     const redelivered = conn.rx_buffer.readBool();
                     const exchange = conn.rx_buffer.readShortString();
@@ -1115,7 +1115,7 @@ pub const Connection = struct {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
         conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.CLOSE_METHOD);
         conn.tx_buffer.writeU16(reply_code);
-        conn.tx_buffer.writeArrayU8(reply_text);
+        conn.tx_buffer.writeShortString(reply_text);
         conn.tx_buffer.writeU16(class_id);
         conn.tx_buffer.writeU16(method_id);
         conn.tx_buffer.updateFrameLength();
@@ -1265,7 +1265,7 @@ pub const Channel = struct {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
         conn.tx_buffer.writeMethodHeader(CHANNEL_CLASS, Channel.CLOSE_METHOD);
         conn.tx_buffer.writeU16(reply_code);
-        conn.tx_buffer.writeArrayU8(reply_text);
+        conn.tx_buffer.writeShortString(reply_text);
         conn.tx_buffer.writeU16(class_id);
         conn.tx_buffer.writeU16(method_id);
         conn.tx_buffer.updateFrameLength();
@@ -1765,7 +1765,7 @@ pub const Basic = struct {
         const reserved_1 = 0;
         conn.tx_buffer.writeU16(reserved_1);
         conn.tx_buffer.writeShortString(queue);
-        conn.tx_buffer.writeArrayU8(consumer_tag);
+        conn.tx_buffer.writeShortString(consumer_tag);
         conn.tx_buffer.writeBool(no_local);
         conn.tx_buffer.writeBool(no_ack);
         conn.tx_buffer.writeBool(exclusive);
@@ -1791,7 +1791,7 @@ pub const Basic = struct {
     ) !void {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
         conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.CANCEL_METHOD);
-        conn.tx_buffer.writeArrayU8(consumer_tag);
+        conn.tx_buffer.writeShortString(consumer_tag);
         conn.tx_buffer.writeBool(no_wait);
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());

@@ -16,7 +16,7 @@ pub fn main() !void {
     std.debug.warn("Connected!\n", .{});
 
     var ch = try conn.channel();
-    var q = try ch.queueDeclare("test", amqp.Queue.Options{}, null);
+    const q = try ch.queueDeclare("test", amqp.Queue.Options{}, null);
 
     while(true) {
         const ret = conn.connector.dispatch(null) catch |err| {

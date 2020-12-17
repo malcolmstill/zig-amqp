@@ -251,7 +251,7 @@ def generateRead(field):
     if field_type in ['queue-name', 'exchange-name']:
         return 'readShortString'
     if field_type in ['consumer-tag', 'reply-text']:
-        return 'readArrayU8'
+        return 'readShortString'
     if field_type in ['shortstr', 'path']:
         return 'readShortString'
     if field_type in ['longstr']:
@@ -280,7 +280,7 @@ def generateWrite(field, name):
     if field_type in ['queue-name', 'exchange-name']:
         return 'writeShortString(' + name + ')'
     if field_type in ['consumer-tag', 'reply-text']:
-        return 'writeArrayU8(' + name + ')'
+        return 'writeShortString(' + name + ')'
     if field_type in ['shortstr', 'path']:
         return 'writeShortString(' + name + ')'
     if field_type in ['longstr']:

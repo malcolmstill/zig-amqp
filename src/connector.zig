@@ -54,7 +54,14 @@ pub const Connector = struct {
                         } else {
                             // TODO: we might receive an unexpecte close with a CHANNEL_ERROR
                             //       we should signal a separate error perhaps
-                            // sync_resp_ok = false;
+
+                            if (class == proto.CHANNEL_CLASS and method == proto.Channel.CLOSE_METHOD) {
+                                std.debug.warn("Likely CHANNEL_ERROR\n", .{});
+                                try proto.dispatchCallback(self, class, method);
+                                // TODO: we need to deallocate the channel here. Which means we need
+                                //       access to Connection
+                            }
+
                             return error.UnexpectedSync;
                         }
                     } else {
