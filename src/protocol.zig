@@ -920,30 +920,30 @@ pub fn isSynchronous(class_id: u16, method_id: u16) !bool {
         else => return error.UnknownClass,
     }
 }
-const frame_method: u16 = 1;
-const frame_header: u16 = 2;
-const frame_body: u16 = 3;
-const frame_heartbeat: u16 = 8;
-const frame_min_size: u16 = 4096;
-const frame_end: u16 = 206;
-const reply_success: u16 = 200;
-const content_too_large: u16 = 311;
-const no_consumers: u16 = 313;
-const connection_forced: u16 = 320;
-const invalid_path: u16 = 402;
-const access_refused: u16 = 403;
-const not_found: u16 = 404;
-const resource_locked: u16 = 405;
-const precondition_failed: u16 = 406;
-const frame_error: u16 = 501;
-const syntax_error: u16 = 502;
-const command_invalid: u16 = 503;
-const channel_error: u16 = 504;
-const unexpected_frame: u16 = 505;
-const resource_error: u16 = 506;
-const not_allowed: u16 = 530;
-const not_implemented: u16 = 540;
-const internal_error: u16 = 541;
+pub const FRAME_METHOD: u16 = 1;
+pub const FRAME_HEADER: u16 = 2;
+pub const FRAME_BODY: u16 = 3;
+pub const FRAME_HEARTBEAT: u16 = 8;
+pub const FRAME_MIN_SIZE: u16 = 4096;
+pub const FRAME_END: u16 = 206;
+pub const REPLY_SUCCESS: u16 = 200;
+pub const CONTENT_TOO_LARGE: u16 = 311;
+pub const NO_CONSUMERS: u16 = 313;
+pub const CONNECTION_FORCED: u16 = 320;
+pub const INVALID_PATH: u16 = 402;
+pub const ACCESS_REFUSED: u16 = 403;
+pub const NOT_FOUND: u16 = 404;
+pub const RESOURCE_LOCKED: u16 = 405;
+pub const PRECONDITION_FAILED: u16 = 406;
+pub const FRAME_ERROR: u16 = 501;
+pub const SYNTAX_ERROR: u16 = 502;
+pub const COMMAND_INVALID: u16 = 503;
+pub const CHANNEL_ERROR: u16 = 504;
+pub const UNEXPECTED_FRAME: u16 = 505;
+pub const RESOURCE_ERROR: u16 = 506;
+pub const NOT_ALLOWED: u16 = 530;
+pub const NOT_IMPLEMENTED: u16 = 540;
+pub const INTERNAL_ERROR: u16 = 541;
 pub const connection_interface = struct {
     start: ?fn (
         *Connector,

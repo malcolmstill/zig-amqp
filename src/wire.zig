@@ -1,6 +1,7 @@
 // A WireBuffer is an abstraction over a slice that knows how
 // to read and write the AMQP messages
 const std = @import("std");
+const proto = @import("protocol.zig");
 const Table = @import("table.zig").Table;
 
 // TODO: Think about input sanitisation
@@ -246,10 +247,10 @@ const FrameHeader = struct {
 };
 
 const FrameType = enum(u8) {
-    Method    = 0x01,
-    Header    = 0x02,
-    Body      = 0x04,
-    Heartbeat = 0x08,
+    Method    = proto.FRAME_METHOD,
+    Header    = proto.FRAME_HEADER,
+    Body      = proto.FRAME_BODY,
+    Heartbeat = proto.FRAME_HEARTBEAT,
 };
 
 const MethodHeader = struct {

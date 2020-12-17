@@ -17,7 +17,7 @@ def generate(file):
         generateIsSyncrhonous(amqp)
         for child in amqp:
             if child.tag == "constant":
-                print(f"const {nameClean(child)}: u16 = {child.attrib['value']};")
+                print(f"pub const {nameCleanUpper(child)}: u16 = {child.attrib['value']};")
             if child.tag == "class":
                 generateInterface(child)
                 generateImplementation(child)
