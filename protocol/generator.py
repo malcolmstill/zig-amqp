@@ -3,7 +3,8 @@ import sys
 
 def generate(file):
     print(f'const std = @import("std");')
-    print(f'const Conn = @import("connection.zig").Conn;')
+    print(f'const fs = std.fs;')
+    print(f'const Connector = @import("connection.zig").Connector;')
     print(f'const ClassMethod = @import("connection.zig").ClassMethod;')
     print(f'const WireBuffer = @import("wire.zig").WireBuffer;')
     print(f'const Table = @import("table.zig").Table;')
@@ -23,7 +24,7 @@ def generate(file):
                 generateClass(child)
 
 def generateLookup(amqp):
-    print(f"pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {{")
+    print(f"pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {{")
     print(f"switch (class) {{")
     for child in amqp:
         if child.tag == "class":
@@ -100,12 +101,12 @@ def generateInterface(klass):
     for child in klass:
         if child.tag == "method":
             method = child
-            generateInterfaceMethod(method)
+            generateInterfaceMethod(method, class_name, nameCleanCap(klass))
     print(f"}};\n")
 
-def generateInterfaceMethod(method):
+def generateInterfaceMethod(method, klass, klass_upper):
     method_name = nameClean(method)
-    print(f"{method_name}: ?fn(*Conn, ")
+    print(f"{method_name}: ?fn(*Connector, ")
     for child in method:
         if child.tag == 'field':
             field = child
@@ -126,9 +127,14 @@ def generateImplementation(klass):
 
 def generateClass(c):
     # print(f"pub const {nameClean(c)} = struct {{")
+    # print(f"const _{nameClean(c)} = @import(\"{nameClean(c)}.zig\");")
     print(f"pub const {nameCleanUpper(c)}_CLASS = {c.attrib['index']}; // CLASS")
     print(f"pub const {nameCleanCap(c)} = struct {{")
-    print(f"conn: *Conn,")
+    # print(f"conn: Connector,")
+    # print(f"connection: *connection.Connection,")
+    # print(f"file: fs.File,")
+    # print(f"rx_buffer: WireBuffer,")
+    # print(f"tx_buffer: WireBuffer,")
     print(f"const Self = @This();")
     for child in c:
         if child.tag == "method":
@@ -136,7 +142,7 @@ def generateClass(c):
             print(f"// METHOD =============================")
             print(f"pub const {nameCleanUpper(method)}_METHOD = {method.attrib['index']};")
             if isClientInitiatedRequest(method):
-                generateClientInitiatedRequest(method, nameCleanCap(c), nameCleanUpper(c))
+                generateClientInitiatedRequest(method, nameClean(c), nameCleanCap(c), nameCleanUpper(c))
             if isClientResponse(method):
                 generateClientResponse(method, nameCleanCap(c), nameCleanUpper(c))
 
@@ -162,53 +168,56 @@ def isClientResponse(method):
             expectsResponse = True
     return isRequestSentToServer and not expectsResponse
 
-def generateClientInitiatedRequest(method, klass_cap, klass_upper):
+def generateClientInitiatedRequest(method, klass, klass_cap, klass_upper):
     # print(method)
     method_name = nameCleanUpper(method)
     reply_method = nameCleanUpper(method) + '_OK'
-    print(f"pub fn {nameClean(method)}_sync(self: *Self,")
+    print(f"pub fn {nameClean(method)}_sync(conn: *Connector,")
     for method_child in method:
         if method_child.tag == 'field' and not ('reserved' in method_child.attrib and method_child.attrib['reserved'] == '1'):
             print(f"{nameClean(method_child)}: {generateArg(method_child)}, ", end = '')
     print(f") !void {{")
     # Send message
-    print(f"self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);")
-    print(f"self.conn.tx_buffer.writeMethodHeader({klass_upper}_CLASS, {klass_cap}.{method_name}_METHOD);")
+    print(f"conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);")
+    print(f"conn.tx_buffer.writeMethodHeader({klass_upper}_CLASS, {klass_cap}.{method_name}_METHOD);")
     # Generate writes
     for method_child in method:
         if method_child.tag == 'field':
             if ('reserved' in method_child.attrib and method_child.attrib['reserved'] == '1'):
                 print(f"const {nameClean(method_child)} = {generateReserved(method_child)};")
-            print(f"self.conn.tx_buffer.{generateWrite(method_child, nameClean(method_child))};")
+            print(f"conn.tx_buffer.{generateWrite(method_child, nameClean(method_child))};")
     # Send message
-    print(f"self.conn.tx_buffer.updateFrameLength();")
-    print(f"const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());")
-    print(f"self.conn.tx_buffer.reset();")
-    print(f"var received_response = false; while (!received_response) {{ const expecting: ClassMethod = .{{ .class = {klass_upper}_CLASS, .method = {klass_cap}.{reply_method}_METHOD }}; received_response = try self.conn.dispatch(expecting); }}")
+    print(f"conn.tx_buffer.updateFrameLength();")
+    print(f"const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());")
+    print(f"conn.tx_buffer.reset();")
+    print(f"var received_response = false;")
+    # print(f"var parent = @fieldParentPtr(_{klass}.{klass_cap}, \"proto\", self);")
+    print(f"while (!received_response) {{ const expecting: ClassMethod = .{{ .class = {klass_upper}_CLASS, .method = {klass_cap}.{reply_method}_METHOD }};")
+    print(f"received_response = try conn.dispatch(expecting); }}")
     print(f"}}")
 
 def generateClientResponse(method, klass_cap, klass_upper):
     method_name = nameCleanUpper(method)
-    print(f"pub fn {nameClean(method)}_resp(self: *Self,")
+    print(f"pub fn {nameClean(method)}_resp(conn: *Connector,")
     for method_child in method:
         if method_child.tag == 'field' and not ('reserved' in method_child.attrib and method_child.attrib['reserved'] == '1'):
             print(f"{nameClean(method_child)}: {generateArg(method_child)}, ", end = '')
     print(f") !void {{")
-    print(f"self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);")
-    print(f"self.conn.tx_buffer.writeMethodHeader({klass_upper}_CLASS, {klass_cap}.{method_name}_METHOD);")
+    print(f"conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);")
+    print(f"conn.tx_buffer.writeMethodHeader({klass_upper}_CLASS, {klass_cap}.{method_name}_METHOD);")
     # Generate writes
     for method_child in method:
         if method_child.tag == 'field':
             if ('reserved' in method_child.attrib and method_child.attrib['reserved'] == '1'):
                 print(f"const {nameClean(method_child)} = {generateReserved(method_child)};")
-            print(f"self.conn.tx_buffer.{generateWrite(method_child, nameClean(method_child))};")
+            print(f"conn.tx_buffer.{generateWrite(method_child, nameClean(method_child))};")
     # Send message
-    print(f"self.conn.tx_buffer.updateFrameLength();");
-    # print(f"for (self.conn.tx_buffer.extent()) |x| {{ std.debug.warn(\"0x{{x:0>2}} \", .{{x}}); }}")
-    # print(f"std.debug.warn(\"{{}}\\n\", .{{self.conn.tx_buffer.extent()}});")
-    # print(f"std.debug.warn(\"{{x}}\\n\", .{{self.conn.tx_buffer.extent()}});")
-    print(f"const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());")
-    print(f"self.conn.tx_buffer.reset();");
+    print(f"conn.tx_buffer.updateFrameLength();");
+    # print(f"for (conn.tx_buffer.extent()) |x| {{ std.debug.warn(\"0x{{x:0>2}} \", .{{x}}); }}")
+    # print(f"std.debug.warn(\"{{}}\\n\", .{{conn.tx_buffer.extent()}});")
+    # print(f"std.debug.warn(\"{{x}}\\n\", .{{conn.tx_buffer.extent()}});")
+    print(f"const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());")
+    print(f"conn.tx_buffer.reset();");
     print(f"}}")
 
 def addressOf(field):

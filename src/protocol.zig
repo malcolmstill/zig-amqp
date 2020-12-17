@@ -1,10 +1,11 @@
 const std = @import("std");
-const Conn = @import("connection.zig").Conn;
+const fs = std.fs;
+const Connector = @import("connection.zig").Connector;
 const ClassMethod = @import("connection.zig").ClassMethod;
 const WireBuffer = @import("wire.zig").WireBuffer;
 const Table = @import("table.zig").Table;
 // amqp
-pub fn dispatchCallback(conn: *Conn, class: u16, method: u16) !void {
+pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
     switch (class) {
         // connection
         10 => {
@@ -945,7 +946,7 @@ const not_implemented: u16 = 540;
 const internal_error: u16 = 541;
 pub const connection_interface = struct {
     start: ?fn (
-        *Conn,
+        *Connector,
         version_major: u8,
         version_minor: u8,
         server_properties: *Table,
@@ -953,55 +954,55 @@ pub const connection_interface = struct {
         locales: []const u8,
     ) anyerror!void,
     start_ok: ?fn (
-        *Conn,
+        *Connector,
         client_properties: *Table,
         mechanism: []const u8,
         response: []const u8,
         locale: []const u8,
     ) anyerror!void,
     secure: ?fn (
-        *Conn,
+        *Connector,
         challenge: []const u8,
     ) anyerror!void,
     secure_ok: ?fn (
-        *Conn,
+        *Connector,
         response: []const u8,
     ) anyerror!void,
     tune: ?fn (
-        *Conn,
+        *Connector,
         channel_max: u16,
         frame_max: u32,
         heartbeat: u16,
     ) anyerror!void,
     tune_ok: ?fn (
-        *Conn,
+        *Connector,
         channel_max: u16,
         frame_max: u32,
         heartbeat: u16,
     ) anyerror!void,
     open: ?fn (
-        *Conn,
+        *Connector,
         virtual_host: []const u8,
     ) anyerror!void,
     open_ok: ?fn (
-        *Conn,
+        *Connector,
     ) anyerror!void,
     close: ?fn (
-        *Conn,
+        *Connector,
         reply_code: u16,
         reply_text: []const u8,
         class_id: u16,
         method_id: u16,
     ) anyerror!void,
     close_ok: ?fn (
-        *Conn,
+        *Connector,
     ) anyerror!void,
     blocked: ?fn (
-        *Conn,
+        *Connector,
         reason: []const u8,
     ) anyerror!void,
     unblocked: ?fn (
-        *Conn,
+        *Connector,
     ) anyerror!void,
 };
 
@@ -1022,83 +1023,82 @@ pub var CONNECTION_IMPL = connection_interface{
 
 pub const CONNECTION_CLASS = 10; // CLASS
 pub const Connection = struct {
-    conn: *Conn,
     const Self = @This();
     // METHOD =============================
     pub const START_METHOD = 10;
     // METHOD =============================
     pub const START_OK_METHOD = 11;
     pub fn start_ok_resp(
-        self: *Self,
+        conn: *Connector,
         client_properties: *Table,
         mechanism: []const u8,
         response: []const u8,
         locale: []const u8,
     ) !void {
-        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.START_OK_METHOD);
-        self.conn.tx_buffer.writeTable(client_properties.buf.mem[0..client_properties.buf.head]);
-        self.conn.tx_buffer.writeShortString(mechanism);
-        self.conn.tx_buffer.writeLongString(response);
-        self.conn.tx_buffer.writeShortString(locale);
-        self.conn.tx_buffer.updateFrameLength();
-        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
-        self.conn.tx_buffer.reset();
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.START_OK_METHOD);
+        conn.tx_buffer.writeTable(client_properties.buf.mem[0..client_properties.buf.head]);
+        conn.tx_buffer.writeShortString(mechanism);
+        conn.tx_buffer.writeLongString(response);
+        conn.tx_buffer.writeShortString(locale);
+        conn.tx_buffer.updateFrameLength();
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
     }
     // METHOD =============================
     pub const SECURE_METHOD = 20;
     // METHOD =============================
     pub const SECURE_OK_METHOD = 21;
     pub fn secure_ok_resp(
-        self: *Self,
+        conn: *Connector,
         response: []const u8,
     ) !void {
-        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.SECURE_OK_METHOD);
-        self.conn.tx_buffer.writeLongString(response);
-        self.conn.tx_buffer.updateFrameLength();
-        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
-        self.conn.tx_buffer.reset();
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.SECURE_OK_METHOD);
+        conn.tx_buffer.writeLongString(response);
+        conn.tx_buffer.updateFrameLength();
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
     }
     // METHOD =============================
     pub const TUNE_METHOD = 30;
     // METHOD =============================
     pub const TUNE_OK_METHOD = 31;
     pub fn tune_ok_resp(
-        self: *Self,
+        conn: *Connector,
         channel_max: u16,
         frame_max: u32,
         heartbeat: u16,
     ) !void {
-        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.TUNE_OK_METHOD);
-        self.conn.tx_buffer.writeU16(channel_max);
-        self.conn.tx_buffer.writeU32(frame_max);
-        self.conn.tx_buffer.writeU16(heartbeat);
-        self.conn.tx_buffer.updateFrameLength();
-        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
-        self.conn.tx_buffer.reset();
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.TUNE_OK_METHOD);
+        conn.tx_buffer.writeU16(channel_max);
+        conn.tx_buffer.writeU32(frame_max);
+        conn.tx_buffer.writeU16(heartbeat);
+        conn.tx_buffer.updateFrameLength();
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
     }
     // METHOD =============================
     pub const OPEN_METHOD = 40;
     pub fn open_sync(
-        self: *Self,
+        conn: *Connector,
         virtual_host: []const u8,
     ) !void {
-        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.OPEN_METHOD);
-        self.conn.tx_buffer.writeShortString(virtual_host);
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.OPEN_METHOD);
+        conn.tx_buffer.writeShortString(virtual_host);
         const reserved_1 = "";
-        self.conn.tx_buffer.writeShortString(reserved_1);
+        conn.tx_buffer.writeShortString(reserved_1);
         const reserved_2 = false;
-        self.conn.tx_buffer.writeBool(reserved_2);
-        self.conn.tx_buffer.updateFrameLength();
-        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
-        self.conn.tx_buffer.reset();
+        conn.tx_buffer.writeBool(reserved_2);
+        conn.tx_buffer.updateFrameLength();
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
         var received_response = false;
         while (!received_response) {
             const expecting: ClassMethod = .{ .class = CONNECTION_CLASS, .method = Connection.OPEN_OK_METHOD };
-            received_response = try self.conn.dispatch(expecting);
+            received_response = try conn.dispatch(expecting);
         }
     }
     // METHOD =============================
@@ -1106,87 +1106,87 @@ pub const Connection = struct {
     // METHOD =============================
     pub const CLOSE_METHOD = 50;
     pub fn close_sync(
-        self: *Self,
+        conn: *Connector,
         reply_code: u16,
         reply_text: []const u8,
         class_id: u16,
         method_id: u16,
     ) !void {
-        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.CLOSE_METHOD);
-        self.conn.tx_buffer.writeU16(reply_code);
-        self.conn.tx_buffer.writeArrayU8(reply_text);
-        self.conn.tx_buffer.writeU16(class_id);
-        self.conn.tx_buffer.writeU16(method_id);
-        self.conn.tx_buffer.updateFrameLength();
-        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
-        self.conn.tx_buffer.reset();
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.CLOSE_METHOD);
+        conn.tx_buffer.writeU16(reply_code);
+        conn.tx_buffer.writeArrayU8(reply_text);
+        conn.tx_buffer.writeU16(class_id);
+        conn.tx_buffer.writeU16(method_id);
+        conn.tx_buffer.updateFrameLength();
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
         var received_response = false;
         while (!received_response) {
             const expecting: ClassMethod = .{ .class = CONNECTION_CLASS, .method = Connection.CLOSE_OK_METHOD };
-            received_response = try self.conn.dispatch(expecting);
+            received_response = try conn.dispatch(expecting);
         }
     }
     // METHOD =============================
     pub const CLOSE_OK_METHOD = 51;
     pub fn close_ok_resp(
-        self: *Self,
+        conn: *Connector,
     ) !void {
-        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.CLOSE_OK_METHOD);
-        self.conn.tx_buffer.updateFrameLength();
-        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
-        self.conn.tx_buffer.reset();
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.CLOSE_OK_METHOD);
+        conn.tx_buffer.updateFrameLength();
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
     }
     // METHOD =============================
     pub const BLOCKED_METHOD = 60;
     pub fn blocked_resp(
-        self: *Self,
+        conn: *Connector,
         reason: []const u8,
     ) !void {
-        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.BLOCKED_METHOD);
-        self.conn.tx_buffer.writeShortString(reason);
-        self.conn.tx_buffer.updateFrameLength();
-        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
-        self.conn.tx_buffer.reset();
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.BLOCKED_METHOD);
+        conn.tx_buffer.writeShortString(reason);
+        conn.tx_buffer.updateFrameLength();
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
     }
     // METHOD =============================
     pub const UNBLOCKED_METHOD = 61;
     pub fn unblocked_resp(
-        self: *Self,
+        conn: *Connector,
     ) !void {
-        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.UNBLOCKED_METHOD);
-        self.conn.tx_buffer.updateFrameLength();
-        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
-        self.conn.tx_buffer.reset();
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.UNBLOCKED_METHOD);
+        conn.tx_buffer.updateFrameLength();
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
     }
 };
 pub const channel_interface = struct {
     open: ?fn (
-        *Conn,
+        *Connector,
     ) anyerror!void,
     open_ok: ?fn (
-        *Conn,
+        *Connector,
     ) anyerror!void,
     flow: ?fn (
-        *Conn,
+        *Connector,
         active: bool,
     ) anyerror!void,
     flow_ok: ?fn (
-        *Conn,
+        *Connector,
         active: bool,
     ) anyerror!void,
     close: ?fn (
-        *Conn,
+        *Connector,
         reply_code: u16,
         reply_text: []const u8,
         class_id: u16,
         method_id: u16,
     ) anyerror!void,
     close_ok: ?fn (
-        *Conn,
+        *Connector,
     ) anyerror!void,
 };
 
@@ -1201,24 +1201,23 @@ pub var CHANNEL_IMPL = channel_interface{
 
 pub const CHANNEL_CLASS = 20; // CLASS
 pub const Channel = struct {
-    conn: *Conn,
     const Self = @This();
     // METHOD =============================
     pub const OPEN_METHOD = 10;
     pub fn open_sync(
-        self: *Self,
+        conn: *Connector,
     ) !void {
-        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(CHANNEL_CLASS, Channel.OPEN_METHOD);
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(CHANNEL_CLASS, Channel.OPEN_METHOD);
         const reserved_1 = "";
-        self.conn.tx_buffer.writeShortString(reserved_1);
-        self.conn.tx_buffer.updateFrameLength();
-        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
-        self.conn.tx_buffer.reset();
+        conn.tx_buffer.writeShortString(reserved_1);
+        conn.tx_buffer.updateFrameLength();
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
         var received_response = false;
         while (!received_response) {
             const expecting: ClassMethod = .{ .class = CHANNEL_CLASS, .method = Channel.OPEN_OK_METHOD };
-            received_response = try self.conn.dispatch(expecting);
+            received_response = try conn.dispatch(expecting);
         }
     }
     // METHOD =============================
@@ -1226,73 +1225,73 @@ pub const Channel = struct {
     // METHOD =============================
     pub const FLOW_METHOD = 20;
     pub fn flow_sync(
-        self: *Self,
+        conn: *Connector,
         active: bool,
     ) !void {
-        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(CHANNEL_CLASS, Channel.FLOW_METHOD);
-        self.conn.tx_buffer.writeBool(active);
-        self.conn.tx_buffer.updateFrameLength();
-        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
-        self.conn.tx_buffer.reset();
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(CHANNEL_CLASS, Channel.FLOW_METHOD);
+        conn.tx_buffer.writeBool(active);
+        conn.tx_buffer.updateFrameLength();
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
         var received_response = false;
         while (!received_response) {
             const expecting: ClassMethod = .{ .class = CHANNEL_CLASS, .method = Channel.FLOW_OK_METHOD };
-            received_response = try self.conn.dispatch(expecting);
+            received_response = try conn.dispatch(expecting);
         }
     }
     // METHOD =============================
     pub const FLOW_OK_METHOD = 21;
     pub fn flow_ok_resp(
-        self: *Self,
+        conn: *Connector,
         active: bool,
     ) !void {
-        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(CHANNEL_CLASS, Channel.FLOW_OK_METHOD);
-        self.conn.tx_buffer.writeBool(active);
-        self.conn.tx_buffer.updateFrameLength();
-        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
-        self.conn.tx_buffer.reset();
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(CHANNEL_CLASS, Channel.FLOW_OK_METHOD);
+        conn.tx_buffer.writeBool(active);
+        conn.tx_buffer.updateFrameLength();
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
     }
     // METHOD =============================
     pub const CLOSE_METHOD = 40;
     pub fn close_sync(
-        self: *Self,
+        conn: *Connector,
         reply_code: u16,
         reply_text: []const u8,
         class_id: u16,
         method_id: u16,
     ) !void {
-        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(CHANNEL_CLASS, Channel.CLOSE_METHOD);
-        self.conn.tx_buffer.writeU16(reply_code);
-        self.conn.tx_buffer.writeArrayU8(reply_text);
-        self.conn.tx_buffer.writeU16(class_id);
-        self.conn.tx_buffer.writeU16(method_id);
-        self.conn.tx_buffer.updateFrameLength();
-        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
-        self.conn.tx_buffer.reset();
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(CHANNEL_CLASS, Channel.CLOSE_METHOD);
+        conn.tx_buffer.writeU16(reply_code);
+        conn.tx_buffer.writeArrayU8(reply_text);
+        conn.tx_buffer.writeU16(class_id);
+        conn.tx_buffer.writeU16(method_id);
+        conn.tx_buffer.updateFrameLength();
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
         var received_response = false;
         while (!received_response) {
             const expecting: ClassMethod = .{ .class = CHANNEL_CLASS, .method = Channel.CLOSE_OK_METHOD };
-            received_response = try self.conn.dispatch(expecting);
+            received_response = try conn.dispatch(expecting);
         }
     }
     // METHOD =============================
     pub const CLOSE_OK_METHOD = 41;
     pub fn close_ok_resp(
-        self: *Self,
+        conn: *Connector,
     ) !void {
-        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(CHANNEL_CLASS, Channel.CLOSE_OK_METHOD);
-        self.conn.tx_buffer.updateFrameLength();
-        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
-        self.conn.tx_buffer.reset();
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(CHANNEL_CLASS, Channel.CLOSE_OK_METHOD);
+        conn.tx_buffer.updateFrameLength();
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
     }
 };
 pub const exchange_interface = struct {
     declare: ?fn (
-        *Conn,
+        *Connector,
         exchange: []u8,
         tipe: []const u8,
         passive: bool,
@@ -1301,16 +1300,16 @@ pub const exchange_interface = struct {
         arguments: *Table,
     ) anyerror!void,
     declare_ok: ?fn (
-        *Conn,
+        *Connector,
     ) anyerror!void,
     delete: ?fn (
-        *Conn,
+        *Connector,
         exchange: []u8,
         if_unused: bool,
         no_wait: bool,
     ) anyerror!void,
     delete_ok: ?fn (
-        *Conn,
+        *Connector,
     ) anyerror!void,
 };
 
@@ -1323,12 +1322,11 @@ pub var EXCHANGE_IMPL = exchange_interface{
 
 pub const EXCHANGE_CLASS = 40; // CLASS
 pub const Exchange = struct {
-    conn: *Conn,
     const Self = @This();
     // METHOD =============================
     pub const DECLARE_METHOD = 10;
     pub fn declare_sync(
-        self: *Self,
+        conn: *Connector,
         exchange: []u8,
         tipe: []const u8,
         passive: bool,
@@ -1336,27 +1334,27 @@ pub const Exchange = struct {
         no_wait: bool,
         arguments: *Table,
     ) !void {
-        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(EXCHANGE_CLASS, Exchange.DECLARE_METHOD);
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(EXCHANGE_CLASS, Exchange.DECLARE_METHOD);
         const reserved_1 = 0;
-        self.conn.tx_buffer.writeU16(reserved_1);
-        self.conn.tx_buffer.writeArray128U8(exchange);
-        self.conn.tx_buffer.writeShortString(tipe);
-        self.conn.tx_buffer.writeBool(passive);
-        self.conn.tx_buffer.writeBool(durable);
+        conn.tx_buffer.writeU16(reserved_1);
+        conn.tx_buffer.writeArray128U8(exchange);
+        conn.tx_buffer.writeShortString(tipe);
+        conn.tx_buffer.writeBool(passive);
+        conn.tx_buffer.writeBool(durable);
         const reserved_2 = false;
-        self.conn.tx_buffer.writeBool(reserved_2);
+        conn.tx_buffer.writeBool(reserved_2);
         const reserved_3 = false;
-        self.conn.tx_buffer.writeBool(reserved_3);
-        self.conn.tx_buffer.writeBool(no_wait);
-        self.conn.tx_buffer.writeTable(arguments.buf.mem[0..arguments.buf.head]);
-        self.conn.tx_buffer.updateFrameLength();
-        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
-        self.conn.tx_buffer.reset();
+        conn.tx_buffer.writeBool(reserved_3);
+        conn.tx_buffer.writeBool(no_wait);
+        conn.tx_buffer.writeTable(arguments.buf.mem[0..arguments.buf.head]);
+        conn.tx_buffer.updateFrameLength();
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
         var received_response = false;
         while (!received_response) {
             const expecting: ClassMethod = .{ .class = EXCHANGE_CLASS, .method = Exchange.DECLARE_OK_METHOD };
-            received_response = try self.conn.dispatch(expecting);
+            received_response = try conn.dispatch(expecting);
         }
     }
     // METHOD =============================
@@ -1364,25 +1362,25 @@ pub const Exchange = struct {
     // METHOD =============================
     pub const DELETE_METHOD = 20;
     pub fn delete_sync(
-        self: *Self,
+        conn: *Connector,
         exchange: []u8,
         if_unused: bool,
         no_wait: bool,
     ) !void {
-        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(EXCHANGE_CLASS, Exchange.DELETE_METHOD);
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(EXCHANGE_CLASS, Exchange.DELETE_METHOD);
         const reserved_1 = 0;
-        self.conn.tx_buffer.writeU16(reserved_1);
-        self.conn.tx_buffer.writeArray128U8(exchange);
-        self.conn.tx_buffer.writeBool(if_unused);
-        self.conn.tx_buffer.writeBool(no_wait);
-        self.conn.tx_buffer.updateFrameLength();
-        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
-        self.conn.tx_buffer.reset();
+        conn.tx_buffer.writeU16(reserved_1);
+        conn.tx_buffer.writeArray128U8(exchange);
+        conn.tx_buffer.writeBool(if_unused);
+        conn.tx_buffer.writeBool(no_wait);
+        conn.tx_buffer.updateFrameLength();
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
         var received_response = false;
         while (!received_response) {
             const expecting: ClassMethod = .{ .class = EXCHANGE_CLASS, .method = Exchange.DELETE_OK_METHOD };
-            received_response = try self.conn.dispatch(expecting);
+            received_response = try conn.dispatch(expecting);
         }
     }
     // METHOD =============================
@@ -1390,7 +1388,7 @@ pub const Exchange = struct {
 };
 pub const queue_interface = struct {
     declare: ?fn (
-        *Conn,
+        *Connector,
         queue: []u8,
         passive: bool,
         durable: bool,
@@ -1400,13 +1398,13 @@ pub const queue_interface = struct {
         arguments: *Table,
     ) anyerror!void,
     declare_ok: ?fn (
-        *Conn,
+        *Connector,
         queue: []u8,
         message_count: u32,
         consumer_count: u32,
     ) anyerror!void,
     bind: ?fn (
-        *Conn,
+        *Connector,
         queue: []u8,
         exchange: []u8,
         routing_key: []const u8,
@@ -1414,36 +1412,36 @@ pub const queue_interface = struct {
         arguments: *Table,
     ) anyerror!void,
     bind_ok: ?fn (
-        *Conn,
+        *Connector,
     ) anyerror!void,
     unbind: ?fn (
-        *Conn,
+        *Connector,
         queue: []u8,
         exchange: []u8,
         routing_key: []const u8,
         arguments: *Table,
     ) anyerror!void,
     unbind_ok: ?fn (
-        *Conn,
+        *Connector,
     ) anyerror!void,
     purge: ?fn (
-        *Conn,
+        *Connector,
         queue: []u8,
         no_wait: bool,
     ) anyerror!void,
     purge_ok: ?fn (
-        *Conn,
+        *Connector,
         message_count: u32,
     ) anyerror!void,
     delete: ?fn (
-        *Conn,
+        *Connector,
         queue: []u8,
         if_unused: bool,
         if_empty: bool,
         no_wait: bool,
     ) anyerror!void,
     delete_ok: ?fn (
-        *Conn,
+        *Connector,
         message_count: u32,
     ) anyerror!void,
 };
@@ -1463,12 +1461,11 @@ pub var QUEUE_IMPL = queue_interface{
 
 pub const QUEUE_CLASS = 50; // CLASS
 pub const Queue = struct {
-    conn: *Conn,
     const Self = @This();
     // METHOD =============================
     pub const DECLARE_METHOD = 10;
     pub fn declare_sync(
-        self: *Self,
+        conn: *Connector,
         queue: []u8,
         passive: bool,
         durable: bool,
@@ -1477,24 +1474,24 @@ pub const Queue = struct {
         no_wait: bool,
         arguments: *Table,
     ) !void {
-        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.DECLARE_METHOD);
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.DECLARE_METHOD);
         const reserved_1 = 0;
-        self.conn.tx_buffer.writeU16(reserved_1);
-        self.conn.tx_buffer.writeArray128U8(queue);
-        self.conn.tx_buffer.writeBool(passive);
-        self.conn.tx_buffer.writeBool(durable);
-        self.conn.tx_buffer.writeBool(exclusive);
-        self.conn.tx_buffer.writeBool(auto_delete);
-        self.conn.tx_buffer.writeBool(no_wait);
-        self.conn.tx_buffer.writeTable(arguments.buf.mem[0..arguments.buf.head]);
-        self.conn.tx_buffer.updateFrameLength();
-        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
-        self.conn.tx_buffer.reset();
+        conn.tx_buffer.writeU16(reserved_1);
+        conn.tx_buffer.writeArray128U8(queue);
+        conn.tx_buffer.writeBool(passive);
+        conn.tx_buffer.writeBool(durable);
+        conn.tx_buffer.writeBool(exclusive);
+        conn.tx_buffer.writeBool(auto_delete);
+        conn.tx_buffer.writeBool(no_wait);
+        conn.tx_buffer.writeTable(arguments.buf.mem[0..arguments.buf.head]);
+        conn.tx_buffer.updateFrameLength();
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
         var received_response = false;
         while (!received_response) {
             const expecting: ClassMethod = .{ .class = QUEUE_CLASS, .method = Queue.DECLARE_OK_METHOD };
-            received_response = try self.conn.dispatch(expecting);
+            received_response = try conn.dispatch(expecting);
         }
     }
     // METHOD =============================
@@ -1502,29 +1499,29 @@ pub const Queue = struct {
     // METHOD =============================
     pub const BIND_METHOD = 20;
     pub fn bind_sync(
-        self: *Self,
+        conn: *Connector,
         queue: []u8,
         exchange: []u8,
         routing_key: []const u8,
         no_wait: bool,
         arguments: *Table,
     ) !void {
-        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.BIND_METHOD);
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.BIND_METHOD);
         const reserved_1 = 0;
-        self.conn.tx_buffer.writeU16(reserved_1);
-        self.conn.tx_buffer.writeArray128U8(queue);
-        self.conn.tx_buffer.writeArray128U8(exchange);
-        self.conn.tx_buffer.writeShortString(routing_key);
-        self.conn.tx_buffer.writeBool(no_wait);
-        self.conn.tx_buffer.writeTable(arguments.buf.mem[0..arguments.buf.head]);
-        self.conn.tx_buffer.updateFrameLength();
-        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
-        self.conn.tx_buffer.reset();
+        conn.tx_buffer.writeU16(reserved_1);
+        conn.tx_buffer.writeArray128U8(queue);
+        conn.tx_buffer.writeArray128U8(exchange);
+        conn.tx_buffer.writeShortString(routing_key);
+        conn.tx_buffer.writeBool(no_wait);
+        conn.tx_buffer.writeTable(arguments.buf.mem[0..arguments.buf.head]);
+        conn.tx_buffer.updateFrameLength();
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
         var received_response = false;
         while (!received_response) {
             const expecting: ClassMethod = .{ .class = QUEUE_CLASS, .method = Queue.BIND_OK_METHOD };
-            received_response = try self.conn.dispatch(expecting);
+            received_response = try conn.dispatch(expecting);
         }
     }
     // METHOD =============================
@@ -1532,27 +1529,27 @@ pub const Queue = struct {
     // METHOD =============================
     pub const UNBIND_METHOD = 50;
     pub fn unbind_sync(
-        self: *Self,
+        conn: *Connector,
         queue: []u8,
         exchange: []u8,
         routing_key: []const u8,
         arguments: *Table,
     ) !void {
-        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.UNBIND_METHOD);
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.UNBIND_METHOD);
         const reserved_1 = 0;
-        self.conn.tx_buffer.writeU16(reserved_1);
-        self.conn.tx_buffer.writeArray128U8(queue);
-        self.conn.tx_buffer.writeArray128U8(exchange);
-        self.conn.tx_buffer.writeShortString(routing_key);
-        self.conn.tx_buffer.writeTable(arguments.buf.mem[0..arguments.buf.head]);
-        self.conn.tx_buffer.updateFrameLength();
-        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
-        self.conn.tx_buffer.reset();
+        conn.tx_buffer.writeU16(reserved_1);
+        conn.tx_buffer.writeArray128U8(queue);
+        conn.tx_buffer.writeArray128U8(exchange);
+        conn.tx_buffer.writeShortString(routing_key);
+        conn.tx_buffer.writeTable(arguments.buf.mem[0..arguments.buf.head]);
+        conn.tx_buffer.updateFrameLength();
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
         var received_response = false;
         while (!received_response) {
             const expecting: ClassMethod = .{ .class = QUEUE_CLASS, .method = Queue.UNBIND_OK_METHOD };
-            received_response = try self.conn.dispatch(expecting);
+            received_response = try conn.dispatch(expecting);
         }
     }
     // METHOD =============================
@@ -1560,23 +1557,23 @@ pub const Queue = struct {
     // METHOD =============================
     pub const PURGE_METHOD = 30;
     pub fn purge_sync(
-        self: *Self,
+        conn: *Connector,
         queue: []u8,
         no_wait: bool,
     ) !void {
-        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.PURGE_METHOD);
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.PURGE_METHOD);
         const reserved_1 = 0;
-        self.conn.tx_buffer.writeU16(reserved_1);
-        self.conn.tx_buffer.writeArray128U8(queue);
-        self.conn.tx_buffer.writeBool(no_wait);
-        self.conn.tx_buffer.updateFrameLength();
-        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
-        self.conn.tx_buffer.reset();
+        conn.tx_buffer.writeU16(reserved_1);
+        conn.tx_buffer.writeArray128U8(queue);
+        conn.tx_buffer.writeBool(no_wait);
+        conn.tx_buffer.updateFrameLength();
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
         var received_response = false;
         while (!received_response) {
             const expecting: ClassMethod = .{ .class = QUEUE_CLASS, .method = Queue.PURGE_OK_METHOD };
-            received_response = try self.conn.dispatch(expecting);
+            received_response = try conn.dispatch(expecting);
         }
     }
     // METHOD =============================
@@ -1584,27 +1581,27 @@ pub const Queue = struct {
     // METHOD =============================
     pub const DELETE_METHOD = 40;
     pub fn delete_sync(
-        self: *Self,
+        conn: *Connector,
         queue: []u8,
         if_unused: bool,
         if_empty: bool,
         no_wait: bool,
     ) !void {
-        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.DELETE_METHOD);
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.DELETE_METHOD);
         const reserved_1 = 0;
-        self.conn.tx_buffer.writeU16(reserved_1);
-        self.conn.tx_buffer.writeArray128U8(queue);
-        self.conn.tx_buffer.writeBool(if_unused);
-        self.conn.tx_buffer.writeBool(if_empty);
-        self.conn.tx_buffer.writeBool(no_wait);
-        self.conn.tx_buffer.updateFrameLength();
-        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
-        self.conn.tx_buffer.reset();
+        conn.tx_buffer.writeU16(reserved_1);
+        conn.tx_buffer.writeArray128U8(queue);
+        conn.tx_buffer.writeBool(if_unused);
+        conn.tx_buffer.writeBool(if_empty);
+        conn.tx_buffer.writeBool(no_wait);
+        conn.tx_buffer.updateFrameLength();
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
         var received_response = false;
         while (!received_response) {
             const expecting: ClassMethod = .{ .class = QUEUE_CLASS, .method = Queue.DELETE_OK_METHOD };
-            received_response = try self.conn.dispatch(expecting);
+            received_response = try conn.dispatch(expecting);
         }
     }
     // METHOD =============================
@@ -1612,16 +1609,16 @@ pub const Queue = struct {
 };
 pub const basic_interface = struct {
     qos: ?fn (
-        *Conn,
+        *Connector,
         prefetch_size: u32,
         prefetch_count: u16,
         global: bool,
     ) anyerror!void,
     qos_ok: ?fn (
-        *Conn,
+        *Connector,
     ) anyerror!void,
     consume: ?fn (
-        *Conn,
+        *Connector,
         queue: []u8,
         consumer_tag: []const u8,
         no_local: bool,
@@ -1631,34 +1628,34 @@ pub const basic_interface = struct {
         arguments: *Table,
     ) anyerror!void,
     consume_ok: ?fn (
-        *Conn,
+        *Connector,
         consumer_tag: []const u8,
     ) anyerror!void,
     cancel: ?fn (
-        *Conn,
+        *Connector,
         consumer_tag: []const u8,
         no_wait: bool,
     ) anyerror!void,
     cancel_ok: ?fn (
-        *Conn,
+        *Connector,
         consumer_tag: []const u8,
     ) anyerror!void,
     publish: ?fn (
-        *Conn,
+        *Connector,
         exchange: []u8,
         routing_key: []const u8,
         mandatory: bool,
         immediate: bool,
     ) anyerror!void,
     @"return": ?fn (
-        *Conn,
+        *Connector,
         reply_code: u16,
         reply_text: []const u8,
         exchange: []u8,
         routing_key: []const u8,
     ) anyerror!void,
     deliver: ?fn (
-        *Conn,
+        *Connector,
         consumer_tag: []const u8,
         delivery_tag: u64,
         redelivered: bool,
@@ -1666,12 +1663,12 @@ pub const basic_interface = struct {
         routing_key: []const u8,
     ) anyerror!void,
     get: ?fn (
-        *Conn,
+        *Connector,
         queue: []u8,
         no_ack: bool,
     ) anyerror!void,
     get_ok: ?fn (
-        *Conn,
+        *Connector,
         delivery_tag: u64,
         redelivered: bool,
         exchange: []u8,
@@ -1679,28 +1676,28 @@ pub const basic_interface = struct {
         message_count: u32,
     ) anyerror!void,
     get_empty: ?fn (
-        *Conn,
+        *Connector,
     ) anyerror!void,
     ack: ?fn (
-        *Conn,
+        *Connector,
         delivery_tag: u64,
         multiple: bool,
     ) anyerror!void,
     reject: ?fn (
-        *Conn,
+        *Connector,
         delivery_tag: u64,
         requeue: bool,
     ) anyerror!void,
     recover_async: ?fn (
-        *Conn,
+        *Connector,
         requeue: bool,
     ) anyerror!void,
     recover: ?fn (
-        *Conn,
+        *Connector,
         requeue: bool,
     ) anyerror!void,
     recover_ok: ?fn (
-        *Conn,
+        *Connector,
     ) anyerror!void,
 };
 
@@ -1726,28 +1723,27 @@ pub var BASIC_IMPL = basic_interface{
 
 pub const BASIC_CLASS = 60; // CLASS
 pub const Basic = struct {
-    conn: *Conn,
     const Self = @This();
     // METHOD =============================
     pub const QOS_METHOD = 10;
     pub fn qos_sync(
-        self: *Self,
+        conn: *Connector,
         prefetch_size: u32,
         prefetch_count: u16,
         global: bool,
     ) !void {
-        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.QOS_METHOD);
-        self.conn.tx_buffer.writeU32(prefetch_size);
-        self.conn.tx_buffer.writeU16(prefetch_count);
-        self.conn.tx_buffer.writeBool(global);
-        self.conn.tx_buffer.updateFrameLength();
-        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
-        self.conn.tx_buffer.reset();
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.QOS_METHOD);
+        conn.tx_buffer.writeU32(prefetch_size);
+        conn.tx_buffer.writeU16(prefetch_count);
+        conn.tx_buffer.writeBool(global);
+        conn.tx_buffer.updateFrameLength();
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
         var received_response = false;
         while (!received_response) {
             const expecting: ClassMethod = .{ .class = BASIC_CLASS, .method = Basic.QOS_OK_METHOD };
-            received_response = try self.conn.dispatch(expecting);
+            received_response = try conn.dispatch(expecting);
         }
     }
     // METHOD =============================
@@ -1755,7 +1751,7 @@ pub const Basic = struct {
     // METHOD =============================
     pub const CONSUME_METHOD = 20;
     pub fn consume_sync(
-        self: *Self,
+        conn: *Connector,
         queue: []u8,
         consumer_tag: []const u8,
         no_local: bool,
@@ -1764,24 +1760,24 @@ pub const Basic = struct {
         no_wait: bool,
         arguments: *Table,
     ) !void {
-        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.CONSUME_METHOD);
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.CONSUME_METHOD);
         const reserved_1 = 0;
-        self.conn.tx_buffer.writeU16(reserved_1);
-        self.conn.tx_buffer.writeArray128U8(queue);
-        self.conn.tx_buffer.writeArrayU8(consumer_tag);
-        self.conn.tx_buffer.writeBool(no_local);
-        self.conn.tx_buffer.writeBool(no_ack);
-        self.conn.tx_buffer.writeBool(exclusive);
-        self.conn.tx_buffer.writeBool(no_wait);
-        self.conn.tx_buffer.writeTable(arguments.buf.mem[0..arguments.buf.head]);
-        self.conn.tx_buffer.updateFrameLength();
-        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
-        self.conn.tx_buffer.reset();
+        conn.tx_buffer.writeU16(reserved_1);
+        conn.tx_buffer.writeArray128U8(queue);
+        conn.tx_buffer.writeArrayU8(consumer_tag);
+        conn.tx_buffer.writeBool(no_local);
+        conn.tx_buffer.writeBool(no_ack);
+        conn.tx_buffer.writeBool(exclusive);
+        conn.tx_buffer.writeBool(no_wait);
+        conn.tx_buffer.writeTable(arguments.buf.mem[0..arguments.buf.head]);
+        conn.tx_buffer.updateFrameLength();
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
         var received_response = false;
         while (!received_response) {
             const expecting: ClassMethod = .{ .class = BASIC_CLASS, .method = Basic.CONSUME_OK_METHOD };
-            received_response = try self.conn.dispatch(expecting);
+            received_response = try conn.dispatch(expecting);
         }
     }
     // METHOD =============================
@@ -1789,21 +1785,21 @@ pub const Basic = struct {
     // METHOD =============================
     pub const CANCEL_METHOD = 30;
     pub fn cancel_sync(
-        self: *Self,
+        conn: *Connector,
         consumer_tag: []const u8,
         no_wait: bool,
     ) !void {
-        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.CANCEL_METHOD);
-        self.conn.tx_buffer.writeArrayU8(consumer_tag);
-        self.conn.tx_buffer.writeBool(no_wait);
-        self.conn.tx_buffer.updateFrameLength();
-        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
-        self.conn.tx_buffer.reset();
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.CANCEL_METHOD);
+        conn.tx_buffer.writeArrayU8(consumer_tag);
+        conn.tx_buffer.writeBool(no_wait);
+        conn.tx_buffer.updateFrameLength();
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
         var received_response = false;
         while (!received_response) {
             const expecting: ClassMethod = .{ .class = BASIC_CLASS, .method = Basic.CANCEL_OK_METHOD };
-            received_response = try self.conn.dispatch(expecting);
+            received_response = try conn.dispatch(expecting);
         }
     }
     // METHOD =============================
@@ -1811,23 +1807,23 @@ pub const Basic = struct {
     // METHOD =============================
     pub const PUBLISH_METHOD = 40;
     pub fn publish_resp(
-        self: *Self,
+        conn: *Connector,
         exchange: []u8,
         routing_key: []const u8,
         mandatory: bool,
         immediate: bool,
     ) !void {
-        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.PUBLISH_METHOD);
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.PUBLISH_METHOD);
         const reserved_1 = 0;
-        self.conn.tx_buffer.writeU16(reserved_1);
-        self.conn.tx_buffer.writeArray128U8(exchange);
-        self.conn.tx_buffer.writeShortString(routing_key);
-        self.conn.tx_buffer.writeBool(mandatory);
-        self.conn.tx_buffer.writeBool(immediate);
-        self.conn.tx_buffer.updateFrameLength();
-        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
-        self.conn.tx_buffer.reset();
+        conn.tx_buffer.writeU16(reserved_1);
+        conn.tx_buffer.writeArray128U8(exchange);
+        conn.tx_buffer.writeShortString(routing_key);
+        conn.tx_buffer.writeBool(mandatory);
+        conn.tx_buffer.writeBool(immediate);
+        conn.tx_buffer.updateFrameLength();
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
     }
     // METHOD =============================
     pub const RETURN_METHOD = 50;
@@ -1836,23 +1832,23 @@ pub const Basic = struct {
     // METHOD =============================
     pub const GET_METHOD = 70;
     pub fn get_sync(
-        self: *Self,
+        conn: *Connector,
         queue: []u8,
         no_ack: bool,
     ) !void {
-        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.GET_METHOD);
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.GET_METHOD);
         const reserved_1 = 0;
-        self.conn.tx_buffer.writeU16(reserved_1);
-        self.conn.tx_buffer.writeArray128U8(queue);
-        self.conn.tx_buffer.writeBool(no_ack);
-        self.conn.tx_buffer.updateFrameLength();
-        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
-        self.conn.tx_buffer.reset();
+        conn.tx_buffer.writeU16(reserved_1);
+        conn.tx_buffer.writeArray128U8(queue);
+        conn.tx_buffer.writeBool(no_ack);
+        conn.tx_buffer.updateFrameLength();
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
         var received_response = false;
         while (!received_response) {
             const expecting: ClassMethod = .{ .class = BASIC_CLASS, .method = Basic.GET_OK_METHOD };
-            received_response = try self.conn.dispatch(expecting);
+            received_response = try conn.dispatch(expecting);
         }
     }
     // METHOD =============================
@@ -1862,80 +1858,80 @@ pub const Basic = struct {
     // METHOD =============================
     pub const ACK_METHOD = 80;
     pub fn ack_resp(
-        self: *Self,
+        conn: *Connector,
         delivery_tag: u64,
         multiple: bool,
     ) !void {
-        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.ACK_METHOD);
-        self.conn.tx_buffer.writeU64(delivery_tag);
-        self.conn.tx_buffer.writeBool(multiple);
-        self.conn.tx_buffer.updateFrameLength();
-        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
-        self.conn.tx_buffer.reset();
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.ACK_METHOD);
+        conn.tx_buffer.writeU64(delivery_tag);
+        conn.tx_buffer.writeBool(multiple);
+        conn.tx_buffer.updateFrameLength();
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
     }
     // METHOD =============================
     pub const REJECT_METHOD = 90;
     pub fn reject_resp(
-        self: *Self,
+        conn: *Connector,
         delivery_tag: u64,
         requeue: bool,
     ) !void {
-        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.REJECT_METHOD);
-        self.conn.tx_buffer.writeU64(delivery_tag);
-        self.conn.tx_buffer.writeBool(requeue);
-        self.conn.tx_buffer.updateFrameLength();
-        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
-        self.conn.tx_buffer.reset();
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.REJECT_METHOD);
+        conn.tx_buffer.writeU64(delivery_tag);
+        conn.tx_buffer.writeBool(requeue);
+        conn.tx_buffer.updateFrameLength();
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
     }
     // METHOD =============================
     pub const RECOVER_ASYNC_METHOD = 100;
     pub fn recover_async_resp(
-        self: *Self,
+        conn: *Connector,
         requeue: bool,
     ) !void {
-        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.RECOVER_ASYNC_METHOD);
-        self.conn.tx_buffer.writeBool(requeue);
-        self.conn.tx_buffer.updateFrameLength();
-        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
-        self.conn.tx_buffer.reset();
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.RECOVER_ASYNC_METHOD);
+        conn.tx_buffer.writeBool(requeue);
+        conn.tx_buffer.updateFrameLength();
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
     }
     // METHOD =============================
     pub const RECOVER_METHOD = 110;
     pub fn recover_resp(
-        self: *Self,
+        conn: *Connector,
         requeue: bool,
     ) !void {
-        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.RECOVER_METHOD);
-        self.conn.tx_buffer.writeBool(requeue);
-        self.conn.tx_buffer.updateFrameLength();
-        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
-        self.conn.tx_buffer.reset();
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.RECOVER_METHOD);
+        conn.tx_buffer.writeBool(requeue);
+        conn.tx_buffer.updateFrameLength();
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
     }
     // METHOD =============================
     pub const RECOVER_OK_METHOD = 111;
 };
 pub const tx_interface = struct {
     select: ?fn (
-        *Conn,
+        *Connector,
     ) anyerror!void,
     select_ok: ?fn (
-        *Conn,
+        *Connector,
     ) anyerror!void,
     commit: ?fn (
-        *Conn,
+        *Connector,
     ) anyerror!void,
     commit_ok: ?fn (
-        *Conn,
+        *Connector,
     ) anyerror!void,
     rollback: ?fn (
-        *Conn,
+        *Connector,
     ) anyerror!void,
     rollback_ok: ?fn (
-        *Conn,
+        *Connector,
     ) anyerror!void,
 };
 
@@ -1950,22 +1946,21 @@ pub var TX_IMPL = tx_interface{
 
 pub const TX_CLASS = 90; // CLASS
 pub const Tx = struct {
-    conn: *Conn,
     const Self = @This();
     // METHOD =============================
     pub const SELECT_METHOD = 10;
     pub fn select_sync(
-        self: *Self,
+        conn: *Connector,
     ) !void {
-        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(TX_CLASS, Tx.SELECT_METHOD);
-        self.conn.tx_buffer.updateFrameLength();
-        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
-        self.conn.tx_buffer.reset();
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(TX_CLASS, Tx.SELECT_METHOD);
+        conn.tx_buffer.updateFrameLength();
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
         var received_response = false;
         while (!received_response) {
             const expecting: ClassMethod = .{ .class = TX_CLASS, .method = Tx.SELECT_OK_METHOD };
-            received_response = try self.conn.dispatch(expecting);
+            received_response = try conn.dispatch(expecting);
         }
     }
     // METHOD =============================
@@ -1973,17 +1968,17 @@ pub const Tx = struct {
     // METHOD =============================
     pub const COMMIT_METHOD = 20;
     pub fn commit_sync(
-        self: *Self,
+        conn: *Connector,
     ) !void {
-        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(TX_CLASS, Tx.COMMIT_METHOD);
-        self.conn.tx_buffer.updateFrameLength();
-        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
-        self.conn.tx_buffer.reset();
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(TX_CLASS, Tx.COMMIT_METHOD);
+        conn.tx_buffer.updateFrameLength();
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
         var received_response = false;
         while (!received_response) {
             const expecting: ClassMethod = .{ .class = TX_CLASS, .method = Tx.COMMIT_OK_METHOD };
-            received_response = try self.conn.dispatch(expecting);
+            received_response = try conn.dispatch(expecting);
         }
     }
     // METHOD =============================
@@ -1991,17 +1986,17 @@ pub const Tx = struct {
     // METHOD =============================
     pub const ROLLBACK_METHOD = 30;
     pub fn rollback_sync(
-        self: *Self,
+        conn: *Connector,
     ) !void {
-        self.conn.tx_buffer.writeFrameHeader(.Method, 0, 0);
-        self.conn.tx_buffer.writeMethodHeader(TX_CLASS, Tx.ROLLBACK_METHOD);
-        self.conn.tx_buffer.updateFrameLength();
-        const n = try std.os.write(self.conn.file.handle, self.conn.tx_buffer.extent());
-        self.conn.tx_buffer.reset();
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(TX_CLASS, Tx.ROLLBACK_METHOD);
+        conn.tx_buffer.updateFrameLength();
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
         var received_response = false;
         while (!received_response) {
             const expecting: ClassMethod = .{ .class = TX_CLASS, .method = Tx.ROLLBACK_OK_METHOD };
-            received_response = try self.conn.dispatch(expecting);
+            received_response = try conn.dispatch(expecting);
         }
     }
     // METHOD =============================
