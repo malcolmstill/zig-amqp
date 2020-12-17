@@ -39,10 +39,17 @@ pub const Channel = struct {
     }
 
     pub fn basicConsume(self: *Self, name: []const u8, options: Basic.Options, args: ?*Table) !void {
+        var ctag: [32]u8 = undefined;
+        try std.os.getrandom(ctag[0..]);
+
+        for (ctag) |r, i| {
+            ctag[i] = std.math.max(48, std.math.min(122, r));
+        }
+
         try proto.Basic.consume_sync(
             &self.connector,
             name,
-            "ctag1.b21f53e7a21d4dc5a2a6b85deef4aa8d",
+            ctag[0..],
             options.no_local,
             options.no_ack,
             options.exclusive,

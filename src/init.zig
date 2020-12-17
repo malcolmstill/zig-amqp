@@ -57,7 +57,7 @@ fn tune(connector: *Connector, channel_max: u16, frame_max: u32, heartbeat: u16)
     const connection = @fieldParentPtr(Connection, "connector", connector);
     connection.max_channels = channel_max;
 
-    try proto.Connection.tune_ok_resp(connector, @bitSizeOf(u2048)-1, frame_max, heartbeat);
+    try proto.Connection.tune_ok_resp(connector, @bitSizeOf(u2048) - 1, frame_max, heartbeat);
 }
 
 fn open_ok(connector: *Connector) anyerror!void {
@@ -68,7 +68,6 @@ fn channel_close(connector: *Connector, reply_code: u16, reply_text: []const u8,
     // TODO: I've made an assumption here that when the class id is greater than zero
     //       that that counts as supplying the client_id and method_id and that it is
     //       a channel error
-
     try proto.Channel.close_ok_resp(connector);
     if (class_id > 0) {
         return error.ChannelError;
@@ -84,6 +83,10 @@ fn connection_close(connector: *Connector, reply_code: u16, reply_text: []const 
     return error.ChannelClosed;
 }
 
+fn consume_ok(connector: *Connector, consumer_tag: []const u8) anyerror!void {
+    
+}
+
 pub fn init() void {
     proto.CONNECTION_IMPL.start = connection_start;
     proto.CONNECTION_IMPL.tune = tune;
@@ -91,4 +94,5 @@ pub fn init() void {
     proto.CONNECTION_IMPL.close = connection_close;
     proto.CHANNEL_IMPL.open_ok = open_ok;
     proto.CHANNEL_IMPL.close = channel_close;
+    proto.BASIC_IMPL.consume_ok = consume_ok;
 }
