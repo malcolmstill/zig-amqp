@@ -91,7 +91,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const open = CONNECTION_IMPL.open orelse return error.MethodNotImplemented;
                     const virtual_host = conn.rx_buffer.readShortString();
                     const reserved_1 = conn.rx_buffer.readShortString();
-                    const reserved_2 = conn.rx_buffer.readBool();
+                    const bitset0 = conn.rx_buffer.readU8();
+                    const reserved_2 = if (bitset0 & (1 << 0) == 0) true else false;
                     try open(
                         conn,
                         virtual_host,
@@ -168,7 +169,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 // flow
                 20 => {
                     const flow = CHANNEL_IMPL.flow orelse return error.MethodNotImplemented;
-                    const active = conn.rx_buffer.readBool();
+                    const bitset0 = conn.rx_buffer.readU8();
+                    const active = if (bitset0 & (1 << 0) == 0) true else false;
                     try flow(
                         conn,
                         active,
@@ -177,7 +179,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 // flow_ok
                 21 => {
                     const flow_ok = CHANNEL_IMPL.flow_ok orelse return error.MethodNotImplemented;
-                    const active = conn.rx_buffer.readBool();
+                    const bitset0 = conn.rx_buffer.readU8();
+                    const active = if (bitset0 & (1 << 0) == 0) true else false;
                     try flow_ok(
                         conn,
                         active,
@@ -217,11 +220,12 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const reserved_1 = conn.rx_buffer.readU16();
                     const exchange = conn.rx_buffer.readShortString();
                     const tipe = conn.rx_buffer.readShortString();
-                    const passive = conn.rx_buffer.readBool();
-                    const durable = conn.rx_buffer.readBool();
-                    const reserved_2 = conn.rx_buffer.readBool();
-                    const reserved_3 = conn.rx_buffer.readBool();
-                    const no_wait = conn.rx_buffer.readBool();
+                    const bitset0 = conn.rx_buffer.readU8();
+                    const passive = if (bitset0 & (1 << 0) == 0) true else false;
+                    const durable = if (bitset0 & (1 << 1) == 0) true else false;
+                    const reserved_2 = if (bitset0 & (1 << 2) == 0) true else false;
+                    const reserved_3 = if (bitset0 & (1 << 3) == 0) true else false;
+                    const no_wait = if (bitset0 & (1 << 4) == 0) true else false;
                     var arguments = conn.rx_buffer.readTable();
                     try declare(
                         conn,
@@ -245,8 +249,9 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const delete = EXCHANGE_IMPL.delete orelse return error.MethodNotImplemented;
                     const reserved_1 = conn.rx_buffer.readU16();
                     const exchange = conn.rx_buffer.readShortString();
-                    const if_unused = conn.rx_buffer.readBool();
-                    const no_wait = conn.rx_buffer.readBool();
+                    const bitset0 = conn.rx_buffer.readU8();
+                    const if_unused = if (bitset0 & (1 << 0) == 0) true else false;
+                    const no_wait = if (bitset0 & (1 << 1) == 0) true else false;
                     try delete(
                         conn,
                         exchange,
@@ -272,11 +277,12 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const declare = QUEUE_IMPL.declare orelse return error.MethodNotImplemented;
                     const reserved_1 = conn.rx_buffer.readU16();
                     const queue = conn.rx_buffer.readShortString();
-                    const passive = conn.rx_buffer.readBool();
-                    const durable = conn.rx_buffer.readBool();
-                    const exclusive = conn.rx_buffer.readBool();
-                    const auto_delete = conn.rx_buffer.readBool();
-                    const no_wait = conn.rx_buffer.readBool();
+                    const bitset0 = conn.rx_buffer.readU8();
+                    const passive = if (bitset0 & (1 << 0) == 0) true else false;
+                    const durable = if (bitset0 & (1 << 1) == 0) true else false;
+                    const exclusive = if (bitset0 & (1 << 2) == 0) true else false;
+                    const auto_delete = if (bitset0 & (1 << 3) == 0) true else false;
+                    const no_wait = if (bitset0 & (1 << 4) == 0) true else false;
                     var arguments = conn.rx_buffer.readTable();
                     try declare(
                         conn,
@@ -309,7 +315,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const queue = conn.rx_buffer.readShortString();
                     const exchange = conn.rx_buffer.readShortString();
                     const routing_key = conn.rx_buffer.readShortString();
-                    const no_wait = conn.rx_buffer.readBool();
+                    const bitset0 = conn.rx_buffer.readU8();
+                    const no_wait = if (bitset0 & (1 << 0) == 0) true else false;
                     var arguments = conn.rx_buffer.readTable();
                     try bind(
                         conn,
@@ -355,7 +362,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const purge = QUEUE_IMPL.purge orelse return error.MethodNotImplemented;
                     const reserved_1 = conn.rx_buffer.readU16();
                     const queue = conn.rx_buffer.readShortString();
-                    const no_wait = conn.rx_buffer.readBool();
+                    const bitset0 = conn.rx_buffer.readU8();
+                    const no_wait = if (bitset0 & (1 << 0) == 0) true else false;
                     try purge(
                         conn,
                         queue,
@@ -376,9 +384,10 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const delete = QUEUE_IMPL.delete orelse return error.MethodNotImplemented;
                     const reserved_1 = conn.rx_buffer.readU16();
                     const queue = conn.rx_buffer.readShortString();
-                    const if_unused = conn.rx_buffer.readBool();
-                    const if_empty = conn.rx_buffer.readBool();
-                    const no_wait = conn.rx_buffer.readBool();
+                    const bitset0 = conn.rx_buffer.readU8();
+                    const if_unused = if (bitset0 & (1 << 0) == 0) true else false;
+                    const if_empty = if (bitset0 & (1 << 1) == 0) true else false;
+                    const no_wait = if (bitset0 & (1 << 2) == 0) true else false;
                     try delete(
                         conn,
                         queue,
@@ -407,7 +416,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const qos = BASIC_IMPL.qos orelse return error.MethodNotImplemented;
                     const prefetch_size = conn.rx_buffer.readU32();
                     const prefetch_count = conn.rx_buffer.readU16();
-                    const global = conn.rx_buffer.readBool();
+                    const bitset0 = conn.rx_buffer.readU8();
+                    const global = if (bitset0 & (1 << 0) == 0) true else false;
                     try qos(
                         conn,
                         prefetch_size,
@@ -428,10 +438,11 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const reserved_1 = conn.rx_buffer.readU16();
                     const queue = conn.rx_buffer.readShortString();
                     const consumer_tag = conn.rx_buffer.readShortString();
-                    const no_local = conn.rx_buffer.readBool();
-                    const no_ack = conn.rx_buffer.readBool();
-                    const exclusive = conn.rx_buffer.readBool();
-                    const no_wait = conn.rx_buffer.readBool();
+                    const bitset0 = conn.rx_buffer.readU8();
+                    const no_local = if (bitset0 & (1 << 0) == 0) true else false;
+                    const no_ack = if (bitset0 & (1 << 1) == 0) true else false;
+                    const exclusive = if (bitset0 & (1 << 2) == 0) true else false;
+                    const no_wait = if (bitset0 & (1 << 3) == 0) true else false;
                     var arguments = conn.rx_buffer.readTable();
                     try consume(
                         conn,
@@ -457,7 +468,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 30 => {
                     const cancel = BASIC_IMPL.cancel orelse return error.MethodNotImplemented;
                     const consumer_tag = conn.rx_buffer.readShortString();
-                    const no_wait = conn.rx_buffer.readBool();
+                    const bitset0 = conn.rx_buffer.readU8();
+                    const no_wait = if (bitset0 & (1 << 0) == 0) true else false;
                     try cancel(
                         conn,
                         consumer_tag,
@@ -479,8 +491,9 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const reserved_1 = conn.rx_buffer.readU16();
                     const exchange = conn.rx_buffer.readShortString();
                     const routing_key = conn.rx_buffer.readShortString();
-                    const mandatory = conn.rx_buffer.readBool();
-                    const immediate = conn.rx_buffer.readBool();
+                    const bitset0 = conn.rx_buffer.readU8();
+                    const mandatory = if (bitset0 & (1 << 0) == 0) true else false;
+                    const immediate = if (bitset0 & (1 << 1) == 0) true else false;
                     try publish(
                         conn,
                         exchange,
@@ -509,7 +522,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const deliver = BASIC_IMPL.deliver orelse return error.MethodNotImplemented;
                     const consumer_tag = conn.rx_buffer.readShortString();
                     const delivery_tag = conn.rx_buffer.readU64();
-                    const redelivered = conn.rx_buffer.readBool();
+                    const bitset0 = conn.rx_buffer.readU8();
+                    const redelivered = if (bitset0 & (1 << 0) == 0) true else false;
                     const exchange = conn.rx_buffer.readShortString();
                     const routing_key = conn.rx_buffer.readShortString();
                     try deliver(
@@ -526,7 +540,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const get = BASIC_IMPL.get orelse return error.MethodNotImplemented;
                     const reserved_1 = conn.rx_buffer.readU16();
                     const queue = conn.rx_buffer.readShortString();
-                    const no_ack = conn.rx_buffer.readBool();
+                    const bitset0 = conn.rx_buffer.readU8();
+                    const no_ack = if (bitset0 & (1 << 0) == 0) true else false;
                     try get(
                         conn,
                         queue,
@@ -537,7 +552,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 71 => {
                     const get_ok = BASIC_IMPL.get_ok orelse return error.MethodNotImplemented;
                     const delivery_tag = conn.rx_buffer.readU64();
-                    const redelivered = conn.rx_buffer.readBool();
+                    const bitset0 = conn.rx_buffer.readU8();
+                    const redelivered = if (bitset0 & (1 << 0) == 0) true else false;
                     const exchange = conn.rx_buffer.readShortString();
                     const routing_key = conn.rx_buffer.readShortString();
                     const message_count = conn.rx_buffer.readU32();
@@ -562,7 +578,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 80 => {
                     const ack = BASIC_IMPL.ack orelse return error.MethodNotImplemented;
                     const delivery_tag = conn.rx_buffer.readU64();
-                    const multiple = conn.rx_buffer.readBool();
+                    const bitset0 = conn.rx_buffer.readU8();
+                    const multiple = if (bitset0 & (1 << 0) == 0) true else false;
                     try ack(
                         conn,
                         delivery_tag,
@@ -573,7 +590,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 90 => {
                     const reject = BASIC_IMPL.reject orelse return error.MethodNotImplemented;
                     const delivery_tag = conn.rx_buffer.readU64();
-                    const requeue = conn.rx_buffer.readBool();
+                    const bitset0 = conn.rx_buffer.readU8();
+                    const requeue = if (bitset0 & (1 << 0) == 0) true else false;
                     try reject(
                         conn,
                         delivery_tag,
@@ -583,7 +601,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 // recover_async
                 100 => {
                     const recover_async = BASIC_IMPL.recover_async orelse return error.MethodNotImplemented;
-                    const requeue = conn.rx_buffer.readBool();
+                    const bitset0 = conn.rx_buffer.readU8();
+                    const requeue = if (bitset0 & (1 << 0) == 0) true else false;
                     try recover_async(
                         conn,
                         requeue,
@@ -592,7 +611,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 // recover
                 110 => {
                     const recover = BASIC_IMPL.recover orelse return error.MethodNotImplemented;
-                    const requeue = conn.rx_buffer.readBool();
+                    const bitset0 = conn.rx_buffer.readU8();
+                    const requeue = if (bitset0 & (1 << 0) == 0) true else false;
                     try recover(
                         conn,
                         requeue,
@@ -1091,7 +1111,10 @@ pub const Connection = struct {
         const reserved_1 = "";
         conn.tx_buffer.writeShortString(reserved_1);
         const reserved_2 = false;
-        conn.tx_buffer.writeBool(reserved_2);
+        var bitset0: u8 = 0;
+        const _bit: u8 = 1;
+        if (reserved_2) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
+        conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
@@ -1230,7 +1253,10 @@ pub const Channel = struct {
     ) !void {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
         conn.tx_buffer.writeMethodHeader(CHANNEL_CLASS, Channel.FLOW_METHOD);
-        conn.tx_buffer.writeBool(active);
+        var bitset0: u8 = 0;
+        const _bit: u8 = 1;
+        if (active) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
+        conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
@@ -1248,7 +1274,10 @@ pub const Channel = struct {
     ) !void {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
         conn.tx_buffer.writeMethodHeader(CHANNEL_CLASS, Channel.FLOW_OK_METHOD);
-        conn.tx_buffer.writeBool(active);
+        var bitset0: u8 = 0;
+        const _bit: u8 = 1;
+        if (active) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
+        conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
@@ -1340,13 +1369,16 @@ pub const Exchange = struct {
         conn.tx_buffer.writeU16(reserved_1);
         conn.tx_buffer.writeShortString(exchange);
         conn.tx_buffer.writeShortString(tipe);
-        conn.tx_buffer.writeBool(passive);
-        conn.tx_buffer.writeBool(durable);
+        var bitset0: u8 = 0;
+        const _bit: u8 = 1;
+        if (passive) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
+        if (durable) bitset0 |= (_bit << 1) else bitset0 &= ~(_bit << 1);
         const reserved_2 = false;
-        conn.tx_buffer.writeBool(reserved_2);
+        if (reserved_2) bitset0 |= (_bit << 2) else bitset0 &= ~(_bit << 2);
         const reserved_3 = false;
-        conn.tx_buffer.writeBool(reserved_3);
-        conn.tx_buffer.writeBool(no_wait);
+        if (reserved_3) bitset0 |= (_bit << 3) else bitset0 &= ~(_bit << 3);
+        if (no_wait) bitset0 |= (_bit << 4) else bitset0 &= ~(_bit << 4);
+        conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.writeTable(arguments);
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
@@ -1372,8 +1404,11 @@ pub const Exchange = struct {
         const reserved_1 = 0;
         conn.tx_buffer.writeU16(reserved_1);
         conn.tx_buffer.writeShortString(exchange);
-        conn.tx_buffer.writeBool(if_unused);
-        conn.tx_buffer.writeBool(no_wait);
+        var bitset0: u8 = 0;
+        const _bit: u8 = 1;
+        if (if_unused) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
+        if (no_wait) bitset0 |= (_bit << 1) else bitset0 &= ~(_bit << 1);
+        conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
@@ -1479,11 +1514,14 @@ pub const Queue = struct {
         const reserved_1 = 0;
         conn.tx_buffer.writeU16(reserved_1);
         conn.tx_buffer.writeShortString(queue);
-        conn.tx_buffer.writeBool(passive);
-        conn.tx_buffer.writeBool(durable);
-        conn.tx_buffer.writeBool(exclusive);
-        conn.tx_buffer.writeBool(auto_delete);
-        conn.tx_buffer.writeBool(no_wait);
+        var bitset0: u8 = 0;
+        const _bit: u8 = 1;
+        if (passive) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
+        if (durable) bitset0 |= (_bit << 1) else bitset0 &= ~(_bit << 1);
+        if (exclusive) bitset0 |= (_bit << 2) else bitset0 &= ~(_bit << 2);
+        if (auto_delete) bitset0 |= (_bit << 3) else bitset0 &= ~(_bit << 3);
+        if (no_wait) bitset0 |= (_bit << 4) else bitset0 &= ~(_bit << 4);
+        conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.writeTable(arguments);
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
@@ -1513,7 +1551,10 @@ pub const Queue = struct {
         conn.tx_buffer.writeShortString(queue);
         conn.tx_buffer.writeShortString(exchange);
         conn.tx_buffer.writeShortString(routing_key);
-        conn.tx_buffer.writeBool(no_wait);
+        var bitset0: u8 = 0;
+        const _bit: u8 = 1;
+        if (no_wait) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
+        conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.writeTable(arguments);
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
@@ -1566,7 +1607,10 @@ pub const Queue = struct {
         const reserved_1 = 0;
         conn.tx_buffer.writeU16(reserved_1);
         conn.tx_buffer.writeShortString(queue);
-        conn.tx_buffer.writeBool(no_wait);
+        var bitset0: u8 = 0;
+        const _bit: u8 = 1;
+        if (no_wait) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
+        conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
@@ -1592,9 +1636,12 @@ pub const Queue = struct {
         const reserved_1 = 0;
         conn.tx_buffer.writeU16(reserved_1);
         conn.tx_buffer.writeShortString(queue);
-        conn.tx_buffer.writeBool(if_unused);
-        conn.tx_buffer.writeBool(if_empty);
-        conn.tx_buffer.writeBool(no_wait);
+        var bitset0: u8 = 0;
+        const _bit: u8 = 1;
+        if (if_unused) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
+        if (if_empty) bitset0 |= (_bit << 1) else bitset0 &= ~(_bit << 1);
+        if (no_wait) bitset0 |= (_bit << 2) else bitset0 &= ~(_bit << 2);
+        conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
@@ -1736,7 +1783,10 @@ pub const Basic = struct {
         conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.QOS_METHOD);
         conn.tx_buffer.writeU32(prefetch_size);
         conn.tx_buffer.writeU16(prefetch_count);
-        conn.tx_buffer.writeBool(global);
+        var bitset0: u8 = 0;
+        const _bit: u8 = 1;
+        if (global) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
+        conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
@@ -1766,10 +1816,13 @@ pub const Basic = struct {
         conn.tx_buffer.writeU16(reserved_1);
         conn.tx_buffer.writeShortString(queue);
         conn.tx_buffer.writeShortString(consumer_tag);
-        conn.tx_buffer.writeBool(no_local);
-        conn.tx_buffer.writeBool(no_ack);
-        conn.tx_buffer.writeBool(exclusive);
-        conn.tx_buffer.writeBool(no_wait);
+        var bitset0: u8 = 0;
+        const _bit: u8 = 1;
+        if (no_local) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
+        if (no_ack) bitset0 |= (_bit << 1) else bitset0 &= ~(_bit << 1);
+        if (exclusive) bitset0 |= (_bit << 2) else bitset0 &= ~(_bit << 2);
+        if (no_wait) bitset0 |= (_bit << 3) else bitset0 &= ~(_bit << 3);
+        conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.writeTable(arguments);
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
@@ -1792,7 +1845,10 @@ pub const Basic = struct {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
         conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.CANCEL_METHOD);
         conn.tx_buffer.writeShortString(consumer_tag);
-        conn.tx_buffer.writeBool(no_wait);
+        var bitset0: u8 = 0;
+        const _bit: u8 = 1;
+        if (no_wait) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
+        conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
@@ -1819,8 +1875,11 @@ pub const Basic = struct {
         conn.tx_buffer.writeU16(reserved_1);
         conn.tx_buffer.writeShortString(exchange);
         conn.tx_buffer.writeShortString(routing_key);
-        conn.tx_buffer.writeBool(mandatory);
-        conn.tx_buffer.writeBool(immediate);
+        var bitset0: u8 = 0;
+        const _bit: u8 = 1;
+        if (mandatory) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
+        if (immediate) bitset0 |= (_bit << 1) else bitset0 &= ~(_bit << 1);
+        conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
@@ -1841,7 +1900,10 @@ pub const Basic = struct {
         const reserved_1 = 0;
         conn.tx_buffer.writeU16(reserved_1);
         conn.tx_buffer.writeShortString(queue);
-        conn.tx_buffer.writeBool(no_ack);
+        var bitset0: u8 = 0;
+        const _bit: u8 = 1;
+        if (no_ack) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
+        conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
@@ -1865,7 +1927,10 @@ pub const Basic = struct {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
         conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.ACK_METHOD);
         conn.tx_buffer.writeU64(delivery_tag);
-        conn.tx_buffer.writeBool(multiple);
+        var bitset0: u8 = 0;
+        const _bit: u8 = 1;
+        if (multiple) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
+        conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
@@ -1880,7 +1945,10 @@ pub const Basic = struct {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
         conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.REJECT_METHOD);
         conn.tx_buffer.writeU64(delivery_tag);
-        conn.tx_buffer.writeBool(requeue);
+        var bitset0: u8 = 0;
+        const _bit: u8 = 1;
+        if (requeue) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
+        conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
@@ -1893,7 +1961,10 @@ pub const Basic = struct {
     ) !void {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
         conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.RECOVER_ASYNC_METHOD);
-        conn.tx_buffer.writeBool(requeue);
+        var bitset0: u8 = 0;
+        const _bit: u8 = 1;
+        if (requeue) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
+        conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
@@ -1906,7 +1977,10 @@ pub const Basic = struct {
     ) !void {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
         conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.RECOVER_METHOD);
-        conn.tx_buffer.writeBool(requeue);
+        var bitset0: u8 = 0;
+        const _bit: u8 = 1;
+        if (requeue) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
+        conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();

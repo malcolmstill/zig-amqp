@@ -1,6 +1,8 @@
 import xml.etree.ElementTree as Tree
 import sys
 
+BITFIELD_TYPES = ['bit', 'no-ack', 'no-local', 'no-wait', 'redelivered']
+
 def generate(file):
     print(f'const std = @import("std");')
     print(f'const fs = std.fs;')
@@ -43,6 +45,7 @@ def generateLookupMethod(klass):
     for child in klass:
         if child.tag == "method":
             method = child
+            bit_field_count = 0
             method_name = nameClean(method)
             index = method.attrib['index']
             print(f"// {method_name}")
@@ -51,7 +54,14 @@ def generateLookupMethod(klass):
             for child in method:
                 if child.tag == 'field':
                     field = child
-                    print(f"{fieldConstness(field)} {nameClean(field)} = conn.rx_buffer.{generateRead(field)}(); ")
+                    if fieldType(field) in BITFIELD_TYPES:
+                        if bit_field_count % 8 == 0:
+                            print(f"const bitset{bit_field_count//8} = conn.rx_buffer.readU8();")
+                        print(f"{fieldConstness(field)} {nameClean(field)} = if (bitset{bit_field_count//8} & (1 << {bit_field_count}) == 0) true else false;")
+                        bit_field_count += 1
+                    else:
+                        bit_field_count = 0
+                        print(f"{fieldConstness(field)} {nameClean(field)} = conn.rx_buffer.{generateRead(field)}(); ")
             print(f"try {method_name}(conn, ")
             for child in method:
                 if child.tag == 'field':
@@ -181,11 +191,29 @@ def generateClientInitiatedRequest(method, klass, klass_cap, klass_upper):
     print(f"conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);")
     print(f"conn.tx_buffer.writeMethodHeader({klass_upper}_CLASS, {klass_cap}.{method_name}_METHOD);")
     # Generate writes
+    bit_field_count = 0
     for method_child in method:
         if method_child.tag == 'field':
+            field = method_child
             if ('reserved' in method_child.attrib and method_child.attrib['reserved'] == '1'):
                 print(f"const {nameClean(method_child)} = {generateReserved(method_child)};")
-            print(f"conn.tx_buffer.{generateWrite(method_child, nameClean(method_child))};")
+            # What we do depends on the field type
+            if fieldType(field) in BITFIELD_TYPES:
+                if bit_field_count % 8 == 0:
+                    print(f"var bitset{bit_field_count//8}: u8 = 0; const _bit: u8 = 1;")
+                print(f"if ({nameClean(field)}) bitset{bit_field_count//8} |= (_bit << {bit_field_count}) else bitset{bit_field_count//8} &= ~(_bit << {bit_field_count});")
+                # print(f"}}")
+                # if bit_field_count % 8 == 0:
+                #     print(f"conn.tx_buffer.writeU8(bitset{bit_field_count//8});")                
+                bit_field_count += 1
+            else:
+                if bit_field_count > 0:
+                    print(f"conn.tx_buffer.writeU8(bitset{bit_field_count//8});")  
+                bit_field_count = 0
+                print(f"conn.tx_buffer.{generateWrite(method_child, nameClean(method_child))};")
+
+    if bit_field_count > 0:
+        print(f"conn.tx_buffer.writeU8(bitset{bit_field_count//8});")                
     # Send message
     print(f"conn.tx_buffer.updateFrameLength();")
     print(f"const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());")
@@ -206,18 +234,31 @@ def generateClientResponse(method, klass_cap, klass_upper):
     print(f"conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);")
     print(f"conn.tx_buffer.writeMethodHeader({klass_upper}_CLASS, {klass_cap}.{method_name}_METHOD);")
     # Generate writes
+    bit_field_count = 0
     for method_child in method:
         if method_child.tag == 'field':
+            field = method_child
             if ('reserved' in method_child.attrib and method_child.attrib['reserved'] == '1'):
                 print(f"const {nameClean(method_child)} = {generateReserved(method_child)};")
-            print(f"conn.tx_buffer.{generateWrite(method_child, nameClean(method_child))};")
+            # What we do depends on the field type
+            if fieldType(field) in BITFIELD_TYPES:
+                if bit_field_count % 8 == 0:
+                    print(f"var bitset{bit_field_count//8}: u8 = 0; const _bit: u8 = 1;")
+                print(f"if ({nameClean(field)}) bitset{bit_field_count//8} |= (_bit << {bit_field_count}) else bitset{bit_field_count//8} &= ~(_bit << {bit_field_count});")              
+                bit_field_count += 1
+            else:
+                if bit_field_count > 0:
+                    print(f"conn.tx_buffer.writeU8(bitset{bit_field_count//8});")   
+
+                bit_field_count = 0
+                print(f"conn.tx_buffer.{generateWrite(method_child, nameClean(method_child))};")
+
+    if bit_field_count > 0:
+        print(f"conn.tx_buffer.writeU8(bitset{bit_field_count//8});")            
     # Send message
-    print(f"conn.tx_buffer.updateFrameLength();");
-    # print(f"for (conn.tx_buffer.extent()) |x| {{ std.debug.warn(\"0x{{x:0>2}} \", .{{x}}); }}")
-    # print(f"std.debug.warn(\"{{}}\\n\", .{{conn.tx_buffer.extent()}});")
-    # print(f"std.debug.warn(\"{{x}}\\n\", .{{conn.tx_buffer.extent()}});")
+    print(f"conn.tx_buffer.updateFrameLength();")
     print(f"const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());")
-    print(f"conn.tx_buffer.reset();");
+    print(f"conn.tx_buffer.reset();")
     print(f"}}")
 
 def addressOf(field):
@@ -231,12 +272,16 @@ def addressOf(field):
         return '&'
     return ''
 
-def generateRead(field):
+def fieldType(field):
     field_type = None
     if 'domain' in field.attrib:
         field_type = field.attrib['domain']
     if 'type' in field.attrib:
         field_type = field.attrib['type']
+    return field_type
+
+def generateRead(field):
+    field_type = fieldType(field)
 
     if field_type == 'octet':
         return 'readU8'
