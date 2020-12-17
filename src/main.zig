@@ -1,11 +1,4 @@
-const std = @import("std");
-const testing = std.testing;
-
-export fn add(a: i32, b: i32) i32 {
-    return a + b;
-}
-
-test "basic add functionality" {
-    testing.expect(add(3, 7) == 10);
-}
-
+pub const Connection = @import("connection.zig").Connection;
+pub const Queue = @import("queue.zig").Queue;
+pub const Table = @import("table.zig").Table;
+pub const connect = @import("connection.zig").Connection.open;
