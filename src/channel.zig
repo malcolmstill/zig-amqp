@@ -53,10 +53,14 @@ pub const Channel = struct {
 
         std.debug.warn("consume_sync returned\n", .{});
 
+        // TODO: this should be const deliver: Deliver = proto.await_deliver();
         var received_response = false;
         while (!received_response) {
             const expecting: ClassMethod = .{ .class = proto.BASIC_CLASS, .method = proto.Basic.DELIVER_METHOD };
             received_response = try self.connector.dispatch(expecting);
         }
+
+        _ = try self.connector.dispatch(null);
+        _ = try self.connector.dispatch(null);
     }
 };

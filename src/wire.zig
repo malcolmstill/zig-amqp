@@ -127,7 +127,6 @@ pub const WireBuffer = struct {
     }
 
     pub fn readMethodHeader(self: *Self) !MethodHeader {
-        if (self.mem.len - self.head < @sizeOf(MethodHeader)) return error.MethodHeaderReadFailure;
         const class = self.readU16();
         const method = self.readU16();
 
@@ -140,6 +139,32 @@ pub const WireBuffer = struct {
     pub fn writeMethodHeader(self: *Self, class: u16, method: u16) void {
         self.writeU16(class);
         self.writeU16(method);
+    }
+
+    pub fn readHeader(self: *Self, frame_size: usize) !Header {
+        const class = self.readU16();
+        const weight = self.readU16();
+        const body_size = self.readU64();
+        const property_flags = self.readU16();
+        const properties = self.mem[self.head..self.head+(frame_size-14)];
+        self.head += (frame_size - 14);
+        try self.readEOF();
+
+        return Header {
+            .class = class,
+            .weight = weight,
+            .body_size = body_size,
+            .property_flags = property_flags,
+            .properties = properties,
+        };
+    }
+
+    pub fn readBody(self: *Self, frame_size: usize) ![]u8 {
+        const body = self.mem[self.head..self.head+frame_size];
+        self.head += frame_size;
+        try self.readEOF();
+
+        return body;
     }
 
     pub fn readU8(self: *Self) u8 {
@@ -318,4 +343,13 @@ const FrameType = enum(u8) {
 const MethodHeader = struct {
     class: u16 = 0,
     method: u16 = 0,
+};
+
+const Header = struct {
+    class: u16 = 0,
+    weight: u16 = 0,
+    body_size: u64 = 0,
+    property_flags: u16 = 0,
+    // TODO: I don't understand the properties field
+    properties: []u8 = undefined,
 };

@@ -59,9 +59,8 @@ pub const Connector = struct {
                     if (std.builtin.mode == .Debug) std.debug.warn("Got heartbeat\n", .{});
                     return false;
                 },
-                else => {
-                    return false;
-                },
+                .Header => return self.dispatchHeader(header.size),
+                .Body => return self.dispatchBody(header.size),
             }
         }
 
@@ -118,6 +117,17 @@ pub const Connector = struct {
         // const connection: *proto.Connection = @fieldParentPtr(proto.Connection, "conn", self);
         try proto.dispatchCallback(self, class, method);
         return sync_resp_ok;
+    }
+
+    fn dispatchHeader(self: *Self, frame_size: usize) !bool {
+        const header = try self.rx_buffer.readHeader(frame_size);
+        return false;
+    }
+
+    fn dispatchBody(self: *Self, frame_size: usize) bool {
+        const body = self.rx_buffer.readBody(frame_size);
+        std.debug.warn("body: {}\n", .{body});
+        return false;
     }
 };
 
