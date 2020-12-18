@@ -42,11 +42,13 @@ def generateLookup(amqp):
 def generateLookupMethod(klass):
     print(f"switch (method) {{")
     class_name_upper = nameCleanUpper(klass)
+    class_name_cap = nameCleanCap(klass)
     for child in klass:
         if child.tag == "method":
             method = child
             bit_field_count = 0
             method_name = nameClean(method)
+            method_name_cap = nameCleanCap(method)
             index = method.attrib['index']
             print(f"// {method_name}")
             print(f"{index} => {{")
@@ -62,6 +64,8 @@ def generateLookupMethod(klass):
                     else:
                         bit_field_count = 0
                         print(f"{fieldConstness(field)} {nameClean(field)} = conn.rx_buffer.{generateRead(field)}(); ")
+            print(f"try conn.rx_buffer.readEOF();")
+            print(f"if (std.builtin.mode == .Debug) std.debug.warn(\"{class_name_cap}.{method_name_cap}\\n\", .{{}});")
             print(f"try {method_name}(conn, ")
             for child in method:
                 if child.tag == 'field':

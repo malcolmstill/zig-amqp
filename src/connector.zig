@@ -26,28 +26,42 @@ pub const Connector = struct {
     // (expected_response supplied), if we receive an asynchronous response we dispatch it
     // but return true.
     pub fn dispatch(self: *Self, expected_response: ?ClassMethod) !bool {
-        const n = try os.read(self.file.handle, self.rx_buffer.mem[0..]);
+        // If we don't have any data (and we're dispatching so we expect data)
+        // block on read
+        // I don't think this is right, if we have a partial read, we'll never
+        // read more data
+        if (!self.rx_buffer.frameReady()) {
+            const n = try os.read(self.file.handle, self.rx_buffer.remaining());
+            self.rx_buffer.incrementEnd(n);
+        }
         self.rx_buffer.reset();
         self.tx_buffer.reset();
 
-        // 1. Attempt to read a frame header
-        const header = try self.rx_buffer.readFrameHeader();
+        // self.rx_buffer.printSpan();
+        defer self.rx_buffer.shift();
 
-        switch (header.@"type") {
-            // TODO: if we have a failure here, we probably still want to
-            //       copy further frames that exist to the front of the buffer
-            //       so they can be processed
-            .Method => {
-                return self.dispatchMethod(expected_response);
-            },
-            .Heartbeat => {
-                if (std.builtin.mode == .Debug) std.debug.warn("Got heartbeat\n", .{});
-                return false;
-            },
-            else => {
-                return false;
-            },
+        while (self.rx_buffer.head < self.rx_buffer.end) : ( i += 1 ) {
+            // 1. Attempt to read a frame header
+            const header = try self.rx_buffer.readFrameHeader();
+
+            switch (header.@"type") {
+                // TODO: if we have a failure here, we probably still want to
+                //       copy further frames that exist to the front of the buffer
+                //       so they can be processed
+                .Method => {
+                    return self.dispatchMethod(expected_response);
+                },
+                .Heartbeat => {
+                    if (std.builtin.mode == .Debug) std.debug.warn("Got heartbeat\n", .{});
+                    return false;
+                },
+                else => {
+                    return false;
+                },
+            }
         }
+
+        return false;
     }
 
     fn dispatchMethod(self: *Self, expected_response: ?ClassMethod) !bool {
@@ -103,6 +117,7 @@ pub const Connector = struct {
     }
 };
 
+// TODO: This maybe needs to contain a channel id too
 pub const ClassMethod = struct {
     class: u16 = 0,
     method: u16 = 0,

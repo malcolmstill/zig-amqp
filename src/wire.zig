@@ -1,6 +1,7 @@
 // A WireBuffer is an abstraction over a slice that knows how
 // to read and write the AMQP messages
 const std = @import("std");
+const mem = std.mem;
 const proto = @import("protocol.zig");
 const Table = @import("table.zig").Table;
 
@@ -9,7 +10,8 @@ const Table = @import("table.zig").Table;
 pub const WireBuffer = struct {
     // the current position in the buffer
     mem: []u8 = undefined,
-    head: usize = 0, // TODO: do we even need head? Can we just update mem?
+    head: usize = 0, // current reading position
+    end: usize = 0,
 
     const Self = @This();
 
@@ -17,7 +19,16 @@ pub const WireBuffer = struct {
         return WireBuffer {
             .mem = slice,
             .head = 0,
+            .end = 0,
         };
+    }
+
+    pub fn printSpan(self: *Self) void {
+        for (self.mem[self.head..self.end]) |byte, i| {
+            std.debug.warn("{x:0>2}", .{byte});
+            if ((i + 1) % 8 == 0) std.debug.warn("\n", .{}) else std.debug.warn(" ", .{});
+        }
+        std.debug.warn("\n", .{});
     }
 
     // move head back to beginning of buffer
@@ -25,8 +36,39 @@ pub const WireBuffer = struct {
         self.head = 0;
     }
 
+    // Return slice of data between head and end
+    pub fn span(self: *Self) []u8 {
+        return self.mem[self.head..self.end];
+    }
+
+    // shift moves data between head and end to the front of mem
+    pub fn shift(self: *Self) void {
+        const new_end = self.end - self.head;
+        mem.copy(u8, self.mem[0..new_end], self.mem[self.head..self.end]);
+        self.head = 0;
+        self.end = new_end;
+    }
+
+    // seek: move the reading `head` to a particular location
+    pub fn seek(self: *Self, position: usize) !void {
+        if (position > self.men.len - 1) return error.SeekOutOfBounds;
+        self.head = position;
+    }
+
+    // Returns a slice of everything between the start of mem and head
     pub fn extent(self: *Self) []u8 {
         return self.mem[0..self.head];
+    }
+
+    // This doesn't return an error because we should use this after
+    // reading into self.remaining() which already bounds amount.
+    pub fn incrementEnd(self: *Self, amount: usize) void {
+        self.end += amount;
+    }
+
+    // Returns a slice of everthing between end and the end of mem
+    pub fn remaining(self: *Self) []u8 {
+        return self.mem[self.end..];
     }
 
     pub fn is_more_data(self: *Self) bool {
@@ -34,7 +76,7 @@ pub const WireBuffer = struct {
     }
 
     pub fn readFrameHeader(self: *Self) !FrameHeader {
-        if (self.mem.len - self.head < @sizeOf(FrameHeader)) return error.FrameHeaderReadFailure;
+        if (self.end - self.head < @sizeOf(FrameHeader)) return error.FrameHeaderReadFailure;
         const frame_type = self.readU8();
         const channel = self.readU16();
         const size = self.readU32();
@@ -45,6 +87,28 @@ pub const WireBuffer = struct {
             .channel = channel,
             .size = size,
         };
+    }
+
+    // Returns true if there is enough data read for
+    // a full frame
+    pub fn frameReady(self: *Self) bool {
+        const save_head = self.head;
+        const frame_header = self.readFrameHeader() catch |err| {
+            switch (err) {
+                error.FrameHeaderReadFailure => return false,
+            }
+        };
+        if ((self.end - save_head) >= (8 + frame_header.size)) {
+            return true;
+        } else {
+            return false;
+        }
+        self.head = save_head;
+    }
+
+    pub fn readEOF(self: *Self) !void {
+        const byte = self.readU8();
+        if (byte != 0xCE) return error.ExpectedEOF;
     }
 
     pub fn writeFrameHeader(self: *Self, frame_type: FrameType, channel: u16, size: u32) void {

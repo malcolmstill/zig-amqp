@@ -18,6 +18,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     var server_properties = conn.rx_buffer.readTable();
                     const mechanisms = conn.rx_buffer.readLongString();
                     const locales = conn.rx_buffer.readLongString();
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Connection.Start\n", .{});
                     try start(
                         conn,
                         version_major,
@@ -34,6 +36,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const mechanism = conn.rx_buffer.readShortString();
                     const response = conn.rx_buffer.readLongString();
                     const locale = conn.rx_buffer.readShortString();
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Connection.Start_ok\n", .{});
                     try start_ok(
                         conn,
                         &client_properties,
@@ -46,6 +50,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 20 => {
                     const secure = CONNECTION_IMPL.secure orelse return error.MethodNotImplemented;
                     const challenge = conn.rx_buffer.readLongString();
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Connection.Secure\n", .{});
                     try secure(
                         conn,
                         challenge,
@@ -55,6 +61,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 21 => {
                     const secure_ok = CONNECTION_IMPL.secure_ok orelse return error.MethodNotImplemented;
                     const response = conn.rx_buffer.readLongString();
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Connection.Secure_ok\n", .{});
                     try secure_ok(
                         conn,
                         response,
@@ -66,6 +74,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const channel_max = conn.rx_buffer.readU16();
                     const frame_max = conn.rx_buffer.readU32();
                     const heartbeat = conn.rx_buffer.readU16();
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Connection.Tune\n", .{});
                     try tune(
                         conn,
                         channel_max,
@@ -79,6 +89,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const channel_max = conn.rx_buffer.readU16();
                     const frame_max = conn.rx_buffer.readU32();
                     const heartbeat = conn.rx_buffer.readU16();
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Connection.Tune_ok\n", .{});
                     try tune_ok(
                         conn,
                         channel_max,
@@ -93,6 +105,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const reserved_1 = conn.rx_buffer.readShortString();
                     const bitset0 = conn.rx_buffer.readU8();
                     const reserved_2 = if (bitset0 & (1 << 0) == 0) true else false;
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Connection.Open\n", .{});
                     try open(
                         conn,
                         virtual_host,
@@ -102,6 +116,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 41 => {
                     const open_ok = CONNECTION_IMPL.open_ok orelse return error.MethodNotImplemented;
                     const reserved_1 = conn.rx_buffer.readShortString();
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Connection.Open_ok\n", .{});
                     try open_ok(
                         conn,
                     );
@@ -113,6 +129,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const reply_text = conn.rx_buffer.readShortString();
                     const class_id = conn.rx_buffer.readU16();
                     const method_id = conn.rx_buffer.readU16();
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Connection.Close\n", .{});
                     try close(
                         conn,
                         reply_code,
@@ -124,6 +142,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 // close_ok
                 51 => {
                     const close_ok = CONNECTION_IMPL.close_ok orelse return error.MethodNotImplemented;
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Connection.Close_ok\n", .{});
                     try close_ok(
                         conn,
                     );
@@ -132,6 +152,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 60 => {
                     const blocked = CONNECTION_IMPL.blocked orelse return error.MethodNotImplemented;
                     const reason = conn.rx_buffer.readShortString();
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Connection.Blocked\n", .{});
                     try blocked(
                         conn,
                         reason,
@@ -140,6 +162,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 // unblocked
                 61 => {
                     const unblocked = CONNECTION_IMPL.unblocked orelse return error.MethodNotImplemented;
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Connection.Unblocked\n", .{});
                     try unblocked(
                         conn,
                     );
@@ -154,6 +178,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 10 => {
                     const open = CHANNEL_IMPL.open orelse return error.MethodNotImplemented;
                     const reserved_1 = conn.rx_buffer.readShortString();
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Channel.Open\n", .{});
                     try open(
                         conn,
                     );
@@ -162,6 +188,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 11 => {
                     const open_ok = CHANNEL_IMPL.open_ok orelse return error.MethodNotImplemented;
                     const reserved_1 = conn.rx_buffer.readLongString();
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Channel.Open_ok\n", .{});
                     try open_ok(
                         conn,
                     );
@@ -171,6 +199,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const flow = CHANNEL_IMPL.flow orelse return error.MethodNotImplemented;
                     const bitset0 = conn.rx_buffer.readU8();
                     const active = if (bitset0 & (1 << 0) == 0) true else false;
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Channel.Flow\n", .{});
                     try flow(
                         conn,
                         active,
@@ -181,6 +211,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const flow_ok = CHANNEL_IMPL.flow_ok orelse return error.MethodNotImplemented;
                     const bitset0 = conn.rx_buffer.readU8();
                     const active = if (bitset0 & (1 << 0) == 0) true else false;
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Channel.Flow_ok\n", .{});
                     try flow_ok(
                         conn,
                         active,
@@ -193,6 +225,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const reply_text = conn.rx_buffer.readShortString();
                     const class_id = conn.rx_buffer.readU16();
                     const method_id = conn.rx_buffer.readU16();
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Channel.Close\n", .{});
                     try close(
                         conn,
                         reply_code,
@@ -204,6 +238,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 // close_ok
                 41 => {
                     const close_ok = CHANNEL_IMPL.close_ok orelse return error.MethodNotImplemented;
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Channel.Close_ok\n", .{});
                     try close_ok(
                         conn,
                     );
@@ -227,6 +263,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const reserved_3 = if (bitset0 & (1 << 3) == 0) true else false;
                     const no_wait = if (bitset0 & (1 << 4) == 0) true else false;
                     var arguments = conn.rx_buffer.readTable();
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Exchange.Declare\n", .{});
                     try declare(
                         conn,
                         exchange,
@@ -240,6 +278,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 // declare_ok
                 11 => {
                     const declare_ok = EXCHANGE_IMPL.declare_ok orelse return error.MethodNotImplemented;
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Exchange.Declare_ok\n", .{});
                     try declare_ok(
                         conn,
                     );
@@ -252,6 +292,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const bitset0 = conn.rx_buffer.readU8();
                     const if_unused = if (bitset0 & (1 << 0) == 0) true else false;
                     const no_wait = if (bitset0 & (1 << 1) == 0) true else false;
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Exchange.Delete\n", .{});
                     try delete(
                         conn,
                         exchange,
@@ -262,6 +304,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 // delete_ok
                 21 => {
                     const delete_ok = EXCHANGE_IMPL.delete_ok orelse return error.MethodNotImplemented;
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Exchange.Delete_ok\n", .{});
                     try delete_ok(
                         conn,
                     );
@@ -284,6 +328,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const auto_delete = if (bitset0 & (1 << 3) == 0) true else false;
                     const no_wait = if (bitset0 & (1 << 4) == 0) true else false;
                     var arguments = conn.rx_buffer.readTable();
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Queue.Declare\n", .{});
                     try declare(
                         conn,
                         queue,
@@ -301,6 +347,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const queue = conn.rx_buffer.readShortString();
                     const message_count = conn.rx_buffer.readU32();
                     const consumer_count = conn.rx_buffer.readU32();
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Queue.Declare_ok\n", .{});
                     try declare_ok(
                         conn,
                         queue,
@@ -318,6 +366,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const bitset0 = conn.rx_buffer.readU8();
                     const no_wait = if (bitset0 & (1 << 0) == 0) true else false;
                     var arguments = conn.rx_buffer.readTable();
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Queue.Bind\n", .{});
                     try bind(
                         conn,
                         queue,
@@ -330,6 +380,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 // bind_ok
                 21 => {
                     const bind_ok = QUEUE_IMPL.bind_ok orelse return error.MethodNotImplemented;
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Queue.Bind_ok\n", .{});
                     try bind_ok(
                         conn,
                     );
@@ -342,6 +394,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const exchange = conn.rx_buffer.readShortString();
                     const routing_key = conn.rx_buffer.readShortString();
                     var arguments = conn.rx_buffer.readTable();
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Queue.Unbind\n", .{});
                     try unbind(
                         conn,
                         queue,
@@ -353,6 +407,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 // unbind_ok
                 51 => {
                     const unbind_ok = QUEUE_IMPL.unbind_ok orelse return error.MethodNotImplemented;
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Queue.Unbind_ok\n", .{});
                     try unbind_ok(
                         conn,
                     );
@@ -364,6 +420,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const queue = conn.rx_buffer.readShortString();
                     const bitset0 = conn.rx_buffer.readU8();
                     const no_wait = if (bitset0 & (1 << 0) == 0) true else false;
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Queue.Purge\n", .{});
                     try purge(
                         conn,
                         queue,
@@ -374,6 +432,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 31 => {
                     const purge_ok = QUEUE_IMPL.purge_ok orelse return error.MethodNotImplemented;
                     const message_count = conn.rx_buffer.readU32();
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Queue.Purge_ok\n", .{});
                     try purge_ok(
                         conn,
                         message_count,
@@ -388,6 +448,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const if_unused = if (bitset0 & (1 << 0) == 0) true else false;
                     const if_empty = if (bitset0 & (1 << 1) == 0) true else false;
                     const no_wait = if (bitset0 & (1 << 2) == 0) true else false;
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Queue.Delete\n", .{});
                     try delete(
                         conn,
                         queue,
@@ -400,6 +462,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 41 => {
                     const delete_ok = QUEUE_IMPL.delete_ok orelse return error.MethodNotImplemented;
                     const message_count = conn.rx_buffer.readU32();
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Queue.Delete_ok\n", .{});
                     try delete_ok(
                         conn,
                         message_count,
@@ -418,6 +482,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const prefetch_count = conn.rx_buffer.readU16();
                     const bitset0 = conn.rx_buffer.readU8();
                     const global = if (bitset0 & (1 << 0) == 0) true else false;
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Basic.Qos\n", .{});
                     try qos(
                         conn,
                         prefetch_size,
@@ -428,6 +494,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 // qos_ok
                 11 => {
                     const qos_ok = BASIC_IMPL.qos_ok orelse return error.MethodNotImplemented;
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Basic.Qos_ok\n", .{});
                     try qos_ok(
                         conn,
                     );
@@ -444,6 +512,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const exclusive = if (bitset0 & (1 << 2) == 0) true else false;
                     const no_wait = if (bitset0 & (1 << 3) == 0) true else false;
                     var arguments = conn.rx_buffer.readTable();
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Basic.Consume\n", .{});
                     try consume(
                         conn,
                         queue,
@@ -459,6 +529,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 21 => {
                     const consume_ok = BASIC_IMPL.consume_ok orelse return error.MethodNotImplemented;
                     const consumer_tag = conn.rx_buffer.readShortString();
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Basic.Consume_ok\n", .{});
                     try consume_ok(
                         conn,
                         consumer_tag,
@@ -470,6 +542,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const consumer_tag = conn.rx_buffer.readShortString();
                     const bitset0 = conn.rx_buffer.readU8();
                     const no_wait = if (bitset0 & (1 << 0) == 0) true else false;
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Basic.Cancel\n", .{});
                     try cancel(
                         conn,
                         consumer_tag,
@@ -480,6 +554,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 31 => {
                     const cancel_ok = BASIC_IMPL.cancel_ok orelse return error.MethodNotImplemented;
                     const consumer_tag = conn.rx_buffer.readShortString();
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Basic.Cancel_ok\n", .{});
                     try cancel_ok(
                         conn,
                         consumer_tag,
@@ -494,6 +570,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const bitset0 = conn.rx_buffer.readU8();
                     const mandatory = if (bitset0 & (1 << 0) == 0) true else false;
                     const immediate = if (bitset0 & (1 << 1) == 0) true else false;
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Basic.Publish\n", .{});
                     try publish(
                         conn,
                         exchange,
@@ -509,6 +587,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const reply_text = conn.rx_buffer.readShortString();
                     const exchange = conn.rx_buffer.readShortString();
                     const routing_key = conn.rx_buffer.readShortString();
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Basic.Return\n", .{});
                     try @"return"(
                         conn,
                         reply_code,
@@ -526,6 +606,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const redelivered = if (bitset0 & (1 << 0) == 0) true else false;
                     const exchange = conn.rx_buffer.readShortString();
                     const routing_key = conn.rx_buffer.readShortString();
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Basic.Deliver\n", .{});
                     try deliver(
                         conn,
                         consumer_tag,
@@ -542,6 +624,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const queue = conn.rx_buffer.readShortString();
                     const bitset0 = conn.rx_buffer.readU8();
                     const no_ack = if (bitset0 & (1 << 0) == 0) true else false;
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Basic.Get\n", .{});
                     try get(
                         conn,
                         queue,
@@ -557,6 +641,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const exchange = conn.rx_buffer.readShortString();
                     const routing_key = conn.rx_buffer.readShortString();
                     const message_count = conn.rx_buffer.readU32();
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Basic.Get_ok\n", .{});
                     try get_ok(
                         conn,
                         delivery_tag,
@@ -570,6 +656,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 72 => {
                     const get_empty = BASIC_IMPL.get_empty orelse return error.MethodNotImplemented;
                     const reserved_1 = conn.rx_buffer.readShortString();
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Basic.Get_empty\n", .{});
                     try get_empty(
                         conn,
                     );
@@ -580,6 +668,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const delivery_tag = conn.rx_buffer.readU64();
                     const bitset0 = conn.rx_buffer.readU8();
                     const multiple = if (bitset0 & (1 << 0) == 0) true else false;
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Basic.Ack\n", .{});
                     try ack(
                         conn,
                         delivery_tag,
@@ -592,6 +682,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const delivery_tag = conn.rx_buffer.readU64();
                     const bitset0 = conn.rx_buffer.readU8();
                     const requeue = if (bitset0 & (1 << 0) == 0) true else false;
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Basic.Reject\n", .{});
                     try reject(
                         conn,
                         delivery_tag,
@@ -603,6 +695,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const recover_async = BASIC_IMPL.recover_async orelse return error.MethodNotImplemented;
                     const bitset0 = conn.rx_buffer.readU8();
                     const requeue = if (bitset0 & (1 << 0) == 0) true else false;
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Basic.Recover_async\n", .{});
                     try recover_async(
                         conn,
                         requeue,
@@ -613,6 +707,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                     const recover = BASIC_IMPL.recover orelse return error.MethodNotImplemented;
                     const bitset0 = conn.rx_buffer.readU8();
                     const requeue = if (bitset0 & (1 << 0) == 0) true else false;
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Basic.Recover\n", .{});
                     try recover(
                         conn,
                         requeue,
@@ -621,6 +717,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 // recover_ok
                 111 => {
                     const recover_ok = BASIC_IMPL.recover_ok orelse return error.MethodNotImplemented;
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Basic.Recover_ok\n", .{});
                     try recover_ok(
                         conn,
                     );
@@ -634,6 +732,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 // select
                 10 => {
                     const select = TX_IMPL.select orelse return error.MethodNotImplemented;
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Tx.Select\n", .{});
                     try select(
                         conn,
                     );
@@ -641,6 +741,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 // select_ok
                 11 => {
                     const select_ok = TX_IMPL.select_ok orelse return error.MethodNotImplemented;
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Tx.Select_ok\n", .{});
                     try select_ok(
                         conn,
                     );
@@ -648,6 +750,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 // commit
                 20 => {
                     const commit = TX_IMPL.commit orelse return error.MethodNotImplemented;
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Tx.Commit\n", .{});
                     try commit(
                         conn,
                     );
@@ -655,6 +759,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 // commit_ok
                 21 => {
                     const commit_ok = TX_IMPL.commit_ok orelse return error.MethodNotImplemented;
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Tx.Commit_ok\n", .{});
                     try commit_ok(
                         conn,
                     );
@@ -662,6 +768,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 // rollback
                 30 => {
                     const rollback = TX_IMPL.rollback orelse return error.MethodNotImplemented;
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Tx.Rollback\n", .{});
                     try rollback(
                         conn,
                     );
@@ -669,6 +777,8 @@ pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
                 // rollback_ok
                 31 => {
                     const rollback_ok = TX_IMPL.rollback_ok orelse return error.MethodNotImplemented;
+                    try conn.rx_buffer.readEOF();
+                    if (std.builtin.mode == .Debug) std.debug.warn("Tx.Rollback_ok\n", .{});
                     try rollback_ok(
                         conn,
                     );

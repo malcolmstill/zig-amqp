@@ -83,8 +83,17 @@ fn connection_close(connector: *Connector, reply_code: u16, reply_text: []const 
     return error.ChannelClosed;
 }
 
-fn consume_ok(connector: *Connector, consumer_tag: []const u8) anyerror!void {
-    
+fn consume_ok(connector: *Connector, consumer_tag: []const u8) anyerror!void {}
+
+fn deliver(
+    connector: *Connector,
+    consumer_tag: []const u8,
+    delivery_tag: u64,
+    redelivered: bool,
+    exchange: []const u8,
+    routing_key: []const u8,
+) anyerror!void {
+    std.debug.warn("consumer tag: {}, delivery tag: {}\n", .{consumer_tag, delivery_tag});
 }
 
 pub fn init() void {
@@ -95,4 +104,5 @@ pub fn init() void {
     proto.CHANNEL_IMPL.open_ok = open_ok;
     proto.CHANNEL_IMPL.close = channel_close;
     proto.BASIC_IMPL.consume_ok = consume_ok;
+    proto.BASIC_IMPL.deliver = deliver;
 }
