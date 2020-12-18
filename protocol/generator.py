@@ -219,6 +219,8 @@ def generateMethodFunction(parsed, class_name, method):
     if method['synchronous'] and method['has_response']:
         # 1. We intiate a call, we then wait upon an expected synchronous response
         generateSynchronousMethodFunction(parsed, class_name, method)
+    else:
+        generateAsynchronousMethodFunction(parsed, class_name, method)
 
     generateAwaitMethod(parsed, class_name, method)
 
@@ -227,7 +229,7 @@ def generateSynchronousMethodFunction(parsed, class_name, method):
     klass_upper = nameCleanUpper(class_name)
     klass_cap = nameCleanCap(class_name)
 
-    print(f"pub fn {nameClean(method_name)}_sync(conn: *Connector,")
+    print(f"pub fn {nameCleanSnake(method_name)}Sync(conn: *Connector,")
     # Write out function args
     for field_name, field in method['fields'].items():
         if not field['reserved']:
@@ -277,9 +279,10 @@ def generateAwaitMethod(parsed, class_name, method):
     print(f"pub fn await{nameCleanCamel(method['name'])}(connector: *Connector) !{nameCleanCamel(method['name'])} {{")
     # print(f"const {method_name} = {class_name_upper}_IMPL.{method_name} orelse return error.MethodNotImplemented;")
 
-    print(f"const frame_header = try conn.getFrameHeader();")
 
     print(f"while (true) {{")
+    print(f"while (self.rx_buffer.frameReady()) {{")
+    print(f"const frame_header = try conn.getFrameHeader();")
 
     print(f"switch (header.@\"type\") {{")
     print(f"    .Method => {{")
@@ -320,7 +323,9 @@ def generateAwaitMethod(parsed, class_name, method):
 
     print(f"if (method_header.class == CHANNEL_CLASS and method_header.method == Channel.CANCEL_METHOD) {{")
     print(f"try Channel.close_ok_async(conn);")
-    print(f"}}")    
+    print(f"}}")
+
+    print(f"return error.ImplementAsyncHandle;")
     # End else:
     print(f"}}")
 
@@ -334,11 +339,52 @@ def generateAwaitMethod(parsed, class_name, method):
     print(f"            .Header => try conn.dispatchHeader(frame_header.size),")
     print(f"            .Body => try conn.dispatchBody(frame_header.size),")
     print(f"        }}")
+    # End while(frameReady)
+    print(f"}}")
+    # End while(true)
     print(f"}}")
     print(f"unreachable;")
     print(f"}}")
 
+def generateAsynchronousMethodFunction(parsed, class_name, method):
+    method_name = nameCleanUpper(method['name'])
+    klass_upper = nameCleanUpper(class_name)
+    klass_cap = nameCleanCap(class_name)
 
+    print(f"pub fn {nameCleanSnake(method['name'])}Async(conn: *Connector,")
+    # Write out function args
+    for field_name, field in method['fields'].items():
+        if not field['reserved']:
+            print(f"{nameClean(field_name)}: {AMQP_TO_ZIG[typeLookup(parsed, field['domain'])]}, ", end = '')
+    print(f") !void {{")
+    # Send message
+    print(f"conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);")
+    print(f"conn.tx_buffer.writeMethodHeader({klass_upper}_CLASS, {klass_cap}.{nameCleanUpper(method_name)}_METHOD);")
+    # Generate writes
+    bit_field_count = 0
+    for field_name, field in method['fields'].items():
+        if field['reserved']:
+            print(f"const {nameClean(field['name'])} = {RESERVED[typeLookup(parsed, field['domain'])]};")
+        # What we do depends on the field type
+        if typeLookup(parsed, field['domain']) == "bit":
+            if bit_field_count % 8 == 0:
+                print(f"var bitset{bit_field_count//8}: u8 = 0; const _bit: u8 = 1;")
+            print(f"if ({nameClean(field['name'])}) bitset{bit_field_count//8} |= (_bit << {bit_field_count}) else bitset{bit_field_count//8} &= ~(_bit << {bit_field_count});")               
+            bit_field_count += 1
+        else:
+            if bit_field_count > 0:
+                print(f"conn.tx_buffer.writeU8(bitset{bit_field_count//8});")  
+            bit_field_count = 0
+            print(f"conn.tx_buffer.{WRITES[typeLookup(parsed, field['domain'])]}({nameClean(field['name'])});")
+
+    if bit_field_count > 0:
+        print(f"conn.tx_buffer.writeU8(bitset{bit_field_count//8});")                
+    # Send message
+    print(f"conn.tx_buffer.updateFrameLength();")
+    print(f"const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());")
+    print(f"conn.tx_buffer.reset();")
+    print(f"if (std.builtin.mode == .Debug) std.debug.warn(\"{klass_cap}.{nameCleanCap(method_name)} ->\\n\", .{{}});")
+    print(f"}}")
 
 
 
@@ -759,5 +805,9 @@ def nameCleanCap(name):
 def nameCleanCamel(name):
     name = ''.join([x.capitalize() for x in name.split('-')])
     return name
+
+def nameCleanSnake(name):
+    return ''.join([x if i == 0 else x.capitalize() for i, x in enumerate(name.split('-'))])
+
 
 generate(sys.argv[1])
