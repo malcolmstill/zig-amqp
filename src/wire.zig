@@ -36,23 +36,12 @@ pub const WireBuffer = struct {
         self.head = 0;
     }
 
-    // Return slice of data between head and end
-    pub fn span(self: *Self) []u8 {
-        return self.mem[self.head..self.end];
-    }
-
     // shift moves data between head and end to the front of mem
     pub fn shift(self: *Self) void {
         const new_end = self.end - self.head;
         mem.copy(u8, self.mem[0..new_end], self.mem[self.head..self.end]);
         self.head = 0;
         self.end = new_end;
-    }
-
-    // seek: move the reading `head` to a particular location
-    pub fn seek(self: *Self, position: usize) !void {
-        if (position > self.men.len - 1) return error.SeekOutOfBounds;
-        self.head = position;
     }
 
     // Returns a slice of everything between the start of mem and head
