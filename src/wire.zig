@@ -93,17 +93,13 @@ pub const WireBuffer = struct {
     // a full frame
     pub fn frameReady(self: *Self) bool {
         const save_head = self.head;
+        defer self.head = save_head;
         const frame_header = self.readFrameHeader() catch |err| {
             switch (err) {
                 error.FrameHeaderReadFailure => return false,
             }
         };
-        if ((self.end - save_head) >= (8 + frame_header.size)) {
-            return true;
-        } else {
-            return false;
-        }
-        self.head = save_head;
+        return (self.end - save_head) >= (8 + frame_header.size);
     }
 
     pub fn readEOF(self: *Self) !void {
