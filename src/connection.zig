@@ -47,7 +47,18 @@ pub const Connection = struct {
             received_response = try self.connector.dispatch(expecting);
         }
 
-        // Await tune
+        // TODO: what we actually want is to be able to return data from where we are waiting (and syncrhronous calls),
+        //       rather than deal with things in callbacks. E.g.:
+        //
+        // var tune: Tune = self.connector.await_tune();
+        //
+        // where Tune is generated from the protocol as
+        // pub const Tune = struct {
+        //     channel_max: u16,
+        //     frame_max: u32,
+        //     heartbeat: u16,
+        // }
+        //
         received_response = false;
         while (!received_response) {
             const expecting: ClassMethod = .{ .class = proto.CONNECTION_CLASS, .method = proto.Connection.TUNE_METHOD };
