@@ -26,10 +26,7 @@ pub const Connector = struct {
     // (expected_response supplied), if we receive an asynchronous response we dispatch it
     // but return true.
     pub fn dispatch(self: *Self, expected_response: ?ClassMethod) !bool {
-        // If we don't have any data (and we're dispatching so we expect data)
-        // block on read
-        // I don't think this is right, if we have a partial read, we'll never
-        // read more data
+        // If we don't have a full frame, block on read
         if (!self.rx_buffer.frameReady()) {
             const n = try os.read(self.file.handle, self.rx_buffer.remaining());
             self.rx_buffer.incrementEnd(n);
@@ -37,7 +34,7 @@ pub const Connector = struct {
         self.rx_buffer.reset();
         self.tx_buffer.reset();
 
-        if (std.builtin.mode == .Debug) self.rx_buffer.printSpan();
+        // if (std.builtin.mode == .Debug) self.rx_buffer.printSpan();
         defer self.rx_buffer.shift();
 
         // TODO: I think this should actually be while (self.rx_buffer.frameReady())
@@ -57,6 +54,7 @@ pub const Connector = struct {
                 },
                 .Heartbeat => {
                     if (std.builtin.mode == .Debug) std.debug.warn("Got heartbeat\n", .{});
+                    try self.rx_buffer.readEOF();
                     return false;
                 },
                 .Header => return self.dispatchHeader(header.size),
