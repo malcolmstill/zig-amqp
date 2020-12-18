@@ -1,6 +1,7 @@
 const std = @import("std");
 const proto = @import("protocol.zig");
 const Connector = @import("connector.zig").Connector;
+const ClassMethod = @import("connector.zig").ClassMethod;
 const Connection = @import("connection.zig").Connection;
 const Queue = @import("queue.zig").Queue;
 const Basic = @import("basic.zig").Basic;
@@ -56,5 +57,11 @@ pub const Channel = struct {
             options.no_wait,
             args,
         );
+
+        var received_response = false;
+        while (!received_response) {
+            const expecting: ClassMethod = .{ .class = proto.BASIC_CLASS, .method = proto.Basic.DELIVER_METHOD };
+            received_response = try self.connector.dispatch(expecting);
+        }
     }
 };
