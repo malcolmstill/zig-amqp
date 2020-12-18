@@ -37,14 +37,14 @@ pub const Connector = struct {
         self.rx_buffer.reset();
         self.tx_buffer.reset();
 
-        // self.rx_buffer.printSpan();
+        if (std.builtin.mode == .Debug) self.rx_buffer.printSpan();
         defer self.rx_buffer.shift();
 
         // TODO: I think this should actually be while (self.rx_buffer.frameReady())
         //       On second thought, if we do that and continue to have the readFrameHeader
         //       in the loop, we'll basically be doing it twice every loop. With this
         //       we're only doing twice on the final loop where we don't have enough data.
-        while (self.rx_buffer.head < self.rx_buffer.end) : ( i += 1 ) {
+        while (self.rx_buffer.frameReady()) : ( i += 1 ) {
             // 1. Attempt to read a frame header
             const header = try self.rx_buffer.readFrameHeader();
 
