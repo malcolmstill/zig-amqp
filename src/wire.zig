@@ -316,7 +316,7 @@ pub const WireBuffer = struct {
     }
 };
 
-const FrameHeader = struct {
+pub const FrameHeader = struct {
     @"type": FrameType = .Method,
     channel: u16 = 0,
     size: u32 = 0,

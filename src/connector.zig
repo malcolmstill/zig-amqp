@@ -2,6 +2,7 @@ const std = @import("std");
 const os = std.os;
 const fs = std.fs;
 const proto = @import("protocol.zig");
+const wire = @import("wire.zig");
 const WireBuffer = @import("wire.zig").WireBuffer;
 const Connection = @import("connection.zig").Connection;
 
@@ -18,7 +19,7 @@ pub const Connector = struct {
 
     const Self = @This();
 
-    pub fn getFrameHeader(self: *Self) !FrameHeader {
+    pub fn getFrameHeader(self: *Self) !wire.FrameHeader {
         // If we don't have a full frame, block on read
         if (!self.rx_buffer.frameReady()) {
             const n = try os.read(self.file.handle, self.rx_buffer.remaining());
@@ -130,12 +131,12 @@ pub const Connector = struct {
         return sync_resp_ok;
     }
 
-    fn dispatchHeader(self: *Self, frame_size: usize) !bool {
+    pub fn dispatchHeader(self: *Self, frame_size: usize) !bool {
         const header = try self.rx_buffer.readHeader(frame_size);
         return false;
     }
 
-    fn dispatchBody(self: *Self, frame_size: usize) bool {
+    pub fn dispatchBody(self: *Self, frame_size: usize) bool {
         const body = self.rx_buffer.readBody(frame_size);
         std.debug.warn("body: {}\n", .{body});
         return false;

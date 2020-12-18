@@ -31,7 +31,7 @@ pub const Connection = struct {
     }
 
     pub fn connect(self: *Self, allocator: *mem.Allocator, host: ?[]u8, port: ?u16) !void {
-        callbacks.init();
+        // callbacks.init();
 
         const file = try net.tcpConnectToHost(allocator, host orelse "127.0.0.1", port orelse 5672);
         const n = try file.write("AMQP\x00\x00\x09\x01");
@@ -39,33 +39,11 @@ pub const Connection = struct {
         self.connector.file = file;
         self.connector.connection = self;
 
-        // TODO: I think we want something like an await_start_ok()
-        // We asynchronously process incoming messages (calling callbacks )
-        var received_response = false;
-        while (!received_response) {
-            const expecting: ClassMethod = .{ .class = proto.CONNECTION_CLASS, .method = proto.Connection.START_METHOD };
-            received_response = try self.connector.dispatch(expecting);
-        }
+        var start_response = try proto.Connection.awaitStart(&self.connector);
 
-        // TODO: what we actually want is to be able to return data from where we are waiting (and syncrhronous calls),
-        //       rather than deal with things in callbacks. E.g.:
-        //
-        // var tune: Tune = self.connector.await_tune();
-        //
-        // where Tune is generated from the protocol as
-        // pub const Tune = struct {
-        //     channel_max: u16,
-        //     frame_max: u32,
-        //     heartbeat: u16,
-        // }
-        //
-        received_response = false;
-        while (!received_response) {
-            const expecting: ClassMethod = .{ .class = proto.CONNECTION_CLASS, .method = proto.Connection.TUNE_METHOD };
-            received_response = try self.connector.dispatch(expecting);
-        }
+        var tune_response = try proto.Connection.awaitTune(&self.connector);
 
-        try proto.Connection.open_sync(&self.connector, "/");
+        var open_repsonse = try proto.Connection.openSync(&self.connector, "/");
     }
 
     pub fn deinit(self: *Self) void {
@@ -76,7 +54,7 @@ pub const Connection = struct {
         const next_available_channel = try self.next_channel();
         var ch = Channel.init(next_available_channel, self);
 
-        try proto.Channel.open_sync(&ch.connector);
+        var open_ok = try proto.Channel.openSync(&ch.connector);
 
         return ch;
     }
