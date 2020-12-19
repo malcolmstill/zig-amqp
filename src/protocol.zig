@@ -63,7 +63,7 @@ pub const Connection = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Connection.Start ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Connection@{}.Start ->\n", .{conn.channel});
         return awaitStartOk(conn);
     }
 
@@ -89,7 +89,7 @@ pub const Connection = struct {
                             const mechanisms = conn.rx_buffer.readLongString();
                             const locales = conn.rx_buffer.readLongString();
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Connection.Start\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Connection@{}.Start\n", .{conn.channel});
                             return Start{
                                 .version_major = version_major,
                                 .version_minor = version_minor,
@@ -149,7 +149,7 @@ pub const Connection = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Connection.Start_ok ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Connection@{}.Start_ok ->\n", .{conn.channel});
     }
 
     // start_ok
@@ -173,7 +173,7 @@ pub const Connection = struct {
                             const response = conn.rx_buffer.readLongString();
                             const locale = conn.rx_buffer.readShortString();
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Connection.Start_ok\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Connection@{}.Start_ok\n", .{conn.channel});
                             return StartOk{
                                 .client_properties = client_properties,
                                 .mechanism = mechanism,
@@ -223,7 +223,7 @@ pub const Connection = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Connection.Secure ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Connection@{}.Secure ->\n", .{conn.channel});
         return awaitSecureOk(conn);
     }
 
@@ -245,7 +245,7 @@ pub const Connection = struct {
                         if (method_header.class == CONNECTION_CLASS and method_header.method == SECURE_METHOD) {
                             const challenge = conn.rx_buffer.readLongString();
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Connection.Secure\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Connection@{}.Secure\n", .{conn.channel});
                             return Secure{
                                 .challenge = challenge,
                             };
@@ -292,7 +292,7 @@ pub const Connection = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Connection.Secure_ok ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Connection@{}.Secure_ok ->\n", .{conn.channel});
     }
 
     // secure_ok
@@ -313,7 +313,7 @@ pub const Connection = struct {
                         if (method_header.class == CONNECTION_CLASS and method_header.method == SECURE_OK_METHOD) {
                             const response = conn.rx_buffer.readLongString();
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Connection.Secure_ok\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Connection@{}.Secure_ok\n", .{conn.channel});
                             return SecureOk{
                                 .response = response,
                             };
@@ -366,7 +366,7 @@ pub const Connection = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Connection.Tune ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Connection@{}.Tune ->\n", .{conn.channel});
         return awaitTuneOk(conn);
     }
 
@@ -390,7 +390,7 @@ pub const Connection = struct {
                             const frame_max = conn.rx_buffer.readU32();
                             const heartbeat = conn.rx_buffer.readU16();
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Connection.Tune\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Connection@{}.Tune\n", .{conn.channel});
                             return Tune{
                                 .channel_max = channel_max,
                                 .frame_max = frame_max,
@@ -445,7 +445,7 @@ pub const Connection = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Connection.Tune_ok ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Connection@{}.Tune_ok ->\n", .{conn.channel});
     }
 
     // tune_ok
@@ -468,7 +468,7 @@ pub const Connection = struct {
                             const frame_max = conn.rx_buffer.readU32();
                             const heartbeat = conn.rx_buffer.readU16();
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Connection.Tune_ok\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Connection@{}.Tune_ok\n", .{conn.channel});
                             return TuneOk{
                                 .channel_max = channel_max,
                                 .frame_max = frame_max,
@@ -526,7 +526,7 @@ pub const Connection = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Connection.Open ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Connection@{}.Open ->\n", .{conn.channel});
         return awaitOpenOk(conn);
     }
 
@@ -551,7 +551,7 @@ pub const Connection = struct {
                             const bitset0 = conn.rx_buffer.readU8();
                             const reserved_2 = if (bitset0 & (1 << 0) == 0) true else false;
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Connection.Open\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Connection@{}.Open\n", .{conn.channel});
                             return Open{
                                 .virtual_host = virtual_host,
                                 .reserved_1 = reserved_1,
@@ -600,7 +600,7 @@ pub const Connection = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Connection.Open_ok ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Connection@{}.Open_ok ->\n", .{conn.channel});
     }
 
     // open_ok
@@ -621,7 +621,7 @@ pub const Connection = struct {
                         if (method_header.class == CONNECTION_CLASS and method_header.method == OPEN_OK_METHOD) {
                             const reserved_1 = conn.rx_buffer.readShortString();
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Connection.Open_ok\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Connection@{}.Open_ok\n", .{conn.channel});
                             return OpenOk{
                                 .reserved_1 = reserved_1,
                             };
@@ -677,7 +677,7 @@ pub const Connection = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Connection.Close ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Connection@{}.Close ->\n", .{conn.channel});
         return awaitCloseOk(conn);
     }
 
@@ -702,7 +702,7 @@ pub const Connection = struct {
                             const class_id = conn.rx_buffer.readU16();
                             const method_id = conn.rx_buffer.readU16();
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Connection.Close\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Connection@{}.Close\n", .{conn.channel});
                             return Close{
                                 .reply_code = reply_code,
                                 .reply_text = reply_text,
@@ -748,7 +748,7 @@ pub const Connection = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Connection.Close_ok ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Connection@{}.Close_ok ->\n", .{conn.channel});
     }
 
     // close_ok
@@ -768,7 +768,7 @@ pub const Connection = struct {
                         const method_header = try conn.rx_buffer.readMethodHeader();
                         if (method_header.class == CONNECTION_CLASS and method_header.method == CLOSE_OK_METHOD) {
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Connection.Close_ok\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Connection@{}.Close_ok\n", .{conn.channel});
                             return CloseOk{};
                         } else {
                             if (method_header.class == 10 and method_header.method == 50) {
@@ -813,7 +813,7 @@ pub const Connection = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Connection.Blocked ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Connection@{}.Blocked ->\n", .{conn.channel});
     }
 
     // blocked
@@ -834,7 +834,7 @@ pub const Connection = struct {
                         if (method_header.class == CONNECTION_CLASS and method_header.method == BLOCKED_METHOD) {
                             const reason = conn.rx_buffer.readShortString();
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Connection.Blocked\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Connection@{}.Blocked\n", .{conn.channel});
                             return Blocked{
                                 .reason = reason,
                             };
@@ -877,7 +877,7 @@ pub const Connection = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Connection.Unblocked ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Connection@{}.Unblocked ->\n", .{conn.channel});
     }
 
     // unblocked
@@ -897,7 +897,7 @@ pub const Connection = struct {
                         const method_header = try conn.rx_buffer.readMethodHeader();
                         if (method_header.class == CONNECTION_CLASS and method_header.method == UNBLOCKED_METHOD) {
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Connection.Unblocked\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Connection@{}.Unblocked\n", .{conn.channel});
                             return Unblocked{};
                         } else {
                             if (method_header.class == 10 and method_header.method == 50) {
@@ -947,7 +947,7 @@ pub const Channel = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Channel.Open ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Channel@{}.Open ->\n", .{conn.channel});
         return awaitOpenOk(conn);
     }
 
@@ -969,7 +969,7 @@ pub const Channel = struct {
                         if (method_header.class == CHANNEL_CLASS and method_header.method == OPEN_METHOD) {
                             const reserved_1 = conn.rx_buffer.readShortString();
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Channel.Open\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Channel@{}.Open\n", .{conn.channel});
                             return Open{
                                 .reserved_1 = reserved_1,
                             };
@@ -1016,7 +1016,7 @@ pub const Channel = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Channel.Open_ok ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Channel@{}.Open_ok ->\n", .{conn.channel});
     }
 
     // open_ok
@@ -1037,7 +1037,7 @@ pub const Channel = struct {
                         if (method_header.class == CHANNEL_CLASS and method_header.method == OPEN_OK_METHOD) {
                             const reserved_1 = conn.rx_buffer.readLongString();
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Channel.Open_ok\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Channel@{}.Open_ok\n", .{conn.channel});
                             return OpenOk{
                                 .reserved_1 = reserved_1,
                             };
@@ -1087,7 +1087,7 @@ pub const Channel = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Channel.Flow ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Channel@{}.Flow ->\n", .{conn.channel});
         return awaitFlowOk(conn);
     }
 
@@ -1110,7 +1110,7 @@ pub const Channel = struct {
                             const bitset0 = conn.rx_buffer.readU8();
                             const active = if (bitset0 & (1 << 0) == 0) true else false;
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Channel.Flow\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Channel@{}.Flow\n", .{conn.channel});
                             return Flow{
                                 .active = active,
                             };
@@ -1160,7 +1160,7 @@ pub const Channel = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Channel.Flow_ok ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Channel@{}.Flow_ok ->\n", .{conn.channel});
     }
 
     // flow_ok
@@ -1182,7 +1182,7 @@ pub const Channel = struct {
                             const bitset0 = conn.rx_buffer.readU8();
                             const active = if (bitset0 & (1 << 0) == 0) true else false;
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Channel.Flow_ok\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Channel@{}.Flow_ok\n", .{conn.channel});
                             return FlowOk{
                                 .active = active,
                             };
@@ -1238,7 +1238,7 @@ pub const Channel = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Channel.Close ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Channel@{}.Close ->\n", .{conn.channel});
         return awaitCloseOk(conn);
     }
 
@@ -1263,7 +1263,7 @@ pub const Channel = struct {
                             const class_id = conn.rx_buffer.readU16();
                             const method_id = conn.rx_buffer.readU16();
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Channel.Close\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Channel@{}.Close\n", .{conn.channel});
                             return Close{
                                 .reply_code = reply_code,
                                 .reply_text = reply_text,
@@ -1309,7 +1309,7 @@ pub const Channel = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Channel.Close_ok ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Channel@{}.Close_ok ->\n", .{conn.channel});
     }
 
     // close_ok
@@ -1329,7 +1329,7 @@ pub const Channel = struct {
                         const method_header = try conn.rx_buffer.readMethodHeader();
                         if (method_header.class == CHANNEL_CLASS and method_header.method == CLOSE_OK_METHOD) {
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Channel.Close_ok\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Channel@{}.Close_ok\n", .{conn.channel});
                             return CloseOk{};
                         } else {
                             if (method_header.class == 10 and method_header.method == 50) {
@@ -1406,7 +1406,7 @@ pub const Exchange = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Exchange.Declare ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Exchange@{}.Declare ->\n", .{conn.channel});
         return awaitDeclareOk(conn);
     }
 
@@ -1437,7 +1437,7 @@ pub const Exchange = struct {
                             const no_wait = if (bitset0 & (1 << 4) == 0) true else false;
                             var arguments = conn.rx_buffer.readTable();
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Exchange.Declare\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Exchange@{}.Declare\n", .{conn.channel});
                             return Declare{
                                 .reserved_1 = reserved_1,
                                 .exchange = exchange,
@@ -1488,7 +1488,7 @@ pub const Exchange = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Exchange.Declare_ok ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Exchange@{}.Declare_ok ->\n", .{conn.channel});
     }
 
     // declare_ok
@@ -1508,7 +1508,7 @@ pub const Exchange = struct {
                         const method_header = try conn.rx_buffer.readMethodHeader();
                         if (method_header.class == EXCHANGE_CLASS and method_header.method == DECLARE_OK_METHOD) {
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Exchange.Declare_ok\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Exchange@{}.Declare_ok\n", .{conn.channel});
                             return DeclareOk{};
                         } else {
                             if (method_header.class == 10 and method_header.method == 50) {
@@ -1565,7 +1565,7 @@ pub const Exchange = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Exchange.Delete ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Exchange@{}.Delete ->\n", .{conn.channel});
         return awaitDeleteOk(conn);
     }
 
@@ -1591,7 +1591,7 @@ pub const Exchange = struct {
                             const if_unused = if (bitset0 & (1 << 0) == 0) true else false;
                             const no_wait = if (bitset0 & (1 << 1) == 0) true else false;
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Exchange.Delete\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Exchange@{}.Delete\n", .{conn.channel});
                             return Delete{
                                 .reserved_1 = reserved_1,
                                 .exchange = exchange,
@@ -1637,7 +1637,7 @@ pub const Exchange = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Exchange.Delete_ok ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Exchange@{}.Delete_ok ->\n", .{conn.channel});
     }
 
     // delete_ok
@@ -1657,7 +1657,7 @@ pub const Exchange = struct {
                         const method_header = try conn.rx_buffer.readMethodHeader();
                         if (method_header.class == EXCHANGE_CLASS and method_header.method == DELETE_OK_METHOD) {
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Exchange.Delete_ok\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Exchange@{}.Delete_ok\n", .{conn.channel});
                             return DeleteOk{};
                         } else {
                             if (method_header.class == 10 and method_header.method == 50) {
@@ -1731,7 +1731,7 @@ pub const Queue = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Queue.Declare ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Queue@{}.Declare ->\n", .{conn.channel});
         return awaitDeclareOk(conn);
     }
 
@@ -1761,7 +1761,7 @@ pub const Queue = struct {
                             const no_wait = if (bitset0 & (1 << 4) == 0) true else false;
                             var arguments = conn.rx_buffer.readTable();
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Queue.Declare\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Queue@{}.Declare\n", .{conn.channel});
                             return Declare{
                                 .reserved_1 = reserved_1,
                                 .queue = queue,
@@ -1821,7 +1821,7 @@ pub const Queue = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Queue.Declare_ok ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Queue@{}.Declare_ok ->\n", .{conn.channel});
     }
 
     // declare_ok
@@ -1844,7 +1844,7 @@ pub const Queue = struct {
                             const message_count = conn.rx_buffer.readU32();
                             const consumer_count = conn.rx_buffer.readU32();
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Queue.Declare_ok\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Queue@{}.Declare_ok\n", .{conn.channel});
                             return DeclareOk{
                                 .queue = queue,
                                 .message_count = message_count,
@@ -1911,7 +1911,7 @@ pub const Queue = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Queue.Bind ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Queue@{}.Bind ->\n", .{conn.channel});
         return awaitBindOk(conn);
     }
 
@@ -1939,7 +1939,7 @@ pub const Queue = struct {
                             const no_wait = if (bitset0 & (1 << 0) == 0) true else false;
                             var arguments = conn.rx_buffer.readTable();
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Queue.Bind\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Queue@{}.Bind\n", .{conn.channel});
                             return Bind{
                                 .reserved_1 = reserved_1,
                                 .queue = queue,
@@ -1987,7 +1987,7 @@ pub const Queue = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Queue.Bind_ok ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Queue@{}.Bind_ok ->\n", .{conn.channel});
     }
 
     // bind_ok
@@ -2007,7 +2007,7 @@ pub const Queue = struct {
                         const method_header = try conn.rx_buffer.readMethodHeader();
                         if (method_header.class == QUEUE_CLASS and method_header.method == BIND_OK_METHOD) {
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Queue.Bind_ok\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Queue@{}.Bind_ok\n", .{conn.channel});
                             return BindOk{};
                         } else {
                             if (method_header.class == 10 and method_header.method == 50) {
@@ -2064,7 +2064,7 @@ pub const Queue = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Queue.Unbind ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Queue@{}.Unbind ->\n", .{conn.channel});
         return awaitUnbindOk(conn);
     }
 
@@ -2090,7 +2090,7 @@ pub const Queue = struct {
                             const routing_key = conn.rx_buffer.readShortString();
                             var arguments = conn.rx_buffer.readTable();
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Queue.Unbind\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Queue@{}.Unbind\n", .{conn.channel});
                             return Unbind{
                                 .reserved_1 = reserved_1,
                                 .queue = queue,
@@ -2137,7 +2137,7 @@ pub const Queue = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Queue.Unbind_ok ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Queue@{}.Unbind_ok ->\n", .{conn.channel});
     }
 
     // unbind_ok
@@ -2157,7 +2157,7 @@ pub const Queue = struct {
                         const method_header = try conn.rx_buffer.readMethodHeader();
                         if (method_header.class == QUEUE_CLASS and method_header.method == UNBIND_OK_METHOD) {
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Queue.Unbind_ok\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Queue@{}.Unbind_ok\n", .{conn.channel});
                             return UnbindOk{};
                         } else {
                             if (method_header.class == 10 and method_header.method == 50) {
@@ -2211,7 +2211,7 @@ pub const Queue = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Queue.Purge ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Queue@{}.Purge ->\n", .{conn.channel});
         return awaitPurgeOk(conn);
     }
 
@@ -2236,7 +2236,7 @@ pub const Queue = struct {
                             const bitset0 = conn.rx_buffer.readU8();
                             const no_wait = if (bitset0 & (1 << 0) == 0) true else false;
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Queue.Purge\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Queue@{}.Purge\n", .{conn.channel});
                             return Purge{
                                 .reserved_1 = reserved_1,
                                 .queue = queue,
@@ -2285,7 +2285,7 @@ pub const Queue = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Queue.Purge_ok ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Queue@{}.Purge_ok ->\n", .{conn.channel});
     }
 
     // purge_ok
@@ -2306,7 +2306,7 @@ pub const Queue = struct {
                         if (method_header.class == QUEUE_CLASS and method_header.method == PURGE_OK_METHOD) {
                             const message_count = conn.rx_buffer.readU32();
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Queue.Purge_ok\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Queue@{}.Purge_ok\n", .{conn.channel});
                             return PurgeOk{
                                 .message_count = message_count,
                             };
@@ -2368,7 +2368,7 @@ pub const Queue = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Queue.Delete ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Queue@{}.Delete ->\n", .{conn.channel});
         return awaitDeleteOk(conn);
     }
 
@@ -2395,7 +2395,7 @@ pub const Queue = struct {
                             const if_empty = if (bitset0 & (1 << 1) == 0) true else false;
                             const no_wait = if (bitset0 & (1 << 2) == 0) true else false;
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Queue.Delete\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Queue@{}.Delete\n", .{conn.channel});
                             return Delete{
                                 .reserved_1 = reserved_1,
                                 .queue = queue,
@@ -2446,7 +2446,7 @@ pub const Queue = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Queue.Delete_ok ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Queue@{}.Delete_ok ->\n", .{conn.channel});
     }
 
     // delete_ok
@@ -2467,7 +2467,7 @@ pub const Queue = struct {
                         if (method_header.class == QUEUE_CLASS and method_header.method == DELETE_OK_METHOD) {
                             const message_count = conn.rx_buffer.readU32();
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Queue.Delete_ok\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Queue@{}.Delete_ok\n", .{conn.channel});
                             return DeleteOk{
                                 .message_count = message_count,
                             };
@@ -2528,7 +2528,7 @@ pub const Basic = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Basic.Qos ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Basic@{}.Qos ->\n", .{conn.channel});
         return awaitQosOk(conn);
     }
 
@@ -2553,7 +2553,7 @@ pub const Basic = struct {
                             const bitset0 = conn.rx_buffer.readU8();
                             const global = if (bitset0 & (1 << 0) == 0) true else false;
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Basic.Qos\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Basic@{}.Qos\n", .{conn.channel});
                             return Qos{
                                 .prefetch_size = prefetch_size,
                                 .prefetch_count = prefetch_count,
@@ -2598,7 +2598,7 @@ pub const Basic = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Basic.Qos_ok ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Basic@{}.Qos_ok ->\n", .{conn.channel});
     }
 
     // qos_ok
@@ -2618,7 +2618,7 @@ pub const Basic = struct {
                         const method_header = try conn.rx_buffer.readMethodHeader();
                         if (method_header.class == BASIC_CLASS and method_header.method == QOS_OK_METHOD) {
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Basic.Qos_ok\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Basic@{}.Qos_ok\n", .{conn.channel});
                             return QosOk{};
                         } else {
                             if (method_header.class == 10 and method_header.method == 50) {
@@ -2687,7 +2687,7 @@ pub const Basic = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Basic.Consume ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Basic@{}.Consume ->\n", .{conn.channel});
         return awaitConsumeOk(conn);
     }
 
@@ -2717,7 +2717,7 @@ pub const Basic = struct {
                             const no_wait = if (bitset0 & (1 << 3) == 0) true else false;
                             var arguments = conn.rx_buffer.readTable();
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Basic.Consume\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Basic@{}.Consume\n", .{conn.channel});
                             return Consume{
                                 .reserved_1 = reserved_1,
                                 .queue = queue,
@@ -2771,7 +2771,7 @@ pub const Basic = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Basic.Consume_ok ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Basic@{}.Consume_ok ->\n", .{conn.channel});
     }
 
     // consume_ok
@@ -2792,7 +2792,7 @@ pub const Basic = struct {
                         if (method_header.class == BASIC_CLASS and method_header.method == CONSUME_OK_METHOD) {
                             const consumer_tag = conn.rx_buffer.readShortString();
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Basic.Consume_ok\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Basic@{}.Consume_ok\n", .{conn.channel});
                             return ConsumeOk{
                                 .consumer_tag = consumer_tag,
                             };
@@ -2845,7 +2845,7 @@ pub const Basic = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Basic.Cancel ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Basic@{}.Cancel ->\n", .{conn.channel});
         return awaitCancelOk(conn);
     }
 
@@ -2869,7 +2869,7 @@ pub const Basic = struct {
                             const bitset0 = conn.rx_buffer.readU8();
                             const no_wait = if (bitset0 & (1 << 0) == 0) true else false;
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Basic.Cancel\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Basic@{}.Cancel\n", .{conn.channel});
                             return Cancel{
                                 .consumer_tag = consumer_tag,
                                 .no_wait = no_wait,
@@ -2917,7 +2917,7 @@ pub const Basic = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Basic.Cancel_ok ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Basic@{}.Cancel_ok ->\n", .{conn.channel});
     }
 
     // cancel_ok
@@ -2938,7 +2938,7 @@ pub const Basic = struct {
                         if (method_header.class == BASIC_CLASS and method_header.method == CANCEL_OK_METHOD) {
                             const consumer_tag = conn.rx_buffer.readShortString();
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Basic.Cancel_ok\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Basic@{}.Cancel_ok\n", .{conn.channel});
                             return CancelOk{
                                 .consumer_tag = consumer_tag,
                             };
@@ -3000,7 +3000,7 @@ pub const Basic = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Basic.Publish ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Basic@{}.Publish ->\n", .{conn.channel});
     }
 
     // publish
@@ -3026,7 +3026,7 @@ pub const Basic = struct {
                             const mandatory = if (bitset0 & (1 << 0) == 0) true else false;
                             const immediate = if (bitset0 & (1 << 1) == 0) true else false;
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Basic.Publish\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Basic@{}.Publish\n", .{conn.channel});
                             return Publish{
                                 .reserved_1 = reserved_1,
                                 .exchange = exchange,
@@ -3086,7 +3086,7 @@ pub const Basic = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Basic.Return ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Basic@{}.Return ->\n", .{conn.channel});
     }
 
     // @"return"
@@ -3110,7 +3110,7 @@ pub const Basic = struct {
                             const exchange = conn.rx_buffer.readShortString();
                             const routing_key = conn.rx_buffer.readShortString();
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Basic.Return\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Basic@{}.Return\n", .{conn.channel});
                             return Return{
                                 .reply_code = reply_code,
                                 .reply_text = reply_text,
@@ -3175,7 +3175,7 @@ pub const Basic = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Basic.Deliver ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Basic@{}.Deliver ->\n", .{conn.channel});
     }
 
     // deliver
@@ -3201,7 +3201,7 @@ pub const Basic = struct {
                             const exchange = conn.rx_buffer.readShortString();
                             const routing_key = conn.rx_buffer.readShortString();
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Basic.Deliver\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Basic@{}.Deliver\n", .{conn.channel});
                             return Deliver{
                                 .consumer_tag = consumer_tag,
                                 .delivery_tag = delivery_tag,
@@ -3261,7 +3261,7 @@ pub const Basic = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Basic.Get ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Basic@{}.Get ->\n", .{conn.channel});
         return awaitGetEmpty(conn);
     }
 
@@ -3286,7 +3286,7 @@ pub const Basic = struct {
                             const bitset0 = conn.rx_buffer.readU8();
                             const no_ack = if (bitset0 & (1 << 0) == 0) true else false;
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Basic.Get\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Basic@{}.Get\n", .{conn.channel});
                             return Get{
                                 .reserved_1 = reserved_1,
                                 .queue = queue,
@@ -3350,7 +3350,7 @@ pub const Basic = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Basic.Get_ok ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Basic@{}.Get_ok ->\n", .{conn.channel});
     }
 
     // get_ok
@@ -3376,7 +3376,7 @@ pub const Basic = struct {
                             const routing_key = conn.rx_buffer.readShortString();
                             const message_count = conn.rx_buffer.readU32();
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Basic.Get_ok\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Basic@{}.Get_ok\n", .{conn.channel});
                             return GetOk{
                                 .delivery_tag = delivery_tag,
                                 .redelivered = redelivered,
@@ -3427,7 +3427,7 @@ pub const Basic = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Basic.Get_empty ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Basic@{}.Get_empty ->\n", .{conn.channel});
     }
 
     // get_empty
@@ -3448,7 +3448,7 @@ pub const Basic = struct {
                         if (method_header.class == BASIC_CLASS and method_header.method == GET_EMPTY_METHOD) {
                             const reserved_1 = conn.rx_buffer.readShortString();
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Basic.Get_empty\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Basic@{}.Get_empty\n", .{conn.channel});
                             return GetEmpty{
                                 .reserved_1 = reserved_1,
                             };
@@ -3501,7 +3501,7 @@ pub const Basic = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Basic.Ack ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Basic@{}.Ack ->\n", .{conn.channel});
     }
 
     // ack
@@ -3524,7 +3524,7 @@ pub const Basic = struct {
                             const bitset0 = conn.rx_buffer.readU8();
                             const multiple = if (bitset0 & (1 << 0) == 0) true else false;
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Basic.Ack\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Basic@{}.Ack\n", .{conn.channel});
                             return Ack{
                                 .delivery_tag = delivery_tag,
                                 .multiple = multiple,
@@ -3578,7 +3578,7 @@ pub const Basic = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Basic.Reject ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Basic@{}.Reject ->\n", .{conn.channel});
     }
 
     // reject
@@ -3601,7 +3601,7 @@ pub const Basic = struct {
                             const bitset0 = conn.rx_buffer.readU8();
                             const requeue = if (bitset0 & (1 << 0) == 0) true else false;
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Basic.Reject\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Basic@{}.Reject\n", .{conn.channel});
                             return Reject{
                                 .delivery_tag = delivery_tag,
                                 .requeue = requeue,
@@ -3652,7 +3652,7 @@ pub const Basic = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Basic.Recover_async ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Basic@{}.Recover_async ->\n", .{conn.channel});
     }
 
     // recover_async
@@ -3674,7 +3674,7 @@ pub const Basic = struct {
                             const bitset0 = conn.rx_buffer.readU8();
                             const requeue = if (bitset0 & (1 << 0) == 0) true else false;
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Basic.Recover_async\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Basic@{}.Recover_async\n", .{conn.channel});
                             return RecoverAsync{
                                 .requeue = requeue,
                             };
@@ -3724,7 +3724,7 @@ pub const Basic = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Basic.Recover ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Basic@{}.Recover ->\n", .{conn.channel});
     }
 
     // recover
@@ -3746,7 +3746,7 @@ pub const Basic = struct {
                             const bitset0 = conn.rx_buffer.readU8();
                             const requeue = if (bitset0 & (1 << 0) == 0) true else false;
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Basic.Recover\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Basic@{}.Recover\n", .{conn.channel});
                             return Recover{
                                 .requeue = requeue,
                             };
@@ -3789,7 +3789,7 @@ pub const Basic = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Basic.Recover_ok ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Basic@{}.Recover_ok ->\n", .{conn.channel});
     }
 
     // recover_ok
@@ -3809,7 +3809,7 @@ pub const Basic = struct {
                         const method_header = try conn.rx_buffer.readMethodHeader();
                         if (method_header.class == BASIC_CLASS and method_header.method == RECOVER_OK_METHOD) {
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Basic.Recover_ok\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Basic@{}.Recover_ok\n", .{conn.channel});
                             return RecoverOk{};
                         } else {
                             if (method_header.class == 10 and method_header.method == 50) {
@@ -3855,7 +3855,7 @@ pub const Tx = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Tx.Select ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Tx@{}.Select ->\n", .{conn.channel});
         return awaitSelectOk(conn);
     }
 
@@ -3876,7 +3876,7 @@ pub const Tx = struct {
                         const method_header = try conn.rx_buffer.readMethodHeader();
                         if (method_header.class == TX_CLASS and method_header.method == SELECT_METHOD) {
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Tx.Select\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Tx@{}.Select\n", .{conn.channel});
                             return Select{};
                         } else {
                             if (method_header.class == 10 and method_header.method == 50) {
@@ -3917,7 +3917,7 @@ pub const Tx = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Tx.Select_ok ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Tx@{}.Select_ok ->\n", .{conn.channel});
     }
 
     // select_ok
@@ -3937,7 +3937,7 @@ pub const Tx = struct {
                         const method_header = try conn.rx_buffer.readMethodHeader();
                         if (method_header.class == TX_CLASS and method_header.method == SELECT_OK_METHOD) {
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Tx.Select_ok\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Tx@{}.Select_ok\n", .{conn.channel});
                             return SelectOk{};
                         } else {
                             if (method_header.class == 10 and method_header.method == 50) {
@@ -3978,7 +3978,7 @@ pub const Tx = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Tx.Commit ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Tx@{}.Commit ->\n", .{conn.channel});
         return awaitCommitOk(conn);
     }
 
@@ -3999,7 +3999,7 @@ pub const Tx = struct {
                         const method_header = try conn.rx_buffer.readMethodHeader();
                         if (method_header.class == TX_CLASS and method_header.method == COMMIT_METHOD) {
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Tx.Commit\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Tx@{}.Commit\n", .{conn.channel});
                             return Commit{};
                         } else {
                             if (method_header.class == 10 and method_header.method == 50) {
@@ -4040,7 +4040,7 @@ pub const Tx = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Tx.Commit_ok ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Tx@{}.Commit_ok ->\n", .{conn.channel});
     }
 
     // commit_ok
@@ -4060,7 +4060,7 @@ pub const Tx = struct {
                         const method_header = try conn.rx_buffer.readMethodHeader();
                         if (method_header.class == TX_CLASS and method_header.method == COMMIT_OK_METHOD) {
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Tx.Commit_ok\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Tx@{}.Commit_ok\n", .{conn.channel});
                             return CommitOk{};
                         } else {
                             if (method_header.class == 10 and method_header.method == 50) {
@@ -4101,7 +4101,7 @@ pub const Tx = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Tx.Rollback ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Tx@{}.Rollback ->\n", .{conn.channel});
         return awaitRollbackOk(conn);
     }
 
@@ -4122,7 +4122,7 @@ pub const Tx = struct {
                         const method_header = try conn.rx_buffer.readMethodHeader();
                         if (method_header.class == TX_CLASS and method_header.method == ROLLBACK_METHOD) {
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Tx.Rollback\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Tx@{}.Rollback\n", .{conn.channel});
                             return Rollback{};
                         } else {
                             if (method_header.class == 10 and method_header.method == 50) {
@@ -4163,7 +4163,7 @@ pub const Tx = struct {
         conn.tx_buffer.updateFrameLength();
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        if (std.builtin.mode == .Debug) std.debug.warn("Tx.Rollback_ok ->\n", .{});
+        if (std.builtin.mode == .Debug) std.debug.warn("Tx@{}.Rollback_ok ->\n", .{conn.channel});
     }
 
     // rollback_ok
@@ -4183,7 +4183,7 @@ pub const Tx = struct {
                         const method_header = try conn.rx_buffer.readMethodHeader();
                         if (method_header.class == TX_CLASS and method_header.method == ROLLBACK_OK_METHOD) {
                             try conn.rx_buffer.readEOF();
-                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Tx.Rollback_ok\n", .{});
+                            if (std.builtin.mode == .Debug) std.debug.warn("\t<- Tx@{}.Rollback_ok\n", .{conn.channel});
                             return RollbackOk{};
                         } else {
                             if (method_header.class == 10 and method_header.method == 50) {
