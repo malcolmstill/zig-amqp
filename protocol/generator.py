@@ -278,7 +278,7 @@ def generateSynchronousMethodFunction(parsed, class_name, method):
     print(f"// TODO: do we need to retry write (if n isn't as high as we expect)?")
     print(f"const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());")
     print(f"conn.tx_buffer.reset();")
-    print(f"if (std.builtin.mode == .Debug) std.debug.warn(\"{klass_cap}@{{}}.{nameCleanCap(method_name)} ->\\n\", .{{conn.channel}});")
+    print(f"std.log.debug(\"{klass_cap}@{{}}.{nameCleanCap(method_name)} ->\", .{{conn.channel}});")
 
     print(f"return await{nameCleanCamel(method['response'])}(conn);")
     print(f"}}")
@@ -323,7 +323,7 @@ def generateAwaitMethod(parsed, class_name, method):
             print(f"{CONSTNESS[Type]} {nameClean(field_name)} = conn.rx_buffer.{READS[Type]}(); ")
 
     print(f"try conn.rx_buffer.readEOF();")
-    print(f"if (std.builtin.mode == .Debug) std.debug.warn(\"\\t<- {class_name_cap}@{{}}.{method_name_cap}\\n\", .{{conn.channel}});")
+    print(f"std.log.debug(\"\\t<- {class_name_cap}@{{}}.{method_name_cap}\", .{{conn.channel}});")
 
     print(f"return {nameCleanCamel(method['name'])} {{")
     for field_name, field in method['fields'].items():
@@ -354,7 +354,7 @@ def generateAwaitMethod(parsed, class_name, method):
     print(f"}},")
 
     print(f".Heartbeat => {{")
-    print(f"if (std.builtin.mode == .Debug) std.debug.warn(\"Got heartbeat\\n\", .{{}});")
+    print(f"std.log.debug(\"Got heartbeat\", .{{}});")
     print(f"                try conn.rx_buffer.readEOF();")
     print(f"            }}, ")
     print(f"            .Header => {{ _ = try conn.rx_buffer.readHeader(frame_header.size); }},")
@@ -405,7 +405,7 @@ def generateAsynchronousMethodFunction(parsed, class_name, method):
     print(f"// TODO: do we need to retry write (if n isn't as high as we expect)?")
     print(f"const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());")
     print(f"conn.tx_buffer.reset();")
-    print(f"if (std.builtin.mode == .Debug) std.debug.warn(\"{klass_cap}@{{}}.{nameCleanCap(method_name)} ->\\n\", .{{conn.channel}});")
+    print(f"std.log.debug(\"{klass_cap}@{{}}.{nameCleanCap(method_name)} ->\", .{{conn.channel}});")
     print(f"}}")
 
 def nameClean(name):
