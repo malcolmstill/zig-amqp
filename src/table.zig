@@ -7,7 +7,7 @@ const mem = std.mem;
 const WireBuffer = @import("wire.zig").WireBuffer;
 
 pub const Table = struct {
-    // a slice of our rx_buffer
+    // a slice of our rx_buffer (with its own head and end)
     buf: WireBuffer = undefined,
     len: usize = 0,
 
@@ -53,7 +53,7 @@ pub const Table = struct {
                     if (@TypeOf(s) == T and correct_key) return s;
                 },
                 else => {
-                    // TODO: support all types
+                    // TODO: support all types as continue will return garbage
                     continue;
                 },
             }
