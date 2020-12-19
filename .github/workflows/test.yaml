@@ -1,3 +1,5 @@
+name: zig-amqp tests
+on: push
 jobs:
   test:
     strategy:
