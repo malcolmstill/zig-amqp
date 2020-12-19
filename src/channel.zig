@@ -1,7 +1,6 @@
 const std = @import("std");
 const proto = @import("protocol.zig");
 const Connector = @import("connector.zig").Connector;
-const ClassMethod = @import("connector.zig").ClassMethod;
 const Connection = @import("connection.zig").Connection;
 const Queue = @import("queue.zig").Queue;
 const Basic = @import("basic.zig").Basic;
