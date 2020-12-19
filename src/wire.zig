@@ -53,7 +53,7 @@ pub const WireBuffer = struct {
         return self.mem[0..self.head];
     }
 
-    // This doesn't return an error because we should use this after
+    // This doesn't return an error because we should always use this after
     // reading into self.remaining() which already bounds amount.
     pub fn incrementEnd(self: *Self, amount: usize) void {
         self.end += amount;
@@ -239,7 +239,6 @@ pub const WireBuffer = struct {
         self.head += string.len;
     }
 
-    // TODO: this is purely incrementing the read_head without returning anything useful
     // 1. Save the current read head
     // 2. Read the length (u32) of the table (the length of data after the u32 length)
     // 3. Until we've reached the end of the table
@@ -253,23 +252,19 @@ pub const WireBuffer = struct {
         while (self.head - table_start < (length + @sizeOf(u32))) {
             const key = self.readShortString();
             const t = self.readU8();
-            // std.debug.warn("{}: ", .{ key });
+
             switch (t) {
                 'F' => {
-                    // std.debug.warn("\n\t", .{});
                     _ = self.readTable();
                 },
                 't' => {
                     const b = self.readBool();
-                    // std.debug.warn("{}\n", .{ b });
                 },
                 's' => {
                     const s = self.readShortString();
-                    // std.debug.warn("{}\n", .{ s });
                 },
                 'S' => {
                     const s = self.readLongString();
-                    // std.debug.warn("{}\n", .{ s });
                 },
                 else => continue,
             }
