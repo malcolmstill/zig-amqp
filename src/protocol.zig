@@ -61,6 +61,7 @@ pub const Connection = struct {
         conn.tx_buffer.writeLongString(mechanisms);
         conn.tx_buffer.writeLongString(locales);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Connection@{}.Start ->\n", .{conn.channel});
@@ -71,6 +72,7 @@ pub const Connection = struct {
     pub fn awaitStart(conn: *Connector) !Start {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -147,6 +149,7 @@ pub const Connection = struct {
         conn.tx_buffer.writeLongString(response);
         conn.tx_buffer.writeShortString(locale);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Connection@{}.Start_ok ->\n", .{conn.channel});
@@ -156,6 +159,7 @@ pub const Connection = struct {
     pub fn awaitStartOk(conn: *Connector) !StartOk {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -221,6 +225,7 @@ pub const Connection = struct {
         conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, SECURE_METHOD);
         conn.tx_buffer.writeLongString(challenge);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Connection@{}.Secure ->\n", .{conn.channel});
@@ -231,6 +236,7 @@ pub const Connection = struct {
     pub fn awaitSecure(conn: *Connector) !Secure {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -290,6 +296,7 @@ pub const Connection = struct {
         conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.SECURE_OK_METHOD);
         conn.tx_buffer.writeLongString(response);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Connection@{}.Secure_ok ->\n", .{conn.channel});
@@ -299,6 +306,7 @@ pub const Connection = struct {
     pub fn awaitSecureOk(conn: *Connector) !SecureOk {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -364,6 +372,7 @@ pub const Connection = struct {
         conn.tx_buffer.writeU32(frame_max);
         conn.tx_buffer.writeU16(heartbeat);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Connection@{}.Tune ->\n", .{conn.channel});
@@ -374,6 +383,7 @@ pub const Connection = struct {
     pub fn awaitTune(conn: *Connector) !Tune {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -443,6 +453,7 @@ pub const Connection = struct {
         conn.tx_buffer.writeU32(frame_max);
         conn.tx_buffer.writeU16(heartbeat);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Connection@{}.Tune_ok ->\n", .{conn.channel});
@@ -452,6 +463,7 @@ pub const Connection = struct {
     pub fn awaitTuneOk(conn: *Connector) !TuneOk {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -524,6 +536,7 @@ pub const Connection = struct {
         if (reserved_2) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Connection@{}.Open ->\n", .{conn.channel});
@@ -534,6 +547,7 @@ pub const Connection = struct {
     pub fn awaitOpen(conn: *Connector) !Open {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -598,6 +612,7 @@ pub const Connection = struct {
         const reserved_1 = "";
         conn.tx_buffer.writeShortString(reserved_1);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Connection@{}.Open_ok ->\n", .{conn.channel});
@@ -607,6 +622,7 @@ pub const Connection = struct {
     pub fn awaitOpenOk(conn: *Connector) !OpenOk {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -675,6 +691,7 @@ pub const Connection = struct {
         conn.tx_buffer.writeU16(class_id);
         conn.tx_buffer.writeU16(method_id);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Connection@{}.Close ->\n", .{conn.channel});
@@ -685,6 +702,7 @@ pub const Connection = struct {
     pub fn awaitClose(conn: *Connector) !Close {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -746,6 +764,7 @@ pub const Connection = struct {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
         conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.CLOSE_OK_METHOD);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Connection@{}.Close_ok ->\n", .{conn.channel});
@@ -755,6 +774,7 @@ pub const Connection = struct {
     pub fn awaitCloseOk(conn: *Connector) !CloseOk {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -811,6 +831,7 @@ pub const Connection = struct {
         conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.BLOCKED_METHOD);
         conn.tx_buffer.writeShortString(reason);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Connection@{}.Blocked ->\n", .{conn.channel});
@@ -820,6 +841,7 @@ pub const Connection = struct {
     pub fn awaitBlocked(conn: *Connector) !Blocked {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -875,6 +897,7 @@ pub const Connection = struct {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
         conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.UNBLOCKED_METHOD);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Connection@{}.Unblocked ->\n", .{conn.channel});
@@ -884,6 +907,7 @@ pub const Connection = struct {
     pub fn awaitUnblocked(conn: *Connector) !Unblocked {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -945,6 +969,7 @@ pub const Channel = struct {
         const reserved_1 = "";
         conn.tx_buffer.writeShortString(reserved_1);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Channel@{}.Open ->\n", .{conn.channel});
@@ -955,6 +980,7 @@ pub const Channel = struct {
     pub fn awaitOpen(conn: *Connector) !Open {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -1014,6 +1040,7 @@ pub const Channel = struct {
         const reserved_1 = "";
         conn.tx_buffer.writeLongString(reserved_1);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Channel@{}.Open_ok ->\n", .{conn.channel});
@@ -1023,6 +1050,7 @@ pub const Channel = struct {
     pub fn awaitOpenOk(conn: *Connector) !OpenOk {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -1085,6 +1113,7 @@ pub const Channel = struct {
         if (active) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Channel@{}.Flow ->\n", .{conn.channel});
@@ -1095,6 +1124,7 @@ pub const Channel = struct {
     pub fn awaitFlow(conn: *Connector) !Flow {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -1158,6 +1188,7 @@ pub const Channel = struct {
         if (active) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Channel@{}.Flow_ok ->\n", .{conn.channel});
@@ -1167,6 +1198,7 @@ pub const Channel = struct {
     pub fn awaitFlowOk(conn: *Connector) !FlowOk {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -1236,6 +1268,7 @@ pub const Channel = struct {
         conn.tx_buffer.writeU16(class_id);
         conn.tx_buffer.writeU16(method_id);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Channel@{}.Close ->\n", .{conn.channel});
@@ -1246,6 +1279,7 @@ pub const Channel = struct {
     pub fn awaitClose(conn: *Connector) !Close {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -1307,6 +1341,7 @@ pub const Channel = struct {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
         conn.tx_buffer.writeMethodHeader(CHANNEL_CLASS, Channel.CLOSE_OK_METHOD);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Channel@{}.Close_ok ->\n", .{conn.channel});
@@ -1316,6 +1351,7 @@ pub const Channel = struct {
     pub fn awaitCloseOk(conn: *Connector) !CloseOk {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -1404,6 +1440,7 @@ pub const Exchange = struct {
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.writeTable(arguments);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Exchange@{}.Declare ->\n", .{conn.channel});
@@ -1414,6 +1451,7 @@ pub const Exchange = struct {
     pub fn awaitDeclare(conn: *Connector) !Declare {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -1486,6 +1524,7 @@ pub const Exchange = struct {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
         conn.tx_buffer.writeMethodHeader(EXCHANGE_CLASS, Exchange.DECLARE_OK_METHOD);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Exchange@{}.Declare_ok ->\n", .{conn.channel});
@@ -1495,6 +1534,7 @@ pub const Exchange = struct {
     pub fn awaitDeclareOk(conn: *Connector) !DeclareOk {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -1563,6 +1603,7 @@ pub const Exchange = struct {
         if (no_wait) bitset0 |= (_bit << 1) else bitset0 &= ~(_bit << 1);
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Exchange@{}.Delete ->\n", .{conn.channel});
@@ -1573,6 +1614,7 @@ pub const Exchange = struct {
     pub fn awaitDelete(conn: *Connector) !Delete {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -1635,6 +1677,7 @@ pub const Exchange = struct {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
         conn.tx_buffer.writeMethodHeader(EXCHANGE_CLASS, Exchange.DELETE_OK_METHOD);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Exchange@{}.Delete_ok ->\n", .{conn.channel});
@@ -1644,6 +1687,7 @@ pub const Exchange = struct {
     pub fn awaitDeleteOk(conn: *Connector) !DeleteOk {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -1729,6 +1773,7 @@ pub const Queue = struct {
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.writeTable(arguments);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Queue@{}.Declare ->\n", .{conn.channel});
@@ -1739,6 +1784,7 @@ pub const Queue = struct {
     pub fn awaitDeclare(conn: *Connector) !Declare {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -1819,6 +1865,7 @@ pub const Queue = struct {
         conn.tx_buffer.writeU32(message_count);
         conn.tx_buffer.writeU32(consumer_count);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Queue@{}.Declare_ok ->\n", .{conn.channel});
@@ -1828,6 +1875,7 @@ pub const Queue = struct {
     pub fn awaitDeclareOk(conn: *Connector) !DeclareOk {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -1909,6 +1957,7 @@ pub const Queue = struct {
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.writeTable(arguments);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Queue@{}.Bind ->\n", .{conn.channel});
@@ -1919,6 +1968,7 @@ pub const Queue = struct {
     pub fn awaitBind(conn: *Connector) !Bind {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -1985,6 +2035,7 @@ pub const Queue = struct {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
         conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.BIND_OK_METHOD);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Queue@{}.Bind_ok ->\n", .{conn.channel});
@@ -1994,6 +2045,7 @@ pub const Queue = struct {
     pub fn awaitBindOk(conn: *Connector) !BindOk {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -2062,6 +2114,7 @@ pub const Queue = struct {
         conn.tx_buffer.writeShortString(routing_key);
         conn.tx_buffer.writeTable(arguments);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Queue@{}.Unbind ->\n", .{conn.channel});
@@ -2072,6 +2125,7 @@ pub const Queue = struct {
     pub fn awaitUnbind(conn: *Connector) !Unbind {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -2135,6 +2189,7 @@ pub const Queue = struct {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
         conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.UNBIND_OK_METHOD);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Queue@{}.Unbind_ok ->\n", .{conn.channel});
@@ -2144,6 +2199,7 @@ pub const Queue = struct {
     pub fn awaitUnbindOk(conn: *Connector) !UnbindOk {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -2209,6 +2265,7 @@ pub const Queue = struct {
         if (no_wait) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Queue@{}.Purge ->\n", .{conn.channel});
@@ -2219,6 +2276,7 @@ pub const Queue = struct {
     pub fn awaitPurge(conn: *Connector) !Purge {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -2283,6 +2341,7 @@ pub const Queue = struct {
         conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.PURGE_OK_METHOD);
         conn.tx_buffer.writeU32(message_count);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Queue@{}.Purge_ok ->\n", .{conn.channel});
@@ -2292,6 +2351,7 @@ pub const Queue = struct {
     pub fn awaitPurgeOk(conn: *Connector) !PurgeOk {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -2366,6 +2426,7 @@ pub const Queue = struct {
         if (no_wait) bitset0 |= (_bit << 2) else bitset0 &= ~(_bit << 2);
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Queue@{}.Delete ->\n", .{conn.channel});
@@ -2376,6 +2437,7 @@ pub const Queue = struct {
     pub fn awaitDelete(conn: *Connector) !Delete {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -2444,6 +2506,7 @@ pub const Queue = struct {
         conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.DELETE_OK_METHOD);
         conn.tx_buffer.writeU32(message_count);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Queue@{}.Delete_ok ->\n", .{conn.channel});
@@ -2453,6 +2516,7 @@ pub const Queue = struct {
     pub fn awaitDeleteOk(conn: *Connector) !DeleteOk {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -2526,6 +2590,7 @@ pub const Basic = struct {
         if (global) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Basic@{}.Qos ->\n", .{conn.channel});
@@ -2536,6 +2601,7 @@ pub const Basic = struct {
     pub fn awaitQos(conn: *Connector) !Qos {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -2596,6 +2662,7 @@ pub const Basic = struct {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
         conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.QOS_OK_METHOD);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Basic@{}.Qos_ok ->\n", .{conn.channel});
@@ -2605,6 +2672,7 @@ pub const Basic = struct {
     pub fn awaitQosOk(conn: *Connector) !QosOk {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -2685,6 +2753,7 @@ pub const Basic = struct {
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.writeTable(arguments);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Basic@{}.Consume ->\n", .{conn.channel});
@@ -2695,6 +2764,7 @@ pub const Basic = struct {
     pub fn awaitConsume(conn: *Connector) !Consume {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -2769,6 +2839,7 @@ pub const Basic = struct {
         conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.CONSUME_OK_METHOD);
         conn.tx_buffer.writeShortString(consumer_tag);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Basic@{}.Consume_ok ->\n", .{conn.channel});
@@ -2778,6 +2849,7 @@ pub const Basic = struct {
     pub fn awaitConsumeOk(conn: *Connector) !ConsumeOk {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -2843,6 +2915,7 @@ pub const Basic = struct {
         if (no_wait) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Basic@{}.Cancel ->\n", .{conn.channel});
@@ -2853,6 +2926,7 @@ pub const Basic = struct {
     pub fn awaitCancel(conn: *Connector) !Cancel {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -2915,6 +2989,7 @@ pub const Basic = struct {
         conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.CANCEL_OK_METHOD);
         conn.tx_buffer.writeShortString(consumer_tag);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Basic@{}.Cancel_ok ->\n", .{conn.channel});
@@ -2924,6 +2999,7 @@ pub const Basic = struct {
     pub fn awaitCancelOk(conn: *Connector) !CancelOk {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -2998,6 +3074,7 @@ pub const Basic = struct {
         if (immediate) bitset0 |= (_bit << 1) else bitset0 &= ~(_bit << 1);
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Basic@{}.Publish ->\n", .{conn.channel});
@@ -3007,6 +3084,7 @@ pub const Basic = struct {
     pub fn awaitPublish(conn: *Connector) !Publish {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -3084,6 +3162,7 @@ pub const Basic = struct {
         conn.tx_buffer.writeShortString(exchange);
         conn.tx_buffer.writeShortString(routing_key);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Basic@{}.Return ->\n", .{conn.channel});
@@ -3093,6 +3172,7 @@ pub const Basic = struct {
     pub fn awaitReturn(conn: *Connector) !Return {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -3173,6 +3253,7 @@ pub const Basic = struct {
         conn.tx_buffer.writeShortString(exchange);
         conn.tx_buffer.writeShortString(routing_key);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Basic@{}.Deliver ->\n", .{conn.channel});
@@ -3182,6 +3263,7 @@ pub const Basic = struct {
     pub fn awaitDeliver(conn: *Connector) !Deliver {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -3259,6 +3341,7 @@ pub const Basic = struct {
         if (no_ack) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Basic@{}.Get ->\n", .{conn.channel});
@@ -3269,6 +3352,7 @@ pub const Basic = struct {
     pub fn awaitGet(conn: *Connector) !Get {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -3348,6 +3432,7 @@ pub const Basic = struct {
         conn.tx_buffer.writeShortString(routing_key);
         conn.tx_buffer.writeU32(message_count);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Basic@{}.Get_ok ->\n", .{conn.channel});
@@ -3357,6 +3442,7 @@ pub const Basic = struct {
     pub fn awaitGetOk(conn: *Connector) !GetOk {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -3425,6 +3511,7 @@ pub const Basic = struct {
         const reserved_1 = "";
         conn.tx_buffer.writeShortString(reserved_1);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Basic@{}.Get_empty ->\n", .{conn.channel});
@@ -3434,6 +3521,7 @@ pub const Basic = struct {
     pub fn awaitGetEmpty(conn: *Connector) !GetEmpty {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -3499,6 +3587,7 @@ pub const Basic = struct {
         if (multiple) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Basic@{}.Ack ->\n", .{conn.channel});
@@ -3508,6 +3597,7 @@ pub const Basic = struct {
     pub fn awaitAck(conn: *Connector) !Ack {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -3576,6 +3666,7 @@ pub const Basic = struct {
         if (requeue) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Basic@{}.Reject ->\n", .{conn.channel});
@@ -3585,6 +3676,7 @@ pub const Basic = struct {
     pub fn awaitReject(conn: *Connector) !Reject {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -3650,6 +3742,7 @@ pub const Basic = struct {
         if (requeue) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Basic@{}.Recover_async ->\n", .{conn.channel});
@@ -3659,6 +3752,7 @@ pub const Basic = struct {
     pub fn awaitRecoverAsync(conn: *Connector) !RecoverAsync {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -3722,6 +3816,7 @@ pub const Basic = struct {
         if (requeue) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Basic@{}.Recover ->\n", .{conn.channel});
@@ -3731,6 +3826,7 @@ pub const Basic = struct {
     pub fn awaitRecover(conn: *Connector) !Recover {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -3787,6 +3883,7 @@ pub const Basic = struct {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
         conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.RECOVER_OK_METHOD);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Basic@{}.Recover_ok ->\n", .{conn.channel});
@@ -3796,6 +3893,7 @@ pub const Basic = struct {
     pub fn awaitRecoverOk(conn: *Connector) !RecoverOk {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -3853,6 +3951,7 @@ pub const Tx = struct {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
         conn.tx_buffer.writeMethodHeader(TX_CLASS, SELECT_METHOD);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Tx@{}.Select ->\n", .{conn.channel});
@@ -3863,6 +3962,7 @@ pub const Tx = struct {
     pub fn awaitSelect(conn: *Connector) !Select {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -3915,6 +4015,7 @@ pub const Tx = struct {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
         conn.tx_buffer.writeMethodHeader(TX_CLASS, Tx.SELECT_OK_METHOD);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Tx@{}.Select_ok ->\n", .{conn.channel});
@@ -3924,6 +4025,7 @@ pub const Tx = struct {
     pub fn awaitSelectOk(conn: *Connector) !SelectOk {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -3976,6 +4078,7 @@ pub const Tx = struct {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
         conn.tx_buffer.writeMethodHeader(TX_CLASS, COMMIT_METHOD);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Tx@{}.Commit ->\n", .{conn.channel});
@@ -3986,6 +4089,7 @@ pub const Tx = struct {
     pub fn awaitCommit(conn: *Connector) !Commit {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -4038,6 +4142,7 @@ pub const Tx = struct {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
         conn.tx_buffer.writeMethodHeader(TX_CLASS, Tx.COMMIT_OK_METHOD);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Tx@{}.Commit_ok ->\n", .{conn.channel});
@@ -4047,6 +4152,7 @@ pub const Tx = struct {
     pub fn awaitCommitOk(conn: *Connector) !CommitOk {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -4099,6 +4205,7 @@ pub const Tx = struct {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
         conn.tx_buffer.writeMethodHeader(TX_CLASS, ROLLBACK_METHOD);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Tx@{}.Rollback ->\n", .{conn.channel});
@@ -4109,6 +4216,7 @@ pub const Tx = struct {
     pub fn awaitRollback(conn: *Connector) !Rollback {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
@@ -4161,6 +4269,7 @@ pub const Tx = struct {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
         conn.tx_buffer.writeMethodHeader(TX_CLASS, Tx.ROLLBACK_OK_METHOD);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
         if (std.builtin.mode == .Debug) std.debug.warn("Tx@{}.Rollback_ok ->\n", .{conn.channel});
@@ -4170,6 +4279,7 @@ pub const Tx = struct {
     pub fn awaitRollbackOk(conn: *Connector) !RollbackOk {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();

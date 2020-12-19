@@ -275,6 +275,7 @@ def generateSynchronousMethodFunction(parsed, class_name, method):
         print(f"conn.tx_buffer.writeU8(bitset{bit_field_count//8});")                
     # Send message
     print(f"conn.tx_buffer.updateFrameLength();")
+    print(f"// TODO: do we need to retry write (if n isn't as high as we expect)?")
     print(f"const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());")
     print(f"conn.tx_buffer.reset();")
     print(f"if (std.builtin.mode == .Debug) std.debug.warn(\"{klass_cap}@{{}}.{nameCleanCap(method_name)} ->\\n\", .{{conn.channel}});")
@@ -295,6 +296,7 @@ def generateAwaitMethod(parsed, class_name, method):
     print(f"pub fn await{nameCleanCamel(method['name'])}(conn: *Connector) !{nameCleanCamel(method['name'])} {{")
     print(f"while (true) {{")
     print(f"        if (!conn.rx_buffer.frameReady()) {{")
+    print(f"// TODO: do we need to retry read (if n isn't as high as we expect)?")
     print(f"        const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());")
     print(f"        conn.rx_buffer.incrementEnd(n);")
     print(f"        if (conn.rx_buffer.isFull()) conn.rx_buffer.shift(); ")
@@ -400,6 +402,7 @@ def generateAsynchronousMethodFunction(parsed, class_name, method):
         print(f"conn.tx_buffer.writeU8(bitset{bit_field_count//8});")                
     # Send message
     print(f"conn.tx_buffer.updateFrameLength();")
+    print(f"// TODO: do we need to retry write (if n isn't as high as we expect)?")
     print(f"const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());")
     print(f"conn.tx_buffer.reset();")
     print(f"if (std.builtin.mode == .Debug) std.debug.warn(\"{klass_cap}@{{}}.{nameCleanCap(method_name)} ->\\n\", .{{conn.channel}});")
