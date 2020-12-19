@@ -14,7 +14,7 @@ pub const Table = struct {
     const Self = @This();
 
     pub fn init(buffer: []u8) Table {
-        var t = Table {
+        var t = Table{
             .buf = WireBuffer.init(buffer),
             .len = 0,
         };
@@ -94,13 +94,7 @@ pub const Table = struct {
     }
 
     fn updateLength(self: *Self) void {
-        mem.writeInt(
-            u32,
-            @ptrCast(*[@sizeOf(u32)]u8,
-            &self.buf.mem[0]),
-            @intCast(u32, self.buf.head - @sizeOf(u32)),
-            .Big
-        );
+        mem.writeInt(u32, @ptrCast(*[@sizeOf(u32)]u8, &self.buf.mem[0]), @intCast(u32, self.buf.head - @sizeOf(u32)), .Big);
     }
 
     pub fn print(self: *Self) void {

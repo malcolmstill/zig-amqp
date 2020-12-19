@@ -16,7 +16,7 @@ pub const WireBuffer = struct {
     const Self = @This();
 
     pub fn init(slice: []u8) WireBuffer {
-        return WireBuffer {
+        return WireBuffer{
             .mem = slice,
             .head = 0,
             .end = 0,
@@ -75,7 +75,7 @@ pub const WireBuffer = struct {
         const size = self.readU32();
         // std.debug.warn("frame_type: {}, channel: {}, size: {}\n", .{frame_type, channel, size});
 
-        return FrameHeader {
+        return FrameHeader{
             .@"type" = @intToEnum(FrameType, frame_type),
             .channel = channel,
             .size = size,
@@ -106,12 +106,11 @@ pub const WireBuffer = struct {
         self.writeU32(size); // This will be overwritten later
     }
 
-
     pub fn updateFrameLength(self: *Self) void {
         self.writeFrameEnd();
         const head = self.head;
         self.head = 3;
-        self.writeU32(@intCast(u32, head-8)); // size is head - header length (7 bytes) - frame end (1 bytes)
+        self.writeU32(@intCast(u32, head - 8)); // size is head - header length (7 bytes) - frame end (1 bytes)
         self.head = head;
     }
 
@@ -123,7 +122,7 @@ pub const WireBuffer = struct {
         const class = self.readU16();
         const method = self.readU16();
 
-        return MethodHeader {
+        return MethodHeader{
             .class = class,
             .method = method,
         };
@@ -139,11 +138,11 @@ pub const WireBuffer = struct {
         const weight = self.readU16();
         const body_size = self.readU64();
         const property_flags = self.readU16();
-        const properties = self.mem[self.head..self.head+(frame_size-14)];
+        const properties = self.mem[self.head .. self.head + (frame_size - 14)];
         self.head += (frame_size - 14);
         try self.readEOF();
 
-        return Header {
+        return Header{
             .class = class,
             .weight = weight,
             .body_size = body_size,
@@ -153,7 +152,7 @@ pub const WireBuffer = struct {
     }
 
     pub fn readBody(self: *Self, frame_size: usize) ![]u8 {
-        const body = self.mem[self.head..self.head+frame_size];
+        const body = self.mem[self.head .. self.head + frame_size];
         self.head += frame_size;
         try self.readEOF();
 
@@ -191,7 +190,7 @@ pub const WireBuffer = struct {
     pub fn writeU32(self: *Self, number: u32) void {
         std.mem.writeInt(u32, @ptrCast(*[@sizeOf(u32)]u8, &self.mem[self.head]), number, .Big);
         self.head += @sizeOf(u32);
-    }    
+    }
 
     pub fn readU64(self: *Self) u64 {
         const r = std.mem.readInt(u64, @ptrCast(*const [@sizeOf(u64)]u8, &self.mem[self.head]), .Big);
@@ -216,7 +215,7 @@ pub const WireBuffer = struct {
 
     pub fn readShortString(self: *Self) []u8 {
         const length = self.readU8();
-        const array = self.mem[self.head..self.head+length];
+        const array = self.mem[self.head .. self.head + length];
         self.head += length;
         return array;
     }
@@ -229,7 +228,7 @@ pub const WireBuffer = struct {
 
     pub fn readLongString(self: *Self) []u8 {
         const length = self.readU32();
-        const array = self.mem[self.head..self.head+length];
+        const array = self.mem[self.head .. self.head + length];
         self.head += length;
         return array;
     }
@@ -251,7 +250,7 @@ pub const WireBuffer = struct {
         const table_start = self.head;
         const length = self.readU32();
 
-        while (self.head - table_start < (length+@sizeOf(u32))) {
+        while (self.head - table_start < (length + @sizeOf(u32))) {
             const key = self.readShortString();
             const t = self.readU8();
             // std.debug.warn("{}: ", .{ key });
@@ -276,7 +275,7 @@ pub const WireBuffer = struct {
             }
         }
 
-        return Table {
+        return Table{
             .buf = WireBuffer.init(self.mem[table_start..self.head]),
         };
     }
@@ -302,19 +301,19 @@ pub const WireBuffer = struct {
 
     // Not sure if all of the following are required
     pub fn readArrayU8(self: *Self) []u8 {
-        const array = self.mem[self.head..self.head+128];
+        const array = self.mem[self.head .. self.head + 128];
         self.head += 128;
         return array;
     }
 
     pub fn readArray128U8(self: *Self) []u8 {
-        const array = self.mem[self.head..self.head+128];
+        const array = self.mem[self.head .. self.head + 128];
         self.head += 128;
         return array;
     }
 
     pub fn readOptionalArray128U8(self: *Self) ?[]u8 {
-        const array = self.mem[self.head..self.head+128];
+        const array = self.mem[self.head .. self.head + 128];
         self.head += 128;
         return array;
     }
@@ -327,9 +326,9 @@ pub const FrameHeader = struct {
 };
 
 const FrameType = enum(u8) {
-    Method    = proto.FRAME_METHOD,
-    Header    = proto.FRAME_HEADER,
-    Body      = proto.FRAME_BODY,
+    Method = proto.FRAME_METHOD,
+    Header = proto.FRAME_HEADER,
+    Body = proto.FRAME_BODY,
     Heartbeat = proto.FRAME_HEARTBEAT,
 };
 

@@ -93,7 +93,7 @@ fn deliver(
     exchange: []const u8,
     routing_key: []const u8,
 ) anyerror!void {
-    std.debug.warn("consumer tag: {}, delivery tag: {}\n", .{consumer_tag, delivery_tag});
+    std.debug.warn("consumer tag: {}, delivery tag: {}\n", .{ consumer_tag, delivery_tag });
 }
 
 pub fn init() void {

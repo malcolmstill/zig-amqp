@@ -14,7 +14,7 @@ pub const Channel = struct {
     const Self = @This();
 
     pub fn init(id: u16, connection: *Connection) Channel {
-        var ch = Channel {
+        var ch = Channel{
             .connector = connection.connector,
             .channel_id = id,
         };
