@@ -1,11 +1,11 @@
-all-examples:
-	for example in examples/* ; do \
-		pushd $$example ; zig build --prefix ./ ; popd ; \
-	done
-
 all-examples-release:
 	for example in examples/* ; do \
 		pushd $$example ; zig build -Drelease-safe=true --prefix ./ ; popd ; \
+	done
+	
+all-examples:
+	for example in examples/* ; do \
+		pushd $$example ; zig build --prefix ./ ; popd ; \
 	done
 
 generate:

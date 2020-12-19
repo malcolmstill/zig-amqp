@@ -21,13 +21,13 @@ pub const Connector = struct {
 
     pub fn sendHeader(self: *Self, size: u64, class: u16) !void {
         self.tx_buffer.writeHeader(self.channel, size, class);
-        const n = try std.os.write(self.file.handle, self.tx_buffer.extent());
+        _ = try std.os.write(self.file.handle, self.tx_buffer.extent());
         self.tx_buffer.reset();
     }
 
     pub fn sendBody(self: *Self, body: []const u8) !void {
         self.tx_buffer.writeBody(self.channel, body);
-        const n = try std.os.write(self.file.handle, self.tx_buffer.extent());
+        _ = try std.os.write(self.file.handle, self.tx_buffer.extent());
         self.tx_buffer.reset();
     }
 };
