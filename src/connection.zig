@@ -8,7 +8,6 @@ const proto = @import("protocol.zig");
 const callbacks = @import("init.zig");
 const WireBuffer = @import("wire.zig").WireBuffer;
 const Connector = @import("connector.zig").Connector;
-const ClassMethod = @import("connector.zig").ClassMethod;
 const Channel = @import("channel.zig").Channel;
 const Table = @import("table.zig").Table;
 
@@ -93,7 +92,7 @@ pub const Connection = struct {
     }
 
     pub fn channel(self: *Self) !Channel {
-        const next_available_channel = try self.next_channel();
+        const next_available_channel = try self.nextChannel();
         var ch = Channel.init(next_available_channel, self);
 
         var open_ok = try proto.Channel.openSync(&ch.connector);
@@ -101,7 +100,7 @@ pub const Connection = struct {
         return ch;
     }
 
-    fn next_channel(self: *Self) !u16 {
+    fn nextChannel(self: *Self) !u16 {
         var i: u16 = 1;
         while (i < self.max_channels and i < @bitSizeOf(u2048)) : (i += 1) {
             const bit: u2048 = 1;
@@ -115,7 +114,7 @@ pub const Connection = struct {
         return error.NoFreeChannel;
     }
 
-    pub fn free_channel(self: *Self, channel_id: u16) void {
+    pub fn freeChannel(self: *Self, channel_id: u16) void {
         if (channel_id >= @bitSizeOf(u2048)) return; // Look it's late okay...
         const bit: u2048 = 1;
         self.in_use_channels &= ~(bit << @intCast(u11, channel_id));
