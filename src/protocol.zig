@@ -2,7 +2,6 @@ const std = @import("std");
 const fs = std.fs;
 const os = std.os;
 const Connector = @import("connector.zig").Connector;
-const ClassMethod = @import("connector.zig").ClassMethod;
 const WireBuffer = @import("wire.zig").WireBuffer;
 const Table = @import("table.zig").Table;
 

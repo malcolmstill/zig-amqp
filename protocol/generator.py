@@ -188,7 +188,6 @@ def generate(file):
     print(f'const fs = std.fs;')
     print(f'const os = std.os;')
     print(f'const Connector = @import("connector.zig").Connector;')
-    print(f'const ClassMethod = @import("connector.zig").ClassMethod;')
     print(f'const WireBuffer = @import("wire.zig").WireBuffer;')
     print(f'const Table = @import("table.zig").Table;')
 
