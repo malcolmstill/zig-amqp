@@ -30,8 +30,8 @@ pub const Connection = struct {
         };
     }
 
-    pub fn connect(self: *Self, allocator: *mem.Allocator, host: ?[]u8, port: ?u16) !void {
-        const file = try net.tcpConnectToHost(allocator, host orelse "127.0.0.1", port orelse 5672);
+    pub fn connect(self: *Self, address: net.Address) !void {
+        const file = try net.tcpConnectToAddress(address);
         const n = try file.write("AMQP\x00\x00\x09\x01");
 
         self.connector.file = file;
