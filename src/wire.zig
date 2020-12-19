@@ -335,3 +335,31 @@ test "buffer is full" {
     testing.expect(buf.isFull() == true);
     testing.expect(buf.remaining().len == 0);
 }
+
+test "basic write / read" {
+    var rx_memory: [1024]u8 = [_]u8{0} ** 1024;
+    var tx_memory: [1024]u8 = [_]u8{0} ** 1024;
+
+    var rx_buf = WireBuffer.init(rx_memory[0..]);
+    var tx_buf = WireBuffer.init(tx_memory[0..]);
+
+    // Write to tx_buf (imagine this is the server's buffer)
+    tx_buf.writeU8(22);
+    tx_buf.writeU16(23);
+    tx_buf.writeU32(24);
+    tx_buf.writeShortString("Hello");
+    tx_buf.writeLongString("World");
+    tx_buf.writeBool(true);
+
+    // Simulate transmission
+    mem.copy(u8, rx_buf.remaining(), tx_buf.extent());
+    rx_buf.incrementEnd(tx_buf.extent().len);
+
+    // Read from rx_buf (image this is the client's buffer)
+    testing.expect(rx_buf.readU8() == 22);
+    testing.expect(rx_buf.readU16() == 23);
+    testing.expect(rx_buf.readU32() == 24);
+    testing.expect(mem.eql(u8, rx_buf.readShortString(), "Hello"));
+    testing.expect(mem.eql(u8, rx_buf.readLongString(), "World"));
+    testing.expect(rx_buf.readBool() == true);
+}
