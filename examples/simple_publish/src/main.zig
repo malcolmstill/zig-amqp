@@ -17,5 +17,10 @@ pub fn main() !void {
     var ch = try conn.channel();
     var q = try ch.queueDeclare("simple_publish", amqp.Queue.Options{}, null);
 
-    try ch.basicPublish("", "simple_publish", "hello world", amqp.Basic.Publish.Options{});
+    var i: usize = 0;
+    var timer = try std.time.Timer.start();
+    while (timer.read() <= std.time.ns_per_s) : (i += 1) {
+        try ch.basicPublish("", "simple_publish", "hello world", amqp.Basic.Publish.Options{});
+    }
+    std.log.warn("{} messages / second\n", .{i});
 }
