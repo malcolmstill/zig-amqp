@@ -100,6 +100,10 @@ pub const WireBuffer = struct {
         if (byte != 0xCE) return error.ExpectedEOF;
     }
 
+    fn writeEOF(self: *Self) void {
+        self.writeU8(0xCE);
+    }
+
     pub fn writeFrameHeader(self: *Self, frame_type: FrameType, channel: u16, size: u32) void {
         self.writeU8(@enumToInt(frame_type));
         self.writeU16(channel);
@@ -107,15 +111,11 @@ pub const WireBuffer = struct {
     }
 
     pub fn updateFrameLength(self: *Self) void {
-        self.writeFrameEnd();
+        self.writeEOF();
         const head = self.head;
         self.head = 3;
         self.writeU32(@intCast(u32, head - 8)); // size is head - header length (7 bytes) - frame end (1 bytes)
         self.head = head;
-    }
-
-    fn writeFrameEnd(self: *Self) void {
-        self.writeU8(0xCE);
     }
 
     pub fn readMethodHeader(self: *Self) !MethodHeader {
@@ -151,12 +151,28 @@ pub const WireBuffer = struct {
         };
     }
 
+    pub fn writeHeader(self: *Self, channel: u16, size: u64, class: u16) void {
+        self.writeFrameHeader(.Header, channel, 0);
+        self.writeU16(class);
+        self.writeU16(0);
+        self.writeU64(size);
+        self.writeU16(0);
+        self.updateFrameLength();
+    }
+
     pub fn readBody(self: *Self, frame_size: usize) ![]u8 {
         const body = self.mem[self.head .. self.head + frame_size];
         self.head += frame_size;
         try self.readEOF();
 
         return body;
+    }
+
+    pub fn writeBody(self: *Self, channel: u16, body: []const u8) void {
+        self.writeFrameHeader(.Body, channel, 0);
+        std.mem.copy(u8, self.mem[self.head..], body);
+        self.head += body.len;
+        self.updateFrameLength();
     }
 
     pub fn readU8(self: *Self) u8 {

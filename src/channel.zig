@@ -24,7 +24,7 @@ pub const Channel = struct {
     }
 
     pub fn queueDeclare(self: *Self, name: []const u8, options: Queue.Options, args: ?*Table) !Queue {
-        try proto.Queue.declareSync(
+        var declare = try proto.Queue.declareSync(
             &self.connector,
             name,
             options.passive,
@@ -38,7 +38,20 @@ pub const Channel = struct {
         return Queue.init(self);
     }
 
-    pub fn basicConsume(self: *Self, name: []const u8, options: Basic.Options, args: ?*Table) !void {
+    pub fn basicPublish(self: *Self, exchange_name: []const u8, routing_key: []const u8, body: []const u8, options: Basic.Publish.Options) !void {
+        try proto.Basic.publishAsync(
+            &self.connector,
+            exchange_name,
+            routing_key,
+            options.mandatory,
+            options.immediate,
+        );
+
+        try self.connector.sendHeader(body.len, proto.Basic.BASIC_CLASS);
+        try self.connector.sendBody(body);
+    }
+
+    pub fn basicConsume(self: *Self, name: []const u8, options: Basic.Consume.Options, args: ?*Table) !void {
         var consume = try proto.Basic.consumeSync(
             &self.connector,
             name,

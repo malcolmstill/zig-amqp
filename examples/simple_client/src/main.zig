@@ -27,6 +27,6 @@ pub fn main() !void {
     // const q2 = ch.queueDeclare("test2", amqp.Queue.Options{}, null);
 
     while (true) {
-        try ch.basicConsume("test", amqp.Basic.Options{ .no_ack = false }, null);
+        try ch.basicConsume("test", amqp.Basic.Consume.Options{ .no_ack = false }, null);
     }
 }
