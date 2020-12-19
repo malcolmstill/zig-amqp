@@ -123,3 +123,61 @@ pub const Connection = struct {
         if (std.builtin.mode == .Debug) std.debug.warn("Freed channel {}, in_use_channels: {}\n", .{ channel_id, @popCount(u2048, self.in_use_channels) });
     }
 };
+
+const testing = std.testing;
+
+test "read / write / shift volatility" {
+    var server_rx_memory: [128]u8 = [_]u8{0} ** 128;
+    var server_tx_memory: [128]u8 = [_]u8{0} ** 128;
+    var client_rx_memory: [128]u8 = [_]u8{0} ** 128;
+    var client_tx_memory: [128]u8 = [_]u8{0} ** 128;
+
+    var server_rx_buf = WireBuffer.init(server_rx_memory[0..]);
+    var server_tx_buf = WireBuffer.init(server_tx_memory[0..]);
+
+    var client_rx_buf = WireBuffer.init(client_rx_memory[0..]);
+    var client_tx_buf = WireBuffer.init(client_tx_memory[0..]);
+
+    const f = try os.pipe();
+    defer os.close(f[0]);
+    defer os.close(f[1]);
+
+    var server_connector = Connector{
+        .file = fs.File{
+            .handle = f[0],
+        },
+        .rx_buffer = server_rx_buf,
+        .tx_buffer = server_tx_buf,
+        .channel = 0,
+    };
+
+    var client_connector = Connector{
+        .file = fs.File{
+            .handle = f[1],
+        },
+        .rx_buffer = server_rx_buf,
+        .tx_buffer = server_tx_buf,
+        .channel = 0,
+    };
+
+    try proto.Connection.blockedAsync(&client_connector, "hello");
+    try proto.Connection.blockedAsync(&client_connector, "world");
+
+    // volatile values should be valid until at least the next call that
+    // modifies the underlying buffers
+    var block = try proto.Connection.awaitBlocked(&server_connector);
+    testing.expect(mem.eql(u8, block.reason, "hello"));
+    var block2 = try proto.Connection.awaitBlocked(&server_connector);
+    testing.expect(mem.eql(u8, block2.reason, "world"));
+
+    // Due to volatility, block.reason may not remain "hello"
+    // 1. Having called awaitBlocked a second time, we're actually still good
+    //    as before messages are still in their original location in the buffer:
+    testing.expect(mem.eql(u8, block.reason, "hello"));
+    // 2. If another message is written and we copy it to the front of the buffer (shift)
+    //    and then await again, we find that block.reason is now "overw" instead of "hello"
+    try proto.Connection.blockedAsync(&client_connector, "overwritten");
+    server_connector.rx_buffer.shift();
+    var block3 = try proto.Connection.awaitBlocked(&server_connector);
+    testing.expect(mem.eql(u8, block.reason, "overw"));
+}

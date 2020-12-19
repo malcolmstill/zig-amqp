@@ -293,20 +293,15 @@ def generateAwaitMethod(parsed, class_name, method):
     # class_index = parsed['classes'][class_name]['index']
     print(f"\n// {method_name}")
     print(f"pub fn await{nameCleanCamel(method['name'])}(conn: *Connector) !{nameCleanCamel(method['name'])} {{")
-    # print(f"const {method_name} = {class_name_upper}_IMPL.{method_name} orelse return error.MethodNotImplemented;")
-
-
     print(f"while (true) {{")
     print(f"        if (!conn.rx_buffer.frameReady()) {{")
     print(f"        const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());")
     print(f"        conn.rx_buffer.incrementEnd(n);")
+    print(f"        if (conn.rx_buffer.isFull()) conn.rx_buffer.shift(); ")
+    print(f"        continue;") # We continue as we might need more data
     print(f"    }}")
-    # print(f"if (std.builtin.mode == .Debug) conn.rx_buffer.printSpan();")
-    print(f"conn.rx_buffer.reset();")
-    print(f"conn.tx_buffer.reset();")
-    print(f"defer conn.rx_buffer.shift();")
     print(f"while (conn.rx_buffer.frameReady()) {{")
-    print(f"const frame_header = try conn.getFrameHeader();")
+    print(f"const frame_header = try conn.rx_buffer.readFrameHeader();")
 
     print(f"switch (frame_header.@\"type\") {{")
     print(f"    .Method => {{")

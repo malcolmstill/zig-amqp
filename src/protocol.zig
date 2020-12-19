@@ -73,12 +73,11 @@ pub const Connection = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -159,12 +158,11 @@ pub const Connection = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -235,12 +233,11 @@ pub const Connection = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -304,12 +301,11 @@ pub const Connection = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -380,12 +376,11 @@ pub const Connection = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -459,12 +454,11 @@ pub const Connection = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -542,12 +536,11 @@ pub const Connection = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -616,12 +609,11 @@ pub const Connection = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -695,12 +687,11 @@ pub const Connection = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -766,12 +757,11 @@ pub const Connection = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -832,12 +822,11 @@ pub const Connection = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -897,12 +886,11 @@ pub const Connection = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -969,12 +957,11 @@ pub const Channel = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -1038,12 +1025,11 @@ pub const Channel = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -1111,12 +1097,11 @@ pub const Channel = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -1184,12 +1169,11 @@ pub const Channel = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -1264,12 +1248,11 @@ pub const Channel = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -1335,12 +1318,11 @@ pub const Channel = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -1434,12 +1416,11 @@ pub const Exchange = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -1516,12 +1497,11 @@ pub const Exchange = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -1595,12 +1575,11 @@ pub const Exchange = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -1667,12 +1646,11 @@ pub const Exchange = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -1763,12 +1741,11 @@ pub const Queue = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -1853,12 +1830,11 @@ pub const Queue = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -1945,12 +1921,11 @@ pub const Queue = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -2021,12 +1996,11 @@ pub const Queue = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -2100,12 +2074,11 @@ pub const Queue = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -2173,12 +2146,11 @@ pub const Queue = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -2249,12 +2221,11 @@ pub const Queue = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -2323,12 +2294,11 @@ pub const Queue = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -2408,12 +2378,11 @@ pub const Queue = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -2486,12 +2455,11 @@ pub const Queue = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -2570,12 +2538,11 @@ pub const Basic = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -2640,12 +2607,11 @@ pub const Basic = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -2731,12 +2697,11 @@ pub const Basic = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -2815,12 +2780,11 @@ pub const Basic = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -2891,12 +2855,11 @@ pub const Basic = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -2963,12 +2926,11 @@ pub const Basic = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -3047,12 +3009,11 @@ pub const Basic = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -3134,12 +3095,11 @@ pub const Basic = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -3224,12 +3184,11 @@ pub const Basic = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -3312,12 +3271,11 @@ pub const Basic = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -3401,12 +3359,11 @@ pub const Basic = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -3479,12 +3436,11 @@ pub const Basic = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -3554,12 +3510,11 @@ pub const Basic = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -3632,12 +3587,11 @@ pub const Basic = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -3707,12 +3661,11 @@ pub const Basic = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -3780,12 +3733,11 @@ pub const Basic = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -3846,12 +3798,11 @@ pub const Basic = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -3914,12 +3865,11 @@ pub const Tx = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -3976,12 +3926,11 @@ pub const Tx = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -4039,12 +3988,11 @@ pub const Tx = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -4101,12 +4049,11 @@ pub const Tx = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -4164,12 +4111,11 @@ pub const Tx = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
@@ -4226,12 +4172,11 @@ pub const Tx = struct {
             if (!conn.rx_buffer.frameReady()) {
                 const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
             }
-            conn.rx_buffer.reset();
-            conn.tx_buffer.reset();
-            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
-                const frame_header = try conn.getFrameHeader();
+                const frame_header = try conn.rx_buffer.readFrameHeader();
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();

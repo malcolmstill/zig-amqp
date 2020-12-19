@@ -19,19 +19,6 @@ pub const Connector = struct {
 
     const Self = @This();
 
-    pub fn getFrameHeader(self: *Self) !wire.FrameHeader {
-        // If we don't have a full frame, block on read
-        if (!self.rx_buffer.frameReady()) {
-            const n = try os.read(self.file.handle, self.rx_buffer.remaining());
-            self.rx_buffer.incrementEnd(n);
-        }
-        self.rx_buffer.reset();
-        self.tx_buffer.reset();
-
-        // 1. Attempt to read a frame header
-        return self.rx_buffer.readFrameHeader();
-    }
-
     // dispatch reads from our socket and dispatches methods in response
     // Where dispatch is invoked in initialising a request, we pass in an expected_response
     // ClassMethod that specifies what (synchronous) response we are expecting. If this value
