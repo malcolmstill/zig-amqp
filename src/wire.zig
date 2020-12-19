@@ -339,6 +339,7 @@ test "buffer is full" {
 test "basic write / read" {
     var rx_memory: [1024]u8 = [_]u8{0} ** 1024;
     var tx_memory: [1024]u8 = [_]u8{0} ** 1024;
+    var table_memory: [1024]u8 = [_]u8{0} ** 1024;
 
     var rx_buf = WireBuffer.init(rx_memory[0..]);
     var tx_buf = WireBuffer.init(tx_memory[0..]);
@@ -350,7 +351,6 @@ test "basic write / read" {
     tx_buf.writeShortString("Hello");
     tx_buf.writeLongString("World");
     tx_buf.writeBool(true);
-    var table_memory: [1024]u8 = [_]u8{0} ** 1024;
     var tx_table = Table.init(table_memory[0..]);
     tx_table.insertBool("flag1", true);
     tx_table.insertBool("flag2", false);
