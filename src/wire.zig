@@ -298,25 +298,6 @@ pub const WireBuffer = struct {
             self.writeU32(0);
         }
     }
-
-    // Not sure if all of the following are required
-    pub fn readArrayU8(self: *Self) []u8 {
-        const array = self.mem[self.head .. self.head + 128];
-        self.head += 128;
-        return array;
-    }
-
-    pub fn readArray128U8(self: *Self) []u8 {
-        const array = self.mem[self.head .. self.head + 128];
-        self.head += 128;
-        return array;
-    }
-
-    pub fn readOptionalArray128U8(self: *Self) ?[]u8 {
-        const array = self.mem[self.head .. self.head + 128];
-        self.head += 128;
-        return array;
-    }
 };
 
 pub const FrameHeader = struct {
