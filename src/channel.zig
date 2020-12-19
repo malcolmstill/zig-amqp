@@ -50,10 +50,10 @@ pub const Channel = struct {
             options.no_wait,
             args,
         );
-        std.debug.warn("consume: {}\n", .{consume});
+        std.log.debug("consume: {}\n", .{consume});
 
         var deliver = proto.Basic.awaitDeliver(&self.connector);
-        std.debug.warn("deliver: {}\n", .{deliver});
+        std.log.debug("deliver: {}\n", .{deliver});
 
         // _ = try self.connector.dispatch(null);
         // _ = try self.connector.dispatch(null);

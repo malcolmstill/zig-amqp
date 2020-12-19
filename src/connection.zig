@@ -32,7 +32,6 @@ pub const Connection = struct {
     }
 
     pub fn connect(self: *Self, allocator: *mem.Allocator, host: ?[]u8, port: ?u16) !void {
-        // callbacks.init();
         const file = try net.tcpConnectToHost(allocator, host orelse "127.0.0.1", port orelse 5672);
         const n = try file.write("AMQP\x00\x00\x09\x01");
 
@@ -41,7 +40,7 @@ pub const Connection = struct {
 
         var start = try proto.Connection.awaitStart(&self.connector);
         const remote_host = start.server_properties.lookup([]u8, "cluster_name");
-        std.debug.warn("Connected to {} AMQP server (version {}.{})\nmechanisms: {}\nlocale: {}\n", .{
+        std.log.debug("Connected to {} AMQP server (version {}.{})\nmechanisms: {}\nlocale: {}\n", .{
             remote_host,
             start.version_major,
             start.version_minor,
