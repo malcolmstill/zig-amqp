@@ -350,6 +350,12 @@ test "basic write / read" {
     tx_buf.writeShortString("Hello");
     tx_buf.writeLongString("World");
     tx_buf.writeBool(true);
+    var table_memory: [1024]u8 = [_]u8{0} ** 1024;
+    var tx_table = Table.init(table_memory[0..]);
+    tx_table.insertBool("flag1", true);
+    tx_table.insertBool("flag2", false);
+    tx_table.insertLongString("longstring", "zig is the best");
+    tx_buf.writeTable(&tx_table);
 
     // Simulate transmission
     mem.copy(u8, rx_buf.remaining(), tx_buf.extent());
@@ -362,4 +368,8 @@ test "basic write / read" {
     testing.expect(mem.eql(u8, rx_buf.readShortString(), "Hello"));
     testing.expect(mem.eql(u8, rx_buf.readLongString(), "World"));
     testing.expect(rx_buf.readBool() == true);
+    var rx_table = rx_buf.readTable();
+    testing.expect(rx_table.lookup(bool, "flag1") == true);
+    testing.expect(rx_table.lookup(bool, "flag2") == false);
+    testing.expect(mem.eql(u8, rx_table.lookup([]u8, "longstring").?, "zig is the best"));
 }
