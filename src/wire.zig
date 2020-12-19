@@ -36,6 +36,10 @@ pub const WireBuffer = struct {
         self.head = 0;
     }
 
+    pub fn isFull(self: *Self) bool {
+        return self.end == self.mem.len; // Should this actually be self.mem.len
+    }
+
     // shift moves data between head and end to the front of mem
     pub fn shift(self: *Self) void {
         const new_end = self.end - self.head;
@@ -342,3 +346,17 @@ const Header = struct {
     // TODO: I don't understand the properties field
     properties: []u8 = undefined,
 };
+
+const testing = std.testing;
+
+test "buffer is full" {
+    var memory: [16]u8 = [_]u8{0} ** 16;
+    var buf = WireBuffer.init(memory[0..]);
+
+    testing.expect(buf.isFull() == false);
+    buf.incrementEnd(16); // simluate writing 16 bytes into buffer
+
+    // The buffer should now be full
+    testing.expect(buf.isFull() == true);
+    testing.expect(buf.remaining().len == 0);
+}
