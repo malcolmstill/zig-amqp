@@ -346,6 +346,7 @@ def generateAwaitMethod(parsed, class_name, method):
 
     print(f"if (method_header.class == {parsed['classes']['channel']['index']} and method_header.method == {parsed['classes']['channel']['methods']['close']['index']}) {{")
     print(f"try Channel.closeOkAsync(conn);")
+    print(f"return error.ChannelClose;")
     print(f"}}")
 
     print(f"return error.ImplementAsyncHandle;")

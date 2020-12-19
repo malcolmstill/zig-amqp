@@ -104,6 +104,7 @@ pub const Connection = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -187,6 +188,7 @@ pub const Connection = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -256,6 +258,7 @@ pub const Connection = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -324,6 +327,7 @@ pub const Connection = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -403,6 +407,7 @@ pub const Connection = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -481,6 +486,7 @@ pub const Connection = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -564,6 +570,7 @@ pub const Connection = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -632,6 +639,7 @@ pub const Connection = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -716,6 +724,7 @@ pub const Connection = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -777,6 +786,7 @@ pub const Connection = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -845,6 +855,7 @@ pub const Connection = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -906,6 +917,7 @@ pub const Connection = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -980,6 +992,7 @@ pub const Channel = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -1048,6 +1061,7 @@ pub const Channel = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -1121,6 +1135,7 @@ pub const Channel = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -1193,6 +1208,7 @@ pub const Channel = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -1277,6 +1293,7 @@ pub const Channel = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -1338,6 +1355,7 @@ pub const Channel = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -1456,6 +1474,7 @@ pub const Exchange = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -1517,6 +1536,7 @@ pub const Exchange = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -1605,6 +1625,7 @@ pub const Exchange = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -1666,6 +1687,7 @@ pub const Exchange = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -1779,6 +1801,7 @@ pub const Queue = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -1857,6 +1880,7 @@ pub const Queue = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -1955,6 +1979,7 @@ pub const Queue = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -2016,6 +2041,7 @@ pub const Queue = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -2105,6 +2131,7 @@ pub const Queue = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -2166,6 +2193,7 @@ pub const Queue = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -2249,6 +2277,7 @@ pub const Queue = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -2317,6 +2346,7 @@ pub const Queue = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -2410,6 +2440,7 @@ pub const Queue = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -2478,6 +2509,7 @@ pub const Queue = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -2566,6 +2598,7 @@ pub const Basic = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -2627,6 +2660,7 @@ pub const Basic = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -2735,6 +2769,7 @@ pub const Basic = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -2803,6 +2838,7 @@ pub const Basic = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -2881,6 +2917,7 @@ pub const Basic = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -2949,6 +2986,7 @@ pub const Basic = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -3041,6 +3079,7 @@ pub const Basic = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -3124,6 +3163,7 @@ pub const Basic = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -3216,6 +3256,7 @@ pub const Basic = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -3299,6 +3340,7 @@ pub const Basic = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -3391,6 +3433,7 @@ pub const Basic = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -3459,6 +3502,7 @@ pub const Basic = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -3536,6 +3580,7 @@ pub const Basic = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -3613,6 +3658,7 @@ pub const Basic = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -3685,6 +3731,7 @@ pub const Basic = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -3757,6 +3804,7 @@ pub const Basic = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -3818,6 +3866,7 @@ pub const Basic = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -3885,6 +3934,7 @@ pub const Tx = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -3946,6 +3996,7 @@ pub const Tx = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -4008,6 +4059,7 @@ pub const Tx = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -4069,6 +4121,7 @@ pub const Tx = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -4131,6 +4184,7 @@ pub const Tx = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
@@ -4192,6 +4246,7 @@ pub const Tx = struct {
                             }
                             if (method_header.class == 20 and method_header.method == 40) {
                                 try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
                             }
                             return error.ImplementAsyncHandle;
                         }
