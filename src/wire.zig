@@ -369,7 +369,7 @@ test "basic write / read" {
     testing.expect(mem.eql(u8, rx_buf.readLongString(), "World"));
     testing.expect(rx_buf.readBool() == true);
     var rx_table = rx_buf.readTable();
-    testing.expect(rx_table.lookup(bool, "flag1") == true);
-    testing.expect(rx_table.lookup(bool, "flag2") == false);
+    testing.expect(rx_table.lookup(bool, "flag1").? == true);
+    testing.expect(rx_table.lookup(bool, "flag2").? == false);
     testing.expect(mem.eql(u8, rx_table.lookup([]u8, "longstring").?, "zig is the best"));
 }
