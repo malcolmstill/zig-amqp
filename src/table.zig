@@ -31,7 +31,7 @@ pub const Table = struct {
         defer self.buf.reset();
         const length = self.buf.readU32();
 
-        while (self.buf.is_more_data()) {
+        while (self.buf.isMoreData()) {
             const current_key = self.buf.readShortString();
             const correct_key = std.mem.eql(u8, key, current_key);
             const t = self.buf.readU8();

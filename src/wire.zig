@@ -64,7 +64,7 @@ pub const WireBuffer = struct {
         return self.mem[self.end..];
     }
 
-    pub fn is_more_data(self: *Self) bool {
+    pub fn isMoreData(self: *Self) bool {
         return self.head < self.mem.len;
     }
 
