@@ -23,3 +23,8 @@ all-examples:
 	for example in examples/* ; do \
 		pushd $$example ; zig build --prefix ./ ; popd ; \
 	done
+
+test:
+	for source in src/*.zig ; do \
+		zig test $$source || exit 1 ; \
+	done
