@@ -10,6 +10,7 @@ const WireBuffer = @import("wire.zig").WireBuffer;
 const Connector = @import("connector.zig").Connector;
 const ClassMethod = @import("connector.zig").ClassMethod;
 const Channel = @import("channel.zig").Channel;
+const Table = @import("table.zig").Table;
 
 pub const Connection = struct {
     connector: Connector,
@@ -20,28 +21,70 @@ pub const Connection = struct {
 
     pub fn init(rx_memory: []u8, tx_memory: []u8) Connection {
         return Connection{
-            .connector = Connector {
+            .connector = Connector{
                 .rx_buffer = WireBuffer.init(rx_memory[0..]),
                 .tx_buffer = WireBuffer.init(tx_memory[0..]),
                 .channel = 0,
             },
             .in_use_channels = 1,
-            .max_channels = 32
+            .max_channels = 32,
         };
     }
 
     pub fn connect(self: *Self, allocator: *mem.Allocator, host: ?[]u8, port: ?u16) !void {
         // callbacks.init();
-
         const file = try net.tcpConnectToHost(allocator, host orelse "127.0.0.1", port orelse 5672);
         const n = try file.write("AMQP\x00\x00\x09\x01");
 
         self.connector.file = file;
         self.connector.connection = self;
 
-        var start_response = try proto.Connection.awaitStart(&self.connector);
+        var start = try proto.Connection.awaitStart(&self.connector);
+        const remote_host = start.server_properties.lookup([]u8, "cluster_name");
+        std.debug.warn("Connected to {} AMQP server (version {}.{})\nmechanisms: {}\nlocale: {}\n", .{
+            remote_host,
+            start.version_major,
+            start.version_minor,
+            start.mechanisms,
+            start.locales,
+        });
 
-        var tune_response = try proto.Connection.awaitTune(&self.connector);
+        var props_buffer: [1024]u8 = undefined;
+        var client_properties: Table = Table.init(props_buffer[0..]);
+
+        client_properties.insertLongString("product", "Zig AMQP Library");
+        client_properties.insertLongString("platform", "Zig 0.7.0");
+
+        // TODO: it's annoying having 3 lines for a single initialisation
+        // UPDATE: thoughts. We can at least get rid of the caps_wb if Table.init
+        //         does its own WireBuffer init from the backing buffer.
+        //         Also, perhaps we can offer a raw slice backed Table.init and,
+        //         say, a Table.initAllocator() that takes an allocator instead.
+        //         This gives users the freedom to decide how they want to deal
+        //         with memory.
+        var caps_buf: [1024]u8 = undefined;
+        var capabilities: Table = Table.init(caps_buf[0..]);
+
+        capabilities.insertBool("authentication_failure_close", true);
+        capabilities.insertBool("basic.nack", true);
+        capabilities.insertBool("connection.blocked", true);
+        capabilities.insertBool("consumer_cancel_notify", true);
+        capabilities.insertBool("publisher_confirms", true);
+        client_properties.insertTable("capabilities", &capabilities);
+
+        client_properties.insertLongString("information", "See https://github.com/malcolmstill/zig-amqp");
+        client_properties.insertLongString("version", "0.0.1");
+
+        // TODO: We want to be able to call start_ok_resp as a function
+        //       rather than having to deal with buffers.
+        // UPDATE: the above TODO is what we now have, but we require extra
+        //         buffers, and how do we size them. It would be nice to
+        //         avoid allocations.
+        try proto.Connection.startOkAsync(&self.connector, &client_properties, "PLAIN", "\x00guest\x00guest", "en_US");
+
+        var tune = try proto.Connection.awaitTune(&self.connector);
+        self.max_channels = tune.channel_max;
+        try proto.Connection.tuneOkAsync(&self.connector, @bitSizeOf(u2048) - 1, tune.frame_max, tune.heartbeat);
 
         var open_repsonse = try proto.Connection.openSync(&self.connector, "/");
     }
@@ -61,7 +104,7 @@ pub const Connection = struct {
 
     fn next_channel(self: *Self) !u16 {
         var i: u16 = 1;
-        while (i < self.max_channels and i < @bitSizeOf(u2048)) : ( i += 1 ) {
+        while (i < self.max_channels and i < @bitSizeOf(u2048)) : (i += 1) {
             const bit: u2048 = 1;
             const shift: u11 = @intCast(u11, i);
             if (self.in_use_channels & (bit << shift) == 0) {
@@ -77,6 +120,6 @@ pub const Connection = struct {
         if (channel_id >= @bitSizeOf(u2048)) return; // Look it's late okay...
         const bit: u2048 = 1;
         self.in_use_channels &= ~(bit << @intCast(u11, channel_id));
-        if (std.builtin.mode == .Debug) std.debug.warn("Freed channel {}, in_use_channels: {}\n", .{channel_id, @popCount(u2048, self.in_use_channels)});
+        if (std.builtin.mode == .Debug) std.debug.warn("Freed channel {}, in_use_channels: {}\n", .{ channel_id, @popCount(u2048, self.in_use_channels) });
     }
 };

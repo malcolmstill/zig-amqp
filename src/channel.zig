@@ -40,7 +40,7 @@ pub const Channel = struct {
     }
 
     pub fn basicConsume(self: *Self, name: []const u8, options: Basic.Options, args: ?*Table) !void {
-        var consume_ok = try proto.Basic.consumeSync(
+        var consume = try proto.Basic.consumeSync(
             &self.connector,
             name,
             "",
@@ -50,16 +50,10 @@ pub const Channel = struct {
             options.no_wait,
             args,
         );
+        std.debug.warn("consume: {}\n", .{consume});
 
-        std.debug.warn("consume_sync returned\n", .{});
-
-        // TODO: this should be const deliver: Deliver = proto.await_deliver();
-        var deliver_ok = proto.Basic.awaitDeliver(&self.connector);
-        // var received_response = false;
-        // while (!received_response) {
-        //     const expecting: ClassMethod = .{ .class = proto.BASIC_CLASS, .method = proto.Basic.DELIVER_METHOD };
-        //     received_response = try self.connector.dispatch(expecting);
-        // }
+        var deliver = proto.Basic.awaitDeliver(&self.connector);
+        std.debug.warn("deliver: {}\n", .{deliver});
 
         // _ = try self.connector.dispatch(null);
         // _ = try self.connector.dispatch(null);

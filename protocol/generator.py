@@ -189,6 +189,7 @@ def buildField(field):
 def generate(file):
     print(f'const std = @import("std");')
     print(f'const fs = std.fs;')
+    print(f'const os = std.os;')
     print(f'const Connector = @import("connector.zig").Connector;')
     print(f'const ClassMethod = @import("connector.zig").ClassMethod;')
     print(f'const WireBuffer = @import("wire.zig").WireBuffer;')
@@ -299,6 +300,14 @@ def generateAwaitMethod(parsed, class_name, method):
 
 
     print(f"while (true) {{")
+    print(f"        if (!conn.rx_buffer.frameReady()) {{")
+    print(f"        const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());")
+    print(f"        conn.rx_buffer.incrementEnd(n);")
+    print(f"    }}")
+    # print(f"if (std.builtin.mode == .Debug) conn.rx_buffer.printSpan();")
+    print(f"conn.rx_buffer.reset();")
+    print(f"conn.tx_buffer.reset();")
+    print(f"defer conn.rx_buffer.shift();")
     print(f"while (conn.rx_buffer.frameReady()) {{")
     print(f"const frame_header = try conn.getFrameHeader();")
 

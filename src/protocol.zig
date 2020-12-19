@@ -1,5 +1,6 @@
 const std = @import("std");
 const fs = std.fs;
+const os = std.os;
 const Connector = @import("connector.zig").Connector;
 const ClassMethod = @import("connector.zig").ClassMethod;
 const WireBuffer = @import("wire.zig").WireBuffer;
@@ -69,6 +70,13 @@ pub const Connection = struct {
     // start
     pub fn awaitStart(conn: *Connector) !Start {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -147,6 +155,13 @@ pub const Connection = struct {
     // start_ok
     pub fn awaitStartOk(conn: *Connector) !StartOk {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -215,6 +230,13 @@ pub const Connection = struct {
     // secure
     pub fn awaitSecure(conn: *Connector) !Secure {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -276,6 +298,13 @@ pub const Connection = struct {
     // secure_ok
     pub fn awaitSecureOk(conn: *Connector) !SecureOk {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -344,6 +373,13 @@ pub const Connection = struct {
     // tune
     pub fn awaitTune(conn: *Connector) !Tune {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -415,6 +451,13 @@ pub const Connection = struct {
     // tune_ok
     pub fn awaitTuneOk(conn: *Connector) !TuneOk {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -490,6 +533,13 @@ pub const Connection = struct {
     // open
     pub fn awaitOpen(conn: *Connector) !Open {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -556,6 +606,13 @@ pub const Connection = struct {
     // open_ok
     pub fn awaitOpenOk(conn: *Connector) !OpenOk {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -627,6 +684,13 @@ pub const Connection = struct {
     // close
     pub fn awaitClose(conn: *Connector) !Close {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -690,6 +754,13 @@ pub const Connection = struct {
     // close_ok
     pub fn awaitCloseOk(conn: *Connector) !CloseOk {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -748,6 +819,13 @@ pub const Connection = struct {
     // blocked
     pub fn awaitBlocked(conn: *Connector) !Blocked {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -805,6 +883,13 @@ pub const Connection = struct {
     // unblocked
     pub fn awaitUnblocked(conn: *Connector) !Unblocked {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -869,6 +954,13 @@ pub const Channel = struct {
     // open
     pub fn awaitOpen(conn: *Connector) !Open {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -930,6 +1022,13 @@ pub const Channel = struct {
     // open_ok
     pub fn awaitOpenOk(conn: *Connector) !OpenOk {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -995,6 +1094,13 @@ pub const Channel = struct {
     // flow
     pub fn awaitFlow(conn: *Connector) !Flow {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -1060,6 +1166,13 @@ pub const Channel = struct {
     // flow_ok
     pub fn awaitFlowOk(conn: *Connector) !FlowOk {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -1132,6 +1245,13 @@ pub const Channel = struct {
     // close
     pub fn awaitClose(conn: *Connector) !Close {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -1195,6 +1315,13 @@ pub const Channel = struct {
     // close_ok
     pub fn awaitCloseOk(conn: *Connector) !CloseOk {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -1286,6 +1413,13 @@ pub const Exchange = struct {
     // declare
     pub fn awaitDeclare(conn: *Connector) !Declare {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -1360,6 +1494,13 @@ pub const Exchange = struct {
     // declare_ok
     pub fn awaitDeclareOk(conn: *Connector) !DeclareOk {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -1431,6 +1572,13 @@ pub const Exchange = struct {
     // delete
     pub fn awaitDelete(conn: *Connector) !Delete {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -1495,6 +1643,13 @@ pub const Exchange = struct {
     // delete_ok
     pub fn awaitDeleteOk(conn: *Connector) !DeleteOk {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -1583,6 +1738,13 @@ pub const Queue = struct {
     // declare
     pub fn awaitDeclare(conn: *Connector) !Declare {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -1665,6 +1827,13 @@ pub const Queue = struct {
     // declare_ok
     pub fn awaitDeclareOk(conn: *Connector) !DeclareOk {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -1749,6 +1918,13 @@ pub const Queue = struct {
     // bind
     pub fn awaitBind(conn: *Connector) !Bind {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -1817,6 +1993,13 @@ pub const Queue = struct {
     // bind_ok
     pub fn awaitBindOk(conn: *Connector) !BindOk {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -1888,6 +2071,13 @@ pub const Queue = struct {
     // unbind
     pub fn awaitUnbind(conn: *Connector) !Unbind {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -1953,6 +2143,13 @@ pub const Queue = struct {
     // unbind_ok
     pub fn awaitUnbindOk(conn: *Connector) !UnbindOk {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -2021,6 +2218,13 @@ pub const Queue = struct {
     // purge
     pub fn awaitPurge(conn: *Connector) !Purge {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -2087,6 +2291,13 @@ pub const Queue = struct {
     // purge_ok
     pub fn awaitPurgeOk(conn: *Connector) !PurgeOk {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -2164,6 +2375,13 @@ pub const Queue = struct {
     // delete
     pub fn awaitDelete(conn: *Connector) !Delete {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -2234,6 +2452,13 @@ pub const Queue = struct {
     // delete_ok
     pub fn awaitDeleteOk(conn: *Connector) !DeleteOk {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -2310,6 +2535,13 @@ pub const Basic = struct {
     // qos
     pub fn awaitQos(conn: *Connector) !Qos {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -2372,6 +2604,13 @@ pub const Basic = struct {
     // qos_ok
     pub fn awaitQosOk(conn: *Connector) !QosOk {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -2455,6 +2694,13 @@ pub const Basic = struct {
     // consume
     pub fn awaitConsume(conn: *Connector) !Consume {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -2531,6 +2777,13 @@ pub const Basic = struct {
     // consume_ok
     pub fn awaitConsumeOk(conn: *Connector) !ConsumeOk {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -2599,6 +2852,13 @@ pub const Basic = struct {
     // cancel
     pub fn awaitCancel(conn: *Connector) !Cancel {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -2663,6 +2923,13 @@ pub const Basic = struct {
     // cancel_ok
     pub fn awaitCancelOk(conn: *Connector) !CancelOk {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -2739,6 +3006,13 @@ pub const Basic = struct {
     // publish
     pub fn awaitPublish(conn: *Connector) !Publish {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -2818,6 +3092,13 @@ pub const Basic = struct {
     // @"return"
     pub fn awaitReturn(conn: *Connector) !Return {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -2900,6 +3181,13 @@ pub const Basic = struct {
     // deliver
     pub fn awaitDeliver(conn: *Connector) !Deliver {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -2980,6 +3268,13 @@ pub const Basic = struct {
     // get
     pub fn awaitGet(conn: *Connector) !Get {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -3061,6 +3356,13 @@ pub const Basic = struct {
     // get_ok
     pub fn awaitGetOk(conn: *Connector) !GetOk {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -3131,6 +3433,13 @@ pub const Basic = struct {
     // get_empty
     pub fn awaitGetEmpty(conn: *Connector) !GetEmpty {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -3198,6 +3507,13 @@ pub const Basic = struct {
     // ack
     pub fn awaitAck(conn: *Connector) !Ack {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -3268,6 +3584,13 @@ pub const Basic = struct {
     // reject
     pub fn awaitReject(conn: *Connector) !Reject {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -3335,6 +3658,13 @@ pub const Basic = struct {
     // recover_async
     pub fn awaitRecoverAsync(conn: *Connector) !RecoverAsync {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -3400,6 +3730,13 @@ pub const Basic = struct {
     // recover
     pub fn awaitRecover(conn: *Connector) !Recover {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -3458,6 +3795,13 @@ pub const Basic = struct {
     // recover_ok
     pub fn awaitRecoverOk(conn: *Connector) !RecoverOk {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -3518,6 +3862,13 @@ pub const Tx = struct {
     // select
     pub fn awaitSelect(conn: *Connector) !Select {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -3572,6 +3923,13 @@ pub const Tx = struct {
     // select_ok
     pub fn awaitSelectOk(conn: *Connector) !SelectOk {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -3627,6 +3985,13 @@ pub const Tx = struct {
     // commit
     pub fn awaitCommit(conn: *Connector) !Commit {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -3681,6 +4046,13 @@ pub const Tx = struct {
     // commit_ok
     pub fn awaitCommitOk(conn: *Connector) !CommitOk {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -3736,6 +4108,13 @@ pub const Tx = struct {
     // rollback
     pub fn awaitRollback(conn: *Connector) !Rollback {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
@@ -3790,6 +4169,13 @@ pub const Tx = struct {
     // rollback_ok
     pub fn awaitRollbackOk(conn: *Connector) !RollbackOk {
         while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+            }
+            conn.rx_buffer.reset();
+            conn.tx_buffer.reset();
+            defer conn.rx_buffer.shift();
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.getFrameHeader();
                 switch (frame_header.@"type") {
