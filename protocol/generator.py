@@ -17,7 +17,6 @@ AMQP_TO_ZIG = {
         'shortstr': "[]const u8"
     }
 
-
 AMQP_ARG_TO_ZIG = {
         'longstr': "[]const u8",
         'bit': "bool",
@@ -76,9 +75,7 @@ CONSTNESS = {
         'octet': "const",
         'timestamp': 'const',
         'shortstr': 'const'
-    }    
-
-BITFIELD_TYPES = ['bit', 'no-ack', 'no-local', 'no-wait', 'redelivered']
+    }
 
 def buildAMQP(amqp):
     constants = {}

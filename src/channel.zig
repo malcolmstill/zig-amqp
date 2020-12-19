@@ -25,7 +25,7 @@ pub const Channel = struct {
     }
 
     pub fn queueDeclare(self: *Self, name: []const u8, options: Queue.Options, args: ?*Table) !Queue {
-        try proto.Queue.declare_sync(
+        try proto.Queue.declareSync(
             &self.connector,
             name,
             options.passive,
