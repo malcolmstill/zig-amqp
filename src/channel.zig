@@ -51,7 +51,7 @@ pub const Channel = struct {
         try self.connector.sendBody(body);
     }
 
-    pub fn basicConsume(self: *Self, name: []const u8, options: Basic.Consume.Options, args: ?*Table) !void {
+    pub fn basicConsume(self: *Self, name: []const u8, options: Basic.Consume.Options, args: ?*Table) !Basic.Consumer {
         var consume = try proto.Basic.consumeSync(
             &self.connector,
             name,
@@ -62,12 +62,9 @@ pub const Channel = struct {
             options.no_wait,
             args,
         );
-        std.log.debug("consume: {}\n", .{consume});
 
-        var deliver = proto.Basic.awaitDeliver(&self.connector);
-        std.log.debug("deliver: {}\n", .{deliver});
-
-        // _ = try self.connector.dispatch(null);
-        // _ = try self.connector.dispatch(null);
+        return Basic.Consumer{
+            .connector = self.connector,
+        };
     }
 };

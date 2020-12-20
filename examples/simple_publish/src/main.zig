@@ -13,7 +13,7 @@ pub fn main() !void {
     _ = try ch.queueDeclare("simple_publish", amqp.Queue.Options{}, null);
 
     var i: usize = 0;
-    while (i < 10) : (i += 1) {
+    while (i < 100_000) : (i += 1) {
         try ch.basicPublish("", "simple_publish", "hello world", amqp.Basic.Publish.Options{});
     }
 }

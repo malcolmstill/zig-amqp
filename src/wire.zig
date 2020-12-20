@@ -334,7 +334,7 @@ const MethodHeader = struct {
     method: u16 = 0,
 };
 
-const Header = struct {
+pub const Header = struct {
     class: u16 = 0,
     weight: u16 = 0,
     body_size: u64 = 0,

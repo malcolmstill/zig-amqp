@@ -106,6 +106,7 @@ pub const Connection = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -192,6 +193,7 @@ pub const Connection = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -264,6 +266,7 @@ pub const Connection = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -335,6 +338,7 @@ pub const Connection = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -417,6 +421,7 @@ pub const Connection = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -498,6 +503,7 @@ pub const Connection = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -584,6 +590,7 @@ pub const Connection = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -655,6 +662,7 @@ pub const Connection = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -742,6 +750,7 @@ pub const Connection = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -806,6 +815,7 @@ pub const Connection = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -877,6 +887,7 @@ pub const Connection = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -941,6 +952,7 @@ pub const Connection = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -1018,6 +1030,7 @@ pub const Channel = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -1089,6 +1102,7 @@ pub const Channel = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -1165,6 +1179,7 @@ pub const Channel = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -1240,6 +1255,7 @@ pub const Channel = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -1327,6 +1343,7 @@ pub const Channel = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -1391,6 +1408,7 @@ pub const Channel = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -1512,6 +1530,7 @@ pub const Exchange = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -1576,6 +1595,7 @@ pub const Exchange = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -1667,6 +1687,7 @@ pub const Exchange = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -1731,6 +1752,7 @@ pub const Exchange = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -1847,6 +1869,7 @@ pub const Queue = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -1928,6 +1951,7 @@ pub const Queue = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -2029,6 +2053,7 @@ pub const Queue = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -2093,6 +2118,7 @@ pub const Queue = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -2185,6 +2211,7 @@ pub const Queue = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -2249,6 +2276,7 @@ pub const Queue = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -2335,6 +2363,7 @@ pub const Queue = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -2406,6 +2435,7 @@ pub const Queue = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -2502,6 +2532,7 @@ pub const Queue = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -2573,6 +2604,7 @@ pub const Queue = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -2664,6 +2696,7 @@ pub const Basic = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -2728,6 +2761,7 @@ pub const Basic = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -2839,6 +2873,7 @@ pub const Basic = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -2910,6 +2945,7 @@ pub const Basic = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -2991,6 +3027,7 @@ pub const Basic = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -3062,6 +3099,7 @@ pub const Basic = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -3157,6 +3195,7 @@ pub const Basic = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -3243,6 +3282,7 @@ pub const Basic = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -3338,6 +3378,7 @@ pub const Basic = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -3424,6 +3465,7 @@ pub const Basic = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -3519,6 +3561,7 @@ pub const Basic = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -3590,6 +3633,7 @@ pub const Basic = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -3670,6 +3714,7 @@ pub const Basic = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -3750,6 +3795,7 @@ pub const Basic = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -3825,6 +3871,7 @@ pub const Basic = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -3900,6 +3947,7 @@ pub const Basic = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -3964,6 +4012,7 @@ pub const Basic = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -4034,6 +4083,7 @@ pub const Tx = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -4098,6 +4148,7 @@ pub const Tx = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -4163,6 +4214,7 @@ pub const Tx = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -4227,6 +4279,7 @@ pub const Tx = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -4292,6 +4345,7 @@ pub const Tx = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },
@@ -4356,6 +4410,7 @@ pub const Tx = struct {
                                 try Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },

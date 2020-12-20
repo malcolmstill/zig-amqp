@@ -344,7 +344,7 @@ def generateAwaitMethod(parsed, class_name, method):
     print(f"try Channel.closeOkAsync(conn);")
     print(f"return error.ChannelClose;")
     print(f"}}")
-
+    print(f"std.log.debug(\"got unexpected {{}}.{{}}\\n\", .{{method_header.class, method_header.method}});")
     print(f"return error.ImplementAsyncHandle;")
     # End else:
     print(f"}}")
