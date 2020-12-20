@@ -1,6 +1,12 @@
-# zig-amqp
+<h1 align="center">zig-amqp</h1>
 
-`zig-amqp` is a [Zig](https://ziglang.org) library for writing AMQP 0.9.1 clients (and servers)
+<div align="center">
+  <strong>AMQP 0.9.1 library for Zig</strong>
+</div>
+
+## About
+
+`zig-amqp` is a [Zig](https://ziglang.org) library for writing AMQP 0.9.1 clients (and servers), letting zig programs to connect to, for example, [RabbitMQ](https://www.rabbitmq.com/).
 
 ## How to use
 
