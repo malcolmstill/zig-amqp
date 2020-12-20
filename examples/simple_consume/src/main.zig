@@ -17,8 +17,6 @@ pub fn main() !void {
         var message = try consumer.next();
         var header = message.header;
         var body = message.body;
-        if (i % 10_000 == 0) {
-            std.debug.warn("count: {}, last body: {}\n", .{ i, body });
-        }
+        std.debug.warn("{}\n", .{body});
     }
 }
