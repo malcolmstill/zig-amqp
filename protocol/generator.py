@@ -353,8 +353,9 @@ def generateAwaitMethod(parsed, class_name, method):
     print(f"}},")
 
     print(f".Heartbeat => {{")
-    print(f"std.log.debug(\"Got heartbeat\", .{{}});")
+    print(f"std.log.debug(\"\\t<- Heartbeat\", .{{}});")
     print(f"                try conn.rx_buffer.readEOF();")
+    print(f"try conn.sendHeartbeat();")
     print(f"            }}, ")
     print(f"            .Header => {{ _ = try conn.rx_buffer.readHeader(frame_header.size); }},")
     print(f"            .Body => {{ _ = try conn.rx_buffer.readBody(frame_header.size); }},")

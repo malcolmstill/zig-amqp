@@ -175,6 +175,11 @@ pub const WireBuffer = struct {
         self.updateFrameLength();
     }
 
+    pub fn writeHeartbeat(self: *Self) void {
+        self.writeFrameHeader(.Heartbeat, 0, 0);
+        self.updateFrameLength();
+    }
+
     pub fn readU8(self: *Self) u8 {
         const r = @ptrCast(u8, self.mem[self.head]);
         self.head += 1;

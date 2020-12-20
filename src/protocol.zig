@@ -110,8 +110,9 @@ pub const Connection = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -195,8 +196,9 @@ pub const Connection = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -266,8 +268,9 @@ pub const Connection = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -336,8 +339,9 @@ pub const Connection = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -417,8 +421,9 @@ pub const Connection = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -497,8 +502,9 @@ pub const Connection = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -582,8 +588,9 @@ pub const Connection = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -652,8 +659,9 @@ pub const Connection = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -738,8 +746,9 @@ pub const Connection = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -801,8 +810,9 @@ pub const Connection = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -871,8 +881,9 @@ pub const Connection = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -934,8 +945,9 @@ pub const Connection = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -1010,8 +1022,9 @@ pub const Channel = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -1080,8 +1093,9 @@ pub const Channel = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -1155,8 +1169,9 @@ pub const Channel = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -1229,8 +1244,9 @@ pub const Channel = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -1315,8 +1331,9 @@ pub const Channel = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -1378,8 +1395,9 @@ pub const Channel = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -1498,8 +1516,9 @@ pub const Exchange = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -1561,8 +1580,9 @@ pub const Exchange = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -1651,8 +1671,9 @@ pub const Exchange = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -1714,8 +1735,9 @@ pub const Exchange = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -1829,8 +1851,9 @@ pub const Queue = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -1909,8 +1932,9 @@ pub const Queue = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -2009,8 +2033,9 @@ pub const Queue = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -2072,8 +2097,9 @@ pub const Queue = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -2163,8 +2189,9 @@ pub const Queue = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -2226,8 +2253,9 @@ pub const Queue = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -2311,8 +2339,9 @@ pub const Queue = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -2381,8 +2410,9 @@ pub const Queue = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -2476,8 +2506,9 @@ pub const Queue = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -2546,8 +2577,9 @@ pub const Queue = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -2636,8 +2668,9 @@ pub const Basic = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -2699,8 +2732,9 @@ pub const Basic = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -2809,8 +2843,9 @@ pub const Basic = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -2879,8 +2914,9 @@ pub const Basic = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -2959,8 +2995,9 @@ pub const Basic = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -3029,8 +3066,9 @@ pub const Basic = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -3123,8 +3161,9 @@ pub const Basic = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -3208,8 +3247,9 @@ pub const Basic = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -3302,8 +3342,9 @@ pub const Basic = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -3387,8 +3428,9 @@ pub const Basic = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -3481,8 +3523,9 @@ pub const Basic = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -3551,8 +3594,9 @@ pub const Basic = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -3630,8 +3674,9 @@ pub const Basic = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -3709,8 +3754,9 @@ pub const Basic = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -3783,8 +3829,9 @@ pub const Basic = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -3857,8 +3904,9 @@ pub const Basic = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -3920,8 +3968,9 @@ pub const Basic = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -3989,8 +4038,9 @@ pub const Tx = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -4052,8 +4102,9 @@ pub const Tx = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -4116,8 +4167,9 @@ pub const Tx = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -4179,8 +4231,9 @@ pub const Tx = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -4243,8 +4296,9 @@ pub const Tx = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);
@@ -4306,8 +4360,9 @@ pub const Tx = struct {
                         }
                     },
                     .Heartbeat => {
-                        std.log.debug("Got heartbeat", .{});
+                        std.log.debug("\t<- Heartbeat", .{});
                         try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
                     },
                     .Header => {
                         _ = try conn.rx_buffer.readHeader(frame_header.size);

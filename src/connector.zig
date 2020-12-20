@@ -30,4 +30,11 @@ pub const Connector = struct {
         _ = try std.os.write(self.file.handle, self.tx_buffer.extent());
         self.tx_buffer.reset();
     }
+
+    pub fn sendHeartbeat(self: *Self) !void {
+        self.tx_buffer.writeHeartbeat();
+        _ = try std.os.write(self.file.handle, self.tx_buffer.extent());
+        self.tx_buffer.reset();
+        std.log.debug("Heartbeat ->", .{});
+    }
 };
