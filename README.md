@@ -58,17 +58,8 @@ require.
         not a dynamic executable
 ➜  zig-amqp git:(master) ✗ ls -l example                                      
 -rwxr-xr-x. 1 malcolm malcolm 44872 Dec 20 04:26 example
-➜  zig-amqp git:(master) ✗ upx example; echo "If we're really size averse"
-                       Ultimate Packer for eXecutables
-                          Copyright (C) 1996 - 2020
-UPX 3.96        Markus Oberhumer, Laszlo Molnar & John Reiser   Jan 23rd 2020
-
-        File size         Ratio      Format      Name
-   --------------------   ------   -----------   -----------
-example  5/6  [***********************************************...]   36.1%  -      44872 ->     19920   44.39%   linux/amd64   example
-
-Packed 1 file.
 ```
+
 
 ### Build
 
