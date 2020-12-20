@@ -11,3 +11,4 @@ inject.sh
 
 TOUR.md
 *.pdf
+src/example.zig
