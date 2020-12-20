@@ -43,7 +43,7 @@ RESERVED = {
 
 WRITES = {
         'longstr': 'writeLongString',
-        'bit': "NOWAY",
+        'bit': "unreachable",
         'longlong': "writeU64",
         'short': "writeU16",
         'table': "writeTable",
@@ -55,7 +55,7 @@ WRITES = {
 
 READS = {
         'longstr': 'readLongString',
-        'bit': "NOWAY",
+        'bit': "unreachable",
         'longlong': "readU64",
         'short': "readU16",
         'table': "readTable",
@@ -430,6 +430,5 @@ def nameCleanCamel(name):
 
 def nameCleanSnake(name):
     return ''.join([x if i == 0 else x.capitalize() for i, x in enumerate(name.split('-'))])
-
 
 generate(sys.argv[1])
