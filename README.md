@@ -27,9 +27,9 @@ pub fn main() !void {
     try conn.connect(addr);
 
     var ch = try conn.channel();
-    _ = try ch.queueDeclare("simple_publish", amqp.Queue.Options{}, null);
+    _ = try ch.queueDeclare("simple_publish", .{}, null);
 
-    try ch.basicPublish("", "simple_publish", "hello world", amqp.Basic.Publish.Options{});
+    try ch.basicPublish("", "simple_publish", "hello world", .{});
 }
 ```
 
