@@ -10,7 +10,7 @@
 
 ## How to use
 
-See [the examples]() for an idea of how to use the library.
+See [the examples](https://github.com/malcolmstill/zig-amqp/tree/master/examples) for an idea of how to use the library.
 
 ## Status
 
