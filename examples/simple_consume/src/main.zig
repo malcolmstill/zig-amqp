@@ -11,7 +11,7 @@ pub fn main() !void {
 
     var ch = try conn.channel();
 
-    var consumer = try ch.basicConsume("simple_publish", amqp.Basic.Consume.Options{ .no_ack = true }, null);
+    var consumer = try ch.basicConsume("simple_publish", .{ .no_ack = true }, null);
     var i: usize = 0;
     while (true) : (i += 1) {
         var message = try consumer.next();
