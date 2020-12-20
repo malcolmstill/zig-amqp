@@ -16,10 +16,8 @@ pub const Queue = struct {
     };
 
     pub fn init(channel: *Channel) Queue {
-        var q = Queue {
+        return Queue{
             .connector = channel.connector,
         };
-
-        return q;
     }
 };

@@ -7,14 +7,14 @@ const mem = std.mem;
 const WireBuffer = @import("wire.zig").WireBuffer;
 
 pub const Table = struct {
-    // a slice of our rx_buffer
+    // a slice of our rx_buffer (with its own head and end)
     buf: WireBuffer = undefined,
     len: usize = 0,
 
     const Self = @This();
 
     pub fn init(buffer: []u8) Table {
-        var t = Table {
+        var t = Table{
             .buf = WireBuffer.init(buffer),
             .len = 0,
         };
@@ -31,7 +31,7 @@ pub const Table = struct {
         defer self.buf.reset();
         const length = self.buf.readU32();
 
-        while (self.buf.is_more_data()) {
+        while (self.buf.isMoreData()) {
             const current_key = self.buf.readShortString();
             const correct_key = std.mem.eql(u8, key, current_key);
             const t = self.buf.readU8();
@@ -53,7 +53,7 @@ pub const Table = struct {
                     if (@TypeOf(s) == T and correct_key) return s;
                 },
                 else => {
-                    // TODO: support all types
+                    // TODO: support all types as continue will return garbage
                     continue;
                 },
             }
@@ -94,13 +94,7 @@ pub const Table = struct {
     }
 
     fn updateLength(self: *Self) void {
-        mem.writeInt(
-            u32,
-            @ptrCast(*[@sizeOf(u32)]u8,
-            &self.buf.mem[0]),
-            @intCast(u32, self.buf.head - @sizeOf(u32)),
-            .Big
-        );
+        mem.writeInt(u32, @ptrCast(*[@sizeOf(u32)]u8, &self.buf.mem[0]), @intCast(u32, self.buf.head - @sizeOf(u32)), .Big);
     }
 
     pub fn print(self: *Self) void {

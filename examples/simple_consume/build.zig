@@ -11,10 +11,10 @@ pub fn build(b: *Builder) void {
     // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall.
     const mode = b.standardReleaseOptions();
 
-    const exe = b.addExecutable("simple_client", "src/main.zig");
+    const exe = b.addExecutable("simple_consume", "src/main.zig");
     exe.setTarget(target);
     exe.setBuildMode(mode);
-    exe.addPackagePath("amqp", "../../src/main.zig");
+    exe.addPackagePath("amqp", "../../src/amqp.zig");
     exe.install();
 
     const run_cmd = exe.run();

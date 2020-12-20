@@ -2,6 +2,8 @@ const std = @import("std");
 const os = std.os;
 const fs = std.fs;
 const proto = @import("protocol.zig");
+const wire = @import("wire.zig");
+const Header = @import("wire.zig").Header;
 const WireBuffer = @import("wire.zig").WireBuffer;
 const Connection = @import("connection.zig").Connection;
 
@@ -18,85 +20,106 @@ pub const Connector = struct {
 
     const Self = @This();
 
-    // dispatch reads from our socket and dispatches methods in response
-    // Where dispatch is invoked in initialising a request, we pass in an expected_response
-    // ClassMethod that specifies what (synchronous) response we are expecting. If this value
-    // is supplied and we receive an incorrect (synchronous) method we error, otherwise we
-    // dispatch and return true. In the case
-    // (expected_response supplied), if we receive an asynchronous response we dispatch it
-    // but return true.
-    pub fn dispatch(self: *Self, expected_response: ?ClassMethod) !bool {
-        const n = try os.read(self.file.handle, self.rx_buffer.mem[0..]);
-        self.rx_buffer.reset();
+    pub fn sendHeader(self: *Self, size: u64, class: u16) !void {
+        self.tx_buffer.writeHeader(self.channel, size, class);
+        _ = try std.os.write(self.file.handle, self.tx_buffer.extent());
         self.tx_buffer.reset();
-
-        // 1. Attempt to read a frame header
-        const header = try self.rx_buffer.readFrameHeader();
-
-        switch (header.@"type") {
-            .Method => {
-                // 2a. The frame header says this is a method, attempt to read
-                // the method header
-                const method_header = try self.rx_buffer.readMethodHeader();
-                const class = method_header.class;
-                const method = method_header.method;
-
-                var sync_resp_ok = false;
-
-                // 3a. If this is a synchronous call, we expect expected_response to be
-                // non-null and to provide the expected class and method of the response
-                // that we're waiting on. That class and method is checked for being
-                // a synchronous response and then we compare the class / method from the
-                // header with expected_response and error if they don't match.
-                if (expected_response) |expected| {
-                    const is_synchronous = try proto.isSynchronous(class, method);
-
-                    if (is_synchronous) {
-                        // if (class != expected.class) return error.UnexpectedResponseClass;
-                        // if (method != expected.method) return error.UnexpectedResponseClass;
-                        if (class == expected.class and method == expected.method) {
-                            sync_resp_ok = true;
-                        } else {
-                            if (class == proto.CHANNEL_CLASS and method == proto.Channel.CLOSE_METHOD) {
-                                proto.dispatchCallback(self, class, method) catch |err| {
-                                    switch (err) {
-                                        error.ChannelError => {
-                                            self.connection.free_channel(self.channel);
-                                            return err;
-                                        },
-                                        else => return err,
-                                    }
-                                };
-                            }
-
-                            if (class == proto.CONNECTION_CLASS and method == proto.Connection.CLOSE_METHOD) {
-                                try proto.dispatchCallback(self, class, method);
-                            }
-
-                            return error.UnexpectedSync;
-                        }
-                    } else {
-                        sync_resp_ok = true;
-                    }
-                }
-
-                // 4a. Finally dispatch the class / method
-                // const connection: *proto.Connection = @fieldParentPtr(proto.Connection, "conn", self);
-                try proto.dispatchCallback(self, class, method);
-                return sync_resp_ok;
-            },
-            .Heartbeat => {
-                if (std.builtin.mode == .Debug) std.debug.warn("Got heartbeat\n", .{});
-                return false;
-            },
-            else => {
-                return false;
-            },
-        }
     }
-};
 
-pub const ClassMethod = struct {
-    class: u16 = 0,
-    method: u16 = 0,
+    pub fn sendBody(self: *Self, body: []const u8) !void {
+        self.tx_buffer.writeBody(self.channel, body);
+        _ = try std.os.write(self.file.handle, self.tx_buffer.extent());
+        self.tx_buffer.reset();
+    }
+
+    pub fn sendHeartbeat(self: *Self) !void {
+        self.tx_buffer.writeHeartbeat();
+        _ = try std.os.write(self.file.handle, self.tx_buffer.extent());
+        self.tx_buffer.reset();
+        std.log.debug("Heartbeat ->", .{});
+    }
+
+    pub fn awaitHeader(conn: *Connector) !Header {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == 10 and method_header.method == 50) {
+                            try proto.Connection.closeOkAsync(conn);
+                            return error.ConnectionClose;
+                        }
+                        if (method_header.class == 20 and method_header.method == 40) {
+                            try proto.Channel.closeOkAsync(conn);
+                            return error.ChannelClose;
+                        }
+                        std.log.debug("awaitHeader: unexpected method {}.{}\n", .{ method_header.class, method_header.method });
+                        return error.ImplementAsyncHandle;
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        return conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    pub fn awaitBody(conn: *Connector) ![]u8 {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == 10 and method_header.method == 50) {
+                            try proto.Connection.closeOkAsync(conn);
+                            return error.ConnectionClose;
+                        }
+                        if (method_header.class == 20 and method_header.method == 40) {
+                            try proto.Channel.closeOkAsync(conn);
+                            return error.ChannelClose;
+                        }
+                        std.log.debug("awaitBody: unexpected method {}.{}\n", .{ method_header.class, method_header.method });
+                        return error.ImplementAsyncHandle;
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        return conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
 };

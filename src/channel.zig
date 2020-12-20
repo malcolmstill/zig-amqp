@@ -13,7 +13,7 @@ pub const Channel = struct {
     const Self = @This();
 
     pub fn init(id: u16, connection: *Connection) Channel {
-        var ch = Channel {
+        var ch = Channel{
             .connector = connection.connector,
             .channel_id = id,
         };
@@ -24,7 +24,7 @@ pub const Channel = struct {
     }
 
     pub fn queueDeclare(self: *Self, name: []const u8, options: Queue.Options, args: ?*Table) !Queue {
-        try proto.Queue.declare_sync(
+        var declare = try proto.Queue.declareSync(
             &self.connector,
             name,
             options.passive,
@@ -38,23 +38,33 @@ pub const Channel = struct {
         return Queue.init(self);
     }
 
-    pub fn basicConsume(self: *Self, name: []const u8, options: Basic.Options, args: ?*Table) !void {
-        var ctag: [32]u8 = undefined;
-        try std.os.getrandom(ctag[0..]);
+    pub fn basicPublish(self: *Self, exchange_name: []const u8, routing_key: []const u8, body: []const u8, options: Basic.Publish.Options) !void {
+        try proto.Basic.publishAsync(
+            &self.connector,
+            exchange_name,
+            routing_key,
+            options.mandatory,
+            options.immediate,
+        );
 
-        for (ctag) |r, i| {
-            ctag[i] = std.math.max(48, std.math.min(122, r));
-        }
+        try self.connector.sendHeader(body.len, proto.Basic.BASIC_CLASS);
+        try self.connector.sendBody(body);
+    }
 
-        try proto.Basic.consume_sync(
+    pub fn basicConsume(self: *Self, name: []const u8, options: Basic.Consume.Options, args: ?*Table) !Basic.Consumer {
+        var consume = try proto.Basic.consumeSync(
             &self.connector,
             name,
-            ctag[0..],
+            "",
             options.no_local,
             options.no_ack,
             options.exclusive,
             options.no_wait,
             args,
         );
+
+        return Basic.Consumer{
+            .connector = self.connector,
+        };
     }
 };

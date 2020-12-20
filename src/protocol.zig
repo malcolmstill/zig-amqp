@@ -1,1054 +1,142 @@
 const std = @import("std");
 const fs = std.fs;
+const os = std.os;
 const Connector = @import("connector.zig").Connector;
-const ClassMethod = @import("connector.zig").ClassMethod;
 const WireBuffer = @import("wire.zig").WireBuffer;
 const Table = @import("table.zig").Table;
-// amqp
-pub fn dispatchCallback(conn: *Connector, class: u16, method: u16) !void {
-    switch (class) {
-        // connection
-        10 => {
-            switch (method) {
-                // start
-                10 => {
-                    const start = CONNECTION_IMPL.start orelse return error.MethodNotImplemented;
-                    const version_major = conn.rx_buffer.readU8();
-                    const version_minor = conn.rx_buffer.readU8();
-                    var server_properties = conn.rx_buffer.readTable();
-                    const mechanisms = conn.rx_buffer.readLongString();
-                    const locales = conn.rx_buffer.readLongString();
-                    try start(
-                        conn,
-                        version_major,
-                        version_minor,
-                        &server_properties,
-                        mechanisms,
-                        locales,
-                    );
-                },
-                // start_ok
-                11 => {
-                    const start_ok = CONNECTION_IMPL.start_ok orelse return error.MethodNotImplemented;
-                    var client_properties = conn.rx_buffer.readTable();
-                    const mechanism = conn.rx_buffer.readShortString();
-                    const response = conn.rx_buffer.readLongString();
-                    const locale = conn.rx_buffer.readShortString();
-                    try start_ok(
-                        conn,
-                        &client_properties,
-                        mechanism,
-                        response,
-                        locale,
-                    );
-                },
-                // secure
-                20 => {
-                    const secure = CONNECTION_IMPL.secure orelse return error.MethodNotImplemented;
-                    const challenge = conn.rx_buffer.readLongString();
-                    try secure(
-                        conn,
-                        challenge,
-                    );
-                },
-                // secure_ok
-                21 => {
-                    const secure_ok = CONNECTION_IMPL.secure_ok orelse return error.MethodNotImplemented;
-                    const response = conn.rx_buffer.readLongString();
-                    try secure_ok(
-                        conn,
-                        response,
-                    );
-                },
-                // tune
-                30 => {
-                    const tune = CONNECTION_IMPL.tune orelse return error.MethodNotImplemented;
-                    const channel_max = conn.rx_buffer.readU16();
-                    const frame_max = conn.rx_buffer.readU32();
-                    const heartbeat = conn.rx_buffer.readU16();
-                    try tune(
-                        conn,
-                        channel_max,
-                        frame_max,
-                        heartbeat,
-                    );
-                },
-                // tune_ok
-                31 => {
-                    const tune_ok = CONNECTION_IMPL.tune_ok orelse return error.MethodNotImplemented;
-                    const channel_max = conn.rx_buffer.readU16();
-                    const frame_max = conn.rx_buffer.readU32();
-                    const heartbeat = conn.rx_buffer.readU16();
-                    try tune_ok(
-                        conn,
-                        channel_max,
-                        frame_max,
-                        heartbeat,
-                    );
-                },
-                // open
-                40 => {
-                    const open = CONNECTION_IMPL.open orelse return error.MethodNotImplemented;
-                    const virtual_host = conn.rx_buffer.readShortString();
-                    const reserved_1 = conn.rx_buffer.readShortString();
-                    const bitset0 = conn.rx_buffer.readU8();
-                    const reserved_2 = if (bitset0 & (1 << 0) == 0) true else false;
-                    try open(
-                        conn,
-                        virtual_host,
-                    );
-                },
-                // open_ok
-                41 => {
-                    const open_ok = CONNECTION_IMPL.open_ok orelse return error.MethodNotImplemented;
-                    const reserved_1 = conn.rx_buffer.readShortString();
-                    try open_ok(
-                        conn,
-                    );
-                },
-                // close
-                50 => {
-                    const close = CONNECTION_IMPL.close orelse return error.MethodNotImplemented;
-                    const reply_code = conn.rx_buffer.readU16();
-                    const reply_text = conn.rx_buffer.readShortString();
-                    const class_id = conn.rx_buffer.readU16();
-                    const method_id = conn.rx_buffer.readU16();
-                    try close(
-                        conn,
-                        reply_code,
-                        reply_text,
-                        class_id,
-                        method_id,
-                    );
-                },
-                // close_ok
-                51 => {
-                    const close_ok = CONNECTION_IMPL.close_ok orelse return error.MethodNotImplemented;
-                    try close_ok(
-                        conn,
-                    );
-                },
-                // blocked
-                60 => {
-                    const blocked = CONNECTION_IMPL.blocked orelse return error.MethodNotImplemented;
-                    const reason = conn.rx_buffer.readShortString();
-                    try blocked(
-                        conn,
-                        reason,
-                    );
-                },
-                // unblocked
-                61 => {
-                    const unblocked = CONNECTION_IMPL.unblocked orelse return error.MethodNotImplemented;
-                    try unblocked(
-                        conn,
-                    );
-                },
-                else => return error.UnknownMethod,
-            }
-        },
-        // channel
-        20 => {
-            switch (method) {
-                // open
-                10 => {
-                    const open = CHANNEL_IMPL.open orelse return error.MethodNotImplemented;
-                    const reserved_1 = conn.rx_buffer.readShortString();
-                    try open(
-                        conn,
-                    );
-                },
-                // open_ok
-                11 => {
-                    const open_ok = CHANNEL_IMPL.open_ok orelse return error.MethodNotImplemented;
-                    const reserved_1 = conn.rx_buffer.readLongString();
-                    try open_ok(
-                        conn,
-                    );
-                },
-                // flow
-                20 => {
-                    const flow = CHANNEL_IMPL.flow orelse return error.MethodNotImplemented;
-                    const bitset0 = conn.rx_buffer.readU8();
-                    const active = if (bitset0 & (1 << 0) == 0) true else false;
-                    try flow(
-                        conn,
-                        active,
-                    );
-                },
-                // flow_ok
-                21 => {
-                    const flow_ok = CHANNEL_IMPL.flow_ok orelse return error.MethodNotImplemented;
-                    const bitset0 = conn.rx_buffer.readU8();
-                    const active = if (bitset0 & (1 << 0) == 0) true else false;
-                    try flow_ok(
-                        conn,
-                        active,
-                    );
-                },
-                // close
-                40 => {
-                    const close = CHANNEL_IMPL.close orelse return error.MethodNotImplemented;
-                    const reply_code = conn.rx_buffer.readU16();
-                    const reply_text = conn.rx_buffer.readShortString();
-                    const class_id = conn.rx_buffer.readU16();
-                    const method_id = conn.rx_buffer.readU16();
-                    try close(
-                        conn,
-                        reply_code,
-                        reply_text,
-                        class_id,
-                        method_id,
-                    );
-                },
-                // close_ok
-                41 => {
-                    const close_ok = CHANNEL_IMPL.close_ok orelse return error.MethodNotImplemented;
-                    try close_ok(
-                        conn,
-                    );
-                },
-                else => return error.UnknownMethod,
-            }
-        },
-        // exchange
-        40 => {
-            switch (method) {
-                // declare
-                10 => {
-                    const declare = EXCHANGE_IMPL.declare orelse return error.MethodNotImplemented;
-                    const reserved_1 = conn.rx_buffer.readU16();
-                    const exchange = conn.rx_buffer.readShortString();
-                    const tipe = conn.rx_buffer.readShortString();
-                    const bitset0 = conn.rx_buffer.readU8();
-                    const passive = if (bitset0 & (1 << 0) == 0) true else false;
-                    const durable = if (bitset0 & (1 << 1) == 0) true else false;
-                    const reserved_2 = if (bitset0 & (1 << 2) == 0) true else false;
-                    const reserved_3 = if (bitset0 & (1 << 3) == 0) true else false;
-                    const no_wait = if (bitset0 & (1 << 4) == 0) true else false;
-                    var arguments = conn.rx_buffer.readTable();
-                    try declare(
-                        conn,
-                        exchange,
-                        tipe,
-                        passive,
-                        durable,
-                        no_wait,
-                        &arguments,
-                    );
-                },
-                // declare_ok
-                11 => {
-                    const declare_ok = EXCHANGE_IMPL.declare_ok orelse return error.MethodNotImplemented;
-                    try declare_ok(
-                        conn,
-                    );
-                },
-                // delete
-                20 => {
-                    const delete = EXCHANGE_IMPL.delete orelse return error.MethodNotImplemented;
-                    const reserved_1 = conn.rx_buffer.readU16();
-                    const exchange = conn.rx_buffer.readShortString();
-                    const bitset0 = conn.rx_buffer.readU8();
-                    const if_unused = if (bitset0 & (1 << 0) == 0) true else false;
-                    const no_wait = if (bitset0 & (1 << 1) == 0) true else false;
-                    try delete(
-                        conn,
-                        exchange,
-                        if_unused,
-                        no_wait,
-                    );
-                },
-                // delete_ok
-                21 => {
-                    const delete_ok = EXCHANGE_IMPL.delete_ok orelse return error.MethodNotImplemented;
-                    try delete_ok(
-                        conn,
-                    );
-                },
-                else => return error.UnknownMethod,
-            }
-        },
-        // queue
-        50 => {
-            switch (method) {
-                // declare
-                10 => {
-                    const declare = QUEUE_IMPL.declare orelse return error.MethodNotImplemented;
-                    const reserved_1 = conn.rx_buffer.readU16();
-                    const queue = conn.rx_buffer.readShortString();
-                    const bitset0 = conn.rx_buffer.readU8();
-                    const passive = if (bitset0 & (1 << 0) == 0) true else false;
-                    const durable = if (bitset0 & (1 << 1) == 0) true else false;
-                    const exclusive = if (bitset0 & (1 << 2) == 0) true else false;
-                    const auto_delete = if (bitset0 & (1 << 3) == 0) true else false;
-                    const no_wait = if (bitset0 & (1 << 4) == 0) true else false;
-                    var arguments = conn.rx_buffer.readTable();
-                    try declare(
-                        conn,
-                        queue,
-                        passive,
-                        durable,
-                        exclusive,
-                        auto_delete,
-                        no_wait,
-                        &arguments,
-                    );
-                },
-                // declare_ok
-                11 => {
-                    const declare_ok = QUEUE_IMPL.declare_ok orelse return error.MethodNotImplemented;
-                    const queue = conn.rx_buffer.readShortString();
-                    const message_count = conn.rx_buffer.readU32();
-                    const consumer_count = conn.rx_buffer.readU32();
-                    try declare_ok(
-                        conn,
-                        queue,
-                        message_count,
-                        consumer_count,
-                    );
-                },
-                // bind
-                20 => {
-                    const bind = QUEUE_IMPL.bind orelse return error.MethodNotImplemented;
-                    const reserved_1 = conn.rx_buffer.readU16();
-                    const queue = conn.rx_buffer.readShortString();
-                    const exchange = conn.rx_buffer.readShortString();
-                    const routing_key = conn.rx_buffer.readShortString();
-                    const bitset0 = conn.rx_buffer.readU8();
-                    const no_wait = if (bitset0 & (1 << 0) == 0) true else false;
-                    var arguments = conn.rx_buffer.readTable();
-                    try bind(
-                        conn,
-                        queue,
-                        exchange,
-                        routing_key,
-                        no_wait,
-                        &arguments,
-                    );
-                },
-                // bind_ok
-                21 => {
-                    const bind_ok = QUEUE_IMPL.bind_ok orelse return error.MethodNotImplemented;
-                    try bind_ok(
-                        conn,
-                    );
-                },
-                // unbind
-                50 => {
-                    const unbind = QUEUE_IMPL.unbind orelse return error.MethodNotImplemented;
-                    const reserved_1 = conn.rx_buffer.readU16();
-                    const queue = conn.rx_buffer.readShortString();
-                    const exchange = conn.rx_buffer.readShortString();
-                    const routing_key = conn.rx_buffer.readShortString();
-                    var arguments = conn.rx_buffer.readTable();
-                    try unbind(
-                        conn,
-                        queue,
-                        exchange,
-                        routing_key,
-                        &arguments,
-                    );
-                },
-                // unbind_ok
-                51 => {
-                    const unbind_ok = QUEUE_IMPL.unbind_ok orelse return error.MethodNotImplemented;
-                    try unbind_ok(
-                        conn,
-                    );
-                },
-                // purge
-                30 => {
-                    const purge = QUEUE_IMPL.purge orelse return error.MethodNotImplemented;
-                    const reserved_1 = conn.rx_buffer.readU16();
-                    const queue = conn.rx_buffer.readShortString();
-                    const bitset0 = conn.rx_buffer.readU8();
-                    const no_wait = if (bitset0 & (1 << 0) == 0) true else false;
-                    try purge(
-                        conn,
-                        queue,
-                        no_wait,
-                    );
-                },
-                // purge_ok
-                31 => {
-                    const purge_ok = QUEUE_IMPL.purge_ok orelse return error.MethodNotImplemented;
-                    const message_count = conn.rx_buffer.readU32();
-                    try purge_ok(
-                        conn,
-                        message_count,
-                    );
-                },
-                // delete
-                40 => {
-                    const delete = QUEUE_IMPL.delete orelse return error.MethodNotImplemented;
-                    const reserved_1 = conn.rx_buffer.readU16();
-                    const queue = conn.rx_buffer.readShortString();
-                    const bitset0 = conn.rx_buffer.readU8();
-                    const if_unused = if (bitset0 & (1 << 0) == 0) true else false;
-                    const if_empty = if (bitset0 & (1 << 1) == 0) true else false;
-                    const no_wait = if (bitset0 & (1 << 2) == 0) true else false;
-                    try delete(
-                        conn,
-                        queue,
-                        if_unused,
-                        if_empty,
-                        no_wait,
-                    );
-                },
-                // delete_ok
-                41 => {
-                    const delete_ok = QUEUE_IMPL.delete_ok orelse return error.MethodNotImplemented;
-                    const message_count = conn.rx_buffer.readU32();
-                    try delete_ok(
-                        conn,
-                        message_count,
-                    );
-                },
-                else => return error.UnknownMethod,
-            }
-        },
-        // basic
-        60 => {
-            switch (method) {
-                // qos
-                10 => {
-                    const qos = BASIC_IMPL.qos orelse return error.MethodNotImplemented;
-                    const prefetch_size = conn.rx_buffer.readU32();
-                    const prefetch_count = conn.rx_buffer.readU16();
-                    const bitset0 = conn.rx_buffer.readU8();
-                    const global = if (bitset0 & (1 << 0) == 0) true else false;
-                    try qos(
-                        conn,
-                        prefetch_size,
-                        prefetch_count,
-                        global,
-                    );
-                },
-                // qos_ok
-                11 => {
-                    const qos_ok = BASIC_IMPL.qos_ok orelse return error.MethodNotImplemented;
-                    try qos_ok(
-                        conn,
-                    );
-                },
-                // consume
-                20 => {
-                    const consume = BASIC_IMPL.consume orelse return error.MethodNotImplemented;
-                    const reserved_1 = conn.rx_buffer.readU16();
-                    const queue = conn.rx_buffer.readShortString();
-                    const consumer_tag = conn.rx_buffer.readShortString();
-                    const bitset0 = conn.rx_buffer.readU8();
-                    const no_local = if (bitset0 & (1 << 0) == 0) true else false;
-                    const no_ack = if (bitset0 & (1 << 1) == 0) true else false;
-                    const exclusive = if (bitset0 & (1 << 2) == 0) true else false;
-                    const no_wait = if (bitset0 & (1 << 3) == 0) true else false;
-                    var arguments = conn.rx_buffer.readTable();
-                    try consume(
-                        conn,
-                        queue,
-                        consumer_tag,
-                        no_local,
-                        no_ack,
-                        exclusive,
-                        no_wait,
-                        &arguments,
-                    );
-                },
-                // consume_ok
-                21 => {
-                    const consume_ok = BASIC_IMPL.consume_ok orelse return error.MethodNotImplemented;
-                    const consumer_tag = conn.rx_buffer.readShortString();
-                    try consume_ok(
-                        conn,
-                        consumer_tag,
-                    );
-                },
-                // cancel
-                30 => {
-                    const cancel = BASIC_IMPL.cancel orelse return error.MethodNotImplemented;
-                    const consumer_tag = conn.rx_buffer.readShortString();
-                    const bitset0 = conn.rx_buffer.readU8();
-                    const no_wait = if (bitset0 & (1 << 0) == 0) true else false;
-                    try cancel(
-                        conn,
-                        consumer_tag,
-                        no_wait,
-                    );
-                },
-                // cancel_ok
-                31 => {
-                    const cancel_ok = BASIC_IMPL.cancel_ok orelse return error.MethodNotImplemented;
-                    const consumer_tag = conn.rx_buffer.readShortString();
-                    try cancel_ok(
-                        conn,
-                        consumer_tag,
-                    );
-                },
-                // publish
-                40 => {
-                    const publish = BASIC_IMPL.publish orelse return error.MethodNotImplemented;
-                    const reserved_1 = conn.rx_buffer.readU16();
-                    const exchange = conn.rx_buffer.readShortString();
-                    const routing_key = conn.rx_buffer.readShortString();
-                    const bitset0 = conn.rx_buffer.readU8();
-                    const mandatory = if (bitset0 & (1 << 0) == 0) true else false;
-                    const immediate = if (bitset0 & (1 << 1) == 0) true else false;
-                    try publish(
-                        conn,
-                        exchange,
-                        routing_key,
-                        mandatory,
-                        immediate,
-                    );
-                },
-                // @"return"
-                50 => {
-                    const @"return" = BASIC_IMPL.@"return" orelse return error.MethodNotImplemented;
-                    const reply_code = conn.rx_buffer.readU16();
-                    const reply_text = conn.rx_buffer.readShortString();
-                    const exchange = conn.rx_buffer.readShortString();
-                    const routing_key = conn.rx_buffer.readShortString();
-                    try @"return"(
-                        conn,
-                        reply_code,
-                        reply_text,
-                        exchange,
-                        routing_key,
-                    );
-                },
-                // deliver
-                60 => {
-                    const deliver = BASIC_IMPL.deliver orelse return error.MethodNotImplemented;
-                    const consumer_tag = conn.rx_buffer.readShortString();
-                    const delivery_tag = conn.rx_buffer.readU64();
-                    const bitset0 = conn.rx_buffer.readU8();
-                    const redelivered = if (bitset0 & (1 << 0) == 0) true else false;
-                    const exchange = conn.rx_buffer.readShortString();
-                    const routing_key = conn.rx_buffer.readShortString();
-                    try deliver(
-                        conn,
-                        consumer_tag,
-                        delivery_tag,
-                        redelivered,
-                        exchange,
-                        routing_key,
-                    );
-                },
-                // get
-                70 => {
-                    const get = BASIC_IMPL.get orelse return error.MethodNotImplemented;
-                    const reserved_1 = conn.rx_buffer.readU16();
-                    const queue = conn.rx_buffer.readShortString();
-                    const bitset0 = conn.rx_buffer.readU8();
-                    const no_ack = if (bitset0 & (1 << 0) == 0) true else false;
-                    try get(
-                        conn,
-                        queue,
-                        no_ack,
-                    );
-                },
-                // get_ok
-                71 => {
-                    const get_ok = BASIC_IMPL.get_ok orelse return error.MethodNotImplemented;
-                    const delivery_tag = conn.rx_buffer.readU64();
-                    const bitset0 = conn.rx_buffer.readU8();
-                    const redelivered = if (bitset0 & (1 << 0) == 0) true else false;
-                    const exchange = conn.rx_buffer.readShortString();
-                    const routing_key = conn.rx_buffer.readShortString();
-                    const message_count = conn.rx_buffer.readU32();
-                    try get_ok(
-                        conn,
-                        delivery_tag,
-                        redelivered,
-                        exchange,
-                        routing_key,
-                        message_count,
-                    );
-                },
-                // get_empty
-                72 => {
-                    const get_empty = BASIC_IMPL.get_empty orelse return error.MethodNotImplemented;
-                    const reserved_1 = conn.rx_buffer.readShortString();
-                    try get_empty(
-                        conn,
-                    );
-                },
-                // ack
-                80 => {
-                    const ack = BASIC_IMPL.ack orelse return error.MethodNotImplemented;
-                    const delivery_tag = conn.rx_buffer.readU64();
-                    const bitset0 = conn.rx_buffer.readU8();
-                    const multiple = if (bitset0 & (1 << 0) == 0) true else false;
-                    try ack(
-                        conn,
-                        delivery_tag,
-                        multiple,
-                    );
-                },
-                // reject
-                90 => {
-                    const reject = BASIC_IMPL.reject orelse return error.MethodNotImplemented;
-                    const delivery_tag = conn.rx_buffer.readU64();
-                    const bitset0 = conn.rx_buffer.readU8();
-                    const requeue = if (bitset0 & (1 << 0) == 0) true else false;
-                    try reject(
-                        conn,
-                        delivery_tag,
-                        requeue,
-                    );
-                },
-                // recover_async
-                100 => {
-                    const recover_async = BASIC_IMPL.recover_async orelse return error.MethodNotImplemented;
-                    const bitset0 = conn.rx_buffer.readU8();
-                    const requeue = if (bitset0 & (1 << 0) == 0) true else false;
-                    try recover_async(
-                        conn,
-                        requeue,
-                    );
-                },
-                // recover
-                110 => {
-                    const recover = BASIC_IMPL.recover orelse return error.MethodNotImplemented;
-                    const bitset0 = conn.rx_buffer.readU8();
-                    const requeue = if (bitset0 & (1 << 0) == 0) true else false;
-                    try recover(
-                        conn,
-                        requeue,
-                    );
-                },
-                // recover_ok
-                111 => {
-                    const recover_ok = BASIC_IMPL.recover_ok orelse return error.MethodNotImplemented;
-                    try recover_ok(
-                        conn,
-                    );
-                },
-                else => return error.UnknownMethod,
-            }
-        },
-        // tx
-        90 => {
-            switch (method) {
-                // select
-                10 => {
-                    const select = TX_IMPL.select orelse return error.MethodNotImplemented;
-                    try select(
-                        conn,
-                    );
-                },
-                // select_ok
-                11 => {
-                    const select_ok = TX_IMPL.select_ok orelse return error.MethodNotImplemented;
-                    try select_ok(
-                        conn,
-                    );
-                },
-                // commit
-                20 => {
-                    const commit = TX_IMPL.commit orelse return error.MethodNotImplemented;
-                    try commit(
-                        conn,
-                    );
-                },
-                // commit_ok
-                21 => {
-                    const commit_ok = TX_IMPL.commit_ok orelse return error.MethodNotImplemented;
-                    try commit_ok(
-                        conn,
-                    );
-                },
-                // rollback
-                30 => {
-                    const rollback = TX_IMPL.rollback orelse return error.MethodNotImplemented;
-                    try rollback(
-                        conn,
-                    );
-                },
-                // rollback_ok
-                31 => {
-                    const rollback_ok = TX_IMPL.rollback_ok orelse return error.MethodNotImplemented;
-                    try rollback_ok(
-                        conn,
-                    );
-                },
-                else => return error.UnknownMethod,
-            }
-        },
-        else => return error.UnknownClass,
-    }
-}
-pub fn isSynchronous(class_id: u16, method_id: u16) !bool {
-    switch (class_id) {
-        // connection
-        10 => {
-            switch (method_id) {
-                // start
-                10 => {
-                    return true;
-                },
-                // start_ok
-                11 => {
-                    return true;
-                },
-                // secure
-                20 => {
-                    return true;
-                },
-                // secure_ok
-                21 => {
-                    return true;
-                },
-                // tune
-                30 => {
-                    return true;
-                },
-                // tune_ok
-                31 => {
-                    return true;
-                },
-                // open
-                40 => {
-                    return true;
-                },
-                // open_ok
-                41 => {
-                    return true;
-                },
-                // close
-                50 => {
-                    return true;
-                },
-                // close_ok
-                51 => {
-                    return true;
-                },
-                // blocked
-                60 => {
-                    return false;
-                },
-                // unblocked
-                61 => {
-                    return false;
-                },
-                else => return error.UnknownMethod,
-            }
-        },
-        // channel
-        20 => {
-            switch (method_id) {
-                // open
-                10 => {
-                    return true;
-                },
-                // open_ok
-                11 => {
-                    return true;
-                },
-                // flow
-                20 => {
-                    return true;
-                },
-                // flow_ok
-                21 => {
-                    return false;
-                },
-                // close
-                40 => {
-                    return true;
-                },
-                // close_ok
-                41 => {
-                    return true;
-                },
-                else => return error.UnknownMethod,
-            }
-        },
-        // exchange
-        40 => {
-            switch (method_id) {
-                // declare
-                10 => {
-                    return true;
-                },
-                // declare_ok
-                11 => {
-                    return true;
-                },
-                // delete
-                20 => {
-                    return true;
-                },
-                // delete_ok
-                21 => {
-                    return true;
-                },
-                else => return error.UnknownMethod,
-            }
-        },
-        // queue
-        50 => {
-            switch (method_id) {
-                // declare
-                10 => {
-                    return true;
-                },
-                // declare_ok
-                11 => {
-                    return true;
-                },
-                // bind
-                20 => {
-                    return true;
-                },
-                // bind_ok
-                21 => {
-                    return true;
-                },
-                // unbind
-                50 => {
-                    return true;
-                },
-                // unbind_ok
-                51 => {
-                    return true;
-                },
-                // purge
-                30 => {
-                    return true;
-                },
-                // purge_ok
-                31 => {
-                    return true;
-                },
-                // delete
-                40 => {
-                    return true;
-                },
-                // delete_ok
-                41 => {
-                    return true;
-                },
-                else => return error.UnknownMethod,
-            }
-        },
-        // basic
-        60 => {
-            switch (method_id) {
-                // qos
-                10 => {
-                    return true;
-                },
-                // qos_ok
-                11 => {
-                    return true;
-                },
-                // consume
-                20 => {
-                    return true;
-                },
-                // consume_ok
-                21 => {
-                    return true;
-                },
-                // cancel
-                30 => {
-                    return true;
-                },
-                // cancel_ok
-                31 => {
-                    return true;
-                },
-                // publish
-                40 => {
-                    return false;
-                },
-                // @"return"
-                50 => {
-                    return false;
-                },
-                // deliver
-                60 => {
-                    return false;
-                },
-                // get
-                70 => {
-                    return true;
-                },
-                // get_ok
-                71 => {
-                    return true;
-                },
-                // get_empty
-                72 => {
-                    return true;
-                },
-                // ack
-                80 => {
-                    return false;
-                },
-                // reject
-                90 => {
-                    return false;
-                },
-                // recover_async
-                100 => {
-                    return false;
-                },
-                // recover
-                110 => {
-                    return false;
-                },
-                // recover_ok
-                111 => {
-                    return true;
-                },
-                else => return error.UnknownMethod,
-            }
-        },
-        // tx
-        90 => {
-            switch (method_id) {
-                // select
-                10 => {
-                    return true;
-                },
-                // select_ok
-                11 => {
-                    return true;
-                },
-                // commit
-                20 => {
-                    return true;
-                },
-                // commit_ok
-                21 => {
-                    return true;
-                },
-                // rollback
-                30 => {
-                    return true;
-                },
-                // rollback_ok
-                31 => {
-                    return true;
-                },
-                else => return error.UnknownMethod,
-            }
-        },
-        else => return error.UnknownClass,
-    }
-}
-pub const FRAME_METHOD: u16 = 1;
-pub const FRAME_HEADER: u16 = 2;
-pub const FRAME_BODY: u16 = 3;
-pub const FRAME_HEARTBEAT: u16 = 8;
-pub const FRAME_MIN_SIZE: u16 = 4096;
-pub const FRAME_END: u16 = 206;
-pub const REPLY_SUCCESS: u16 = 200;
-pub const CONTENT_TOO_LARGE: u16 = 311;
-pub const NO_CONSUMERS: u16 = 313;
-pub const CONNECTION_FORCED: u16 = 320;
-pub const INVALID_PATH: u16 = 402;
-pub const ACCESS_REFUSED: u16 = 403;
-pub const NOT_FOUND: u16 = 404;
-pub const RESOURCE_LOCKED: u16 = 405;
-pub const PRECONDITION_FAILED: u16 = 406;
-pub const FRAME_ERROR: u16 = 501;
-pub const SYNTAX_ERROR: u16 = 502;
-pub const COMMAND_INVALID: u16 = 503;
-pub const CHANNEL_ERROR: u16 = 504;
-pub const UNEXPECTED_FRAME: u16 = 505;
-pub const RESOURCE_ERROR: u16 = 506;
-pub const NOT_ALLOWED: u16 = 530;
-pub const NOT_IMPLEMENTED: u16 = 540;
-pub const INTERNAL_ERROR: u16 = 541;
-pub const connection_interface = struct {
-    start: ?fn (
-        *Connector,
+
+pub const FRAME_METHOD = 1;
+pub const FRAME_HEADER = 2;
+pub const FRAME_BODY = 3;
+pub const FRAME_HEARTBEAT = 8;
+pub const FRAME_MIN_SIZE = 4096;
+pub const FRAME_END = 206;
+pub const REPLY_SUCCESS = 200;
+pub const CONTENT_TOO_LARGE = 311;
+pub const NO_CONSUMERS = 313;
+pub const CONNECTION_FORCED = 320;
+pub const INVALID_PATH = 402;
+pub const ACCESS_REFUSED = 403;
+pub const NOT_FOUND = 404;
+pub const RESOURCE_LOCKED = 405;
+pub const PRECONDITION_FAILED = 406;
+pub const FRAME_ERROR = 501;
+pub const SYNTAX_ERROR = 502;
+pub const COMMAND_INVALID = 503;
+pub const CHANNEL_ERROR = 504;
+pub const UNEXPECTED_FRAME = 505;
+pub const RESOURCE_ERROR = 506;
+pub const NOT_ALLOWED = 530;
+pub const NOT_IMPLEMENTED = 540;
+pub const INTERNAL_ERROR = 541;
+
+// connection
+pub const Connection = struct {
+    pub const CONNECTION_CLASS = 10;
+
+    // start
+
+    pub const Start = struct {
+        version_major: u8,
+        version_minor: u8,
+        server_properties: Table,
+        mechanisms: []const u8,
+        locales: []const u8,
+    };
+    pub const START_METHOD = 10;
+    pub fn startSync(
+        conn: *Connector,
         version_major: u8,
         version_minor: u8,
         server_properties: ?*Table,
         mechanisms: []const u8,
         locales: []const u8,
-    ) anyerror!void,
-    start_ok: ?fn (
-        *Connector,
-        client_properties: ?*Table,
+    ) !StartOk {
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, START_METHOD);
+        conn.tx_buffer.writeU8(version_major);
+        conn.tx_buffer.writeU8(version_minor);
+        conn.tx_buffer.writeTable(server_properties);
+        conn.tx_buffer.writeLongString(mechanisms);
+        conn.tx_buffer.writeLongString(locales);
+        conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
+        std.log.debug("Connection@{}.Start ->", .{conn.channel});
+        return awaitStartOk(conn);
+    }
+
+    // start
+    pub fn awaitStart(conn: *Connector) !Start {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == CONNECTION_CLASS and method_header.method == START_METHOD) {
+                            const version_major = conn.rx_buffer.readU8();
+                            const version_minor = conn.rx_buffer.readU8();
+                            var server_properties = conn.rx_buffer.readTable();
+                            const mechanisms = conn.rx_buffer.readLongString();
+                            const locales = conn.rx_buffer.readLongString();
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Connection@{}.Start", .{conn.channel});
+                            return Start{
+                                .version_major = version_major,
+                                .version_minor = version_minor,
+                                .server_properties = server_properties,
+                                .mechanisms = mechanisms,
+                                .locales = locales,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // start-ok
+
+    pub const StartOk = struct {
+        client_properties: Table,
         mechanism: []const u8,
         response: []const u8,
         locale: []const u8,
-    ) anyerror!void,
-    secure: ?fn (
-        *Connector,
-        challenge: []const u8,
-    ) anyerror!void,
-    secure_ok: ?fn (
-        *Connector,
-        response: []const u8,
-    ) anyerror!void,
-    tune: ?fn (
-        *Connector,
-        channel_max: u16,
-        frame_max: u32,
-        heartbeat: u16,
-    ) anyerror!void,
-    tune_ok: ?fn (
-        *Connector,
-        channel_max: u16,
-        frame_max: u32,
-        heartbeat: u16,
-    ) anyerror!void,
-    open: ?fn (
-        *Connector,
-        virtual_host: []const u8,
-    ) anyerror!void,
-    open_ok: ?fn (
-        *Connector,
-    ) anyerror!void,
-    close: ?fn (
-        *Connector,
-        reply_code: u16,
-        reply_text: []const u8,
-        class_id: u16,
-        method_id: u16,
-    ) anyerror!void,
-    close_ok: ?fn (
-        *Connector,
-    ) anyerror!void,
-    blocked: ?fn (
-        *Connector,
-        reason: []const u8,
-    ) anyerror!void,
-    unblocked: ?fn (
-        *Connector,
-    ) anyerror!void,
-};
-
-pub var CONNECTION_IMPL = connection_interface{
-    .start = null,
-    .start_ok = null,
-    .secure = null,
-    .secure_ok = null,
-    .tune = null,
-    .tune_ok = null,
-    .open = null,
-    .open_ok = null,
-    .close = null,
-    .close_ok = null,
-    .blocked = null,
-    .unblocked = null,
-};
-
-pub const CONNECTION_CLASS = 10; // CLASS
-pub const Connection = struct {
-    const Self = @This();
-    // METHOD =============================
-    pub const START_METHOD = 10;
-    // METHOD =============================
+    };
     pub const START_OK_METHOD = 11;
-    pub fn start_ok_resp(
+    pub fn startOkAsync(
         conn: *Connector,
         client_properties: ?*Table,
         mechanism: []const u8,
@@ -1062,14 +150,150 @@ pub const Connection = struct {
         conn.tx_buffer.writeLongString(response);
         conn.tx_buffer.writeShortString(locale);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
+        std.log.debug("Connection@{}.Start_ok ->", .{conn.channel});
     }
-    // METHOD =============================
+
+    // start_ok
+    pub fn awaitStartOk(conn: *Connector) !StartOk {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == CONNECTION_CLASS and method_header.method == START_OK_METHOD) {
+                            var client_properties = conn.rx_buffer.readTable();
+                            const mechanism = conn.rx_buffer.readShortString();
+                            const response = conn.rx_buffer.readLongString();
+                            const locale = conn.rx_buffer.readShortString();
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Connection@{}.Start_ok", .{conn.channel});
+                            return StartOk{
+                                .client_properties = client_properties,
+                                .mechanism = mechanism,
+                                .response = response,
+                                .locale = locale,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // secure
+
+    pub const Secure = struct {
+        challenge: []const u8,
+    };
     pub const SECURE_METHOD = 20;
-    // METHOD =============================
+    pub fn secureSync(
+        conn: *Connector,
+        challenge: []const u8,
+    ) !SecureOk {
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, SECURE_METHOD);
+        conn.tx_buffer.writeLongString(challenge);
+        conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
+        std.log.debug("Connection@{}.Secure ->", .{conn.channel});
+        return awaitSecureOk(conn);
+    }
+
+    // secure
+    pub fn awaitSecure(conn: *Connector) !Secure {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == CONNECTION_CLASS and method_header.method == SECURE_METHOD) {
+                            const challenge = conn.rx_buffer.readLongString();
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Connection@{}.Secure", .{conn.channel});
+                            return Secure{
+                                .challenge = challenge,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // secure-ok
+
+    pub const SecureOk = struct {
+        response: []const u8,
+    };
     pub const SECURE_OK_METHOD = 21;
-    pub fn secure_ok_resp(
+    pub fn secureOkAsync(
         conn: *Connector,
         response: []const u8,
     ) !void {
@@ -1077,14 +301,156 @@ pub const Connection = struct {
         conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.SECURE_OK_METHOD);
         conn.tx_buffer.writeLongString(response);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
+        std.log.debug("Connection@{}.Secure_ok ->", .{conn.channel});
     }
-    // METHOD =============================
+
+    // secure_ok
+    pub fn awaitSecureOk(conn: *Connector) !SecureOk {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == CONNECTION_CLASS and method_header.method == SECURE_OK_METHOD) {
+                            const response = conn.rx_buffer.readLongString();
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Connection@{}.Secure_ok", .{conn.channel});
+                            return SecureOk{
+                                .response = response,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // tune
+
+    pub const Tune = struct {
+        channel_max: u16,
+        frame_max: u32,
+        heartbeat: u16,
+    };
     pub const TUNE_METHOD = 30;
-    // METHOD =============================
+    pub fn tuneSync(
+        conn: *Connector,
+        channel_max: u16,
+        frame_max: u32,
+        heartbeat: u16,
+    ) !TuneOk {
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, TUNE_METHOD);
+        conn.tx_buffer.writeU16(channel_max);
+        conn.tx_buffer.writeU32(frame_max);
+        conn.tx_buffer.writeU16(heartbeat);
+        conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
+        std.log.debug("Connection@{}.Tune ->", .{conn.channel});
+        return awaitTuneOk(conn);
+    }
+
+    // tune
+    pub fn awaitTune(conn: *Connector) !Tune {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == CONNECTION_CLASS and method_header.method == TUNE_METHOD) {
+                            const channel_max = conn.rx_buffer.readU16();
+                            const frame_max = conn.rx_buffer.readU32();
+                            const heartbeat = conn.rx_buffer.readU16();
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Connection@{}.Tune", .{conn.channel});
+                            return Tune{
+                                .channel_max = channel_max,
+                                .frame_max = frame_max,
+                                .heartbeat = heartbeat,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // tune-ok
+
+    pub const TuneOk = struct {
+        channel_max: u16,
+        frame_max: u32,
+        heartbeat: u16,
+    };
     pub const TUNE_OK_METHOD = 31;
-    pub fn tune_ok_resp(
+    pub fn tuneOkAsync(
         conn: *Connector,
         channel_max: u16,
         frame_max: u32,
@@ -1096,17 +462,82 @@ pub const Connection = struct {
         conn.tx_buffer.writeU32(frame_max);
         conn.tx_buffer.writeU16(heartbeat);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
+        std.log.debug("Connection@{}.Tune_ok ->", .{conn.channel});
     }
-    // METHOD =============================
+
+    // tune_ok
+    pub fn awaitTuneOk(conn: *Connector) !TuneOk {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == CONNECTION_CLASS and method_header.method == TUNE_OK_METHOD) {
+                            const channel_max = conn.rx_buffer.readU16();
+                            const frame_max = conn.rx_buffer.readU32();
+                            const heartbeat = conn.rx_buffer.readU16();
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Connection@{}.Tune_ok", .{conn.channel});
+                            return TuneOk{
+                                .channel_max = channel_max,
+                                .frame_max = frame_max,
+                                .heartbeat = heartbeat,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // open
+
+    pub const Open = struct {
+        virtual_host: []const u8,
+        reserved_1: []const u8,
+        reserved_2: bool,
+    };
     pub const OPEN_METHOD = 40;
-    pub fn open_sync(
+    pub fn openSync(
         conn: *Connector,
         virtual_host: []const u8,
-    ) !void {
+    ) !OpenOk {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.OPEN_METHOD);
+        conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, OPEN_METHOD);
         conn.tx_buffer.writeShortString(virtual_host);
         const reserved_1 = "";
         conn.tx_buffer.writeShortString(reserved_1);
@@ -1116,54 +547,302 @@ pub const Connection = struct {
         if (reserved_2) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        var received_response = false;
-        while (!received_response) {
-            const expecting: ClassMethod = .{ .class = CONNECTION_CLASS, .method = Connection.OPEN_OK_METHOD };
-            received_response = try conn.dispatch(expecting);
-        }
+        std.log.debug("Connection@{}.Open ->", .{conn.channel});
+        return awaitOpenOk(conn);
     }
-    // METHOD =============================
+
+    // open
+    pub fn awaitOpen(conn: *Connector) !Open {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == CONNECTION_CLASS and method_header.method == OPEN_METHOD) {
+                            const virtual_host = conn.rx_buffer.readShortString();
+                            const reserved_1 = conn.rx_buffer.readShortString();
+                            const bitset0 = conn.rx_buffer.readU8();
+                            const reserved_2 = if (bitset0 & (1 << 0) == 0) true else false;
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Connection@{}.Open", .{conn.channel});
+                            return Open{
+                                .virtual_host = virtual_host,
+                                .reserved_1 = reserved_1,
+                                .reserved_2 = reserved_2,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // open-ok
+
+    pub const OpenOk = struct {
+        reserved_1: []const u8,
+    };
     pub const OPEN_OK_METHOD = 41;
-    // METHOD =============================
+    pub fn openOkAsync(
+        conn: *Connector,
+    ) !void {
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.OPEN_OK_METHOD);
+        const reserved_1 = "";
+        conn.tx_buffer.writeShortString(reserved_1);
+        conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
+        std.log.debug("Connection@{}.Open_ok ->", .{conn.channel});
+    }
+
+    // open_ok
+    pub fn awaitOpenOk(conn: *Connector) !OpenOk {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == CONNECTION_CLASS and method_header.method == OPEN_OK_METHOD) {
+                            const reserved_1 = conn.rx_buffer.readShortString();
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Connection@{}.Open_ok", .{conn.channel});
+                            return OpenOk{
+                                .reserved_1 = reserved_1,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // close
+
+    pub const Close = struct {
+        reply_code: u16,
+        reply_text: []const u8,
+        class_id: u16,
+        method_id: u16,
+    };
     pub const CLOSE_METHOD = 50;
-    pub fn close_sync(
+    pub fn closeSync(
         conn: *Connector,
         reply_code: u16,
         reply_text: []const u8,
         class_id: u16,
         method_id: u16,
-    ) !void {
+    ) !CloseOk {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.CLOSE_METHOD);
+        conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, CLOSE_METHOD);
         conn.tx_buffer.writeU16(reply_code);
         conn.tx_buffer.writeShortString(reply_text);
         conn.tx_buffer.writeU16(class_id);
         conn.tx_buffer.writeU16(method_id);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        var received_response = false;
-        while (!received_response) {
-            const expecting: ClassMethod = .{ .class = CONNECTION_CLASS, .method = Connection.CLOSE_OK_METHOD };
-            received_response = try conn.dispatch(expecting);
-        }
+        std.log.debug("Connection@{}.Close ->", .{conn.channel});
+        return awaitCloseOk(conn);
     }
-    // METHOD =============================
+
+    // close
+    pub fn awaitClose(conn: *Connector) !Close {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == CONNECTION_CLASS and method_header.method == CLOSE_METHOD) {
+                            const reply_code = conn.rx_buffer.readU16();
+                            const reply_text = conn.rx_buffer.readShortString();
+                            const class_id = conn.rx_buffer.readU16();
+                            const method_id = conn.rx_buffer.readU16();
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Connection@{}.Close", .{conn.channel});
+                            return Close{
+                                .reply_code = reply_code,
+                                .reply_text = reply_text,
+                                .class_id = class_id,
+                                .method_id = method_id,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // close-ok
+
+    pub const CloseOk = struct {};
     pub const CLOSE_OK_METHOD = 51;
-    pub fn close_ok_resp(
+    pub fn closeOkAsync(
         conn: *Connector,
     ) !void {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
         conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.CLOSE_OK_METHOD);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
+        std.log.debug("Connection@{}.Close_ok ->", .{conn.channel});
     }
-    // METHOD =============================
+
+    // close_ok
+    pub fn awaitCloseOk(conn: *Connector) !CloseOk {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == CONNECTION_CLASS and method_header.method == CLOSE_OK_METHOD) {
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Connection@{}.Close_ok", .{conn.channel});
+                            return CloseOk{};
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // blocked
+
+    pub const Blocked = struct {
+        reason: []const u8,
+    };
     pub const BLOCKED_METHOD = 60;
-    pub fn blocked_resp(
+    pub fn blockedAsync(
         conn: *Connector,
         reason: []const u8,
     ) !void {
@@ -1171,104 +850,363 @@ pub const Connection = struct {
         conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.BLOCKED_METHOD);
         conn.tx_buffer.writeShortString(reason);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
+        std.log.debug("Connection@{}.Blocked ->", .{conn.channel});
     }
-    // METHOD =============================
+
+    // blocked
+    pub fn awaitBlocked(conn: *Connector) !Blocked {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == CONNECTION_CLASS and method_header.method == BLOCKED_METHOD) {
+                            const reason = conn.rx_buffer.readShortString();
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Connection@{}.Blocked", .{conn.channel});
+                            return Blocked{
+                                .reason = reason,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // unblocked
+
+    pub const Unblocked = struct {};
     pub const UNBLOCKED_METHOD = 61;
-    pub fn unblocked_resp(
+    pub fn unblockedAsync(
         conn: *Connector,
     ) !void {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
         conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.UNBLOCKED_METHOD);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
+        std.log.debug("Connection@{}.Unblocked ->", .{conn.channel});
+    }
+
+    // unblocked
+    pub fn awaitUnblocked(conn: *Connector) !Unblocked {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == CONNECTION_CLASS and method_header.method == UNBLOCKED_METHOD) {
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Connection@{}.Unblocked", .{conn.channel});
+                            return Unblocked{};
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
     }
 };
-pub const channel_interface = struct {
-    open: ?fn (
-        *Connector,
-    ) anyerror!void,
-    open_ok: ?fn (
-        *Connector,
-    ) anyerror!void,
-    flow: ?fn (
-        *Connector,
-        active: bool,
-    ) anyerror!void,
-    flow_ok: ?fn (
-        *Connector,
-        active: bool,
-    ) anyerror!void,
-    close: ?fn (
-        *Connector,
-        reply_code: u16,
-        reply_text: []const u8,
-        class_id: u16,
-        method_id: u16,
-    ) anyerror!void,
-    close_ok: ?fn (
-        *Connector,
-    ) anyerror!void,
-};
 
-pub var CHANNEL_IMPL = channel_interface{
-    .open = null,
-    .open_ok = null,
-    .flow = null,
-    .flow_ok = null,
-    .close = null,
-    .close_ok = null,
-};
-
-pub const CHANNEL_CLASS = 20; // CLASS
+// channel
 pub const Channel = struct {
-    const Self = @This();
-    // METHOD =============================
+    pub const CHANNEL_CLASS = 20;
+
+    // open
+
+    pub const Open = struct {
+        reserved_1: []const u8,
+    };
     pub const OPEN_METHOD = 10;
-    pub fn open_sync(
+    pub fn openSync(
         conn: *Connector,
-    ) !void {
+    ) !OpenOk {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(CHANNEL_CLASS, Channel.OPEN_METHOD);
+        conn.tx_buffer.writeMethodHeader(CHANNEL_CLASS, OPEN_METHOD);
         const reserved_1 = "";
         conn.tx_buffer.writeShortString(reserved_1);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        var received_response = false;
-        while (!received_response) {
-            const expecting: ClassMethod = .{ .class = CHANNEL_CLASS, .method = Channel.OPEN_OK_METHOD };
-            received_response = try conn.dispatch(expecting);
-        }
+        std.log.debug("Channel@{}.Open ->", .{conn.channel});
+        return awaitOpenOk(conn);
     }
-    // METHOD =============================
+
+    // open
+    pub fn awaitOpen(conn: *Connector) !Open {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == CHANNEL_CLASS and method_header.method == OPEN_METHOD) {
+                            const reserved_1 = conn.rx_buffer.readShortString();
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Channel@{}.Open", .{conn.channel});
+                            return Open{
+                                .reserved_1 = reserved_1,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // open-ok
+
+    pub const OpenOk = struct {
+        reserved_1: []const u8,
+    };
     pub const OPEN_OK_METHOD = 11;
-    // METHOD =============================
-    pub const FLOW_METHOD = 20;
-    pub fn flow_sync(
+    pub fn openOkAsync(
         conn: *Connector,
-        active: bool,
     ) !void {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(CHANNEL_CLASS, Channel.FLOW_METHOD);
+        conn.tx_buffer.writeMethodHeader(CHANNEL_CLASS, Channel.OPEN_OK_METHOD);
+        const reserved_1 = "";
+        conn.tx_buffer.writeLongString(reserved_1);
+        conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
+        std.log.debug("Channel@{}.Open_ok ->", .{conn.channel});
+    }
+
+    // open_ok
+    pub fn awaitOpenOk(conn: *Connector) !OpenOk {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == CHANNEL_CLASS and method_header.method == OPEN_OK_METHOD) {
+                            const reserved_1 = conn.rx_buffer.readLongString();
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Channel@{}.Open_ok", .{conn.channel});
+                            return OpenOk{
+                                .reserved_1 = reserved_1,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // flow
+
+    pub const Flow = struct {
+        active: bool,
+    };
+    pub const FLOW_METHOD = 20;
+    pub fn flowSync(
+        conn: *Connector,
+        active: bool,
+    ) !FlowOk {
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(CHANNEL_CLASS, FLOW_METHOD);
         var bitset0: u8 = 0;
         const _bit: u8 = 1;
         if (active) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        var received_response = false;
-        while (!received_response) {
-            const expecting: ClassMethod = .{ .class = CHANNEL_CLASS, .method = Channel.FLOW_OK_METHOD };
-            received_response = try conn.dispatch(expecting);
-        }
+        std.log.debug("Channel@{}.Flow ->", .{conn.channel});
+        return awaitFlowOk(conn);
     }
-    // METHOD =============================
+
+    // flow
+    pub fn awaitFlow(conn: *Connector) !Flow {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == CHANNEL_CLASS and method_header.method == FLOW_METHOD) {
+                            const bitset0 = conn.rx_buffer.readU8();
+                            const active = if (bitset0 & (1 << 0) == 0) true else false;
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Channel@{}.Flow", .{conn.channel});
+                            return Flow{
+                                .active = active,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // flow-ok
+
+    pub const FlowOk = struct {
+        active: bool,
+    };
     pub const FLOW_OK_METHOD = 21;
-    pub fn flow_ok_resp(
+    pub fn flowOkAsync(
         conn: *Connector,
         active: bool,
     ) !void {
@@ -1279,82 +1217,238 @@ pub const Channel = struct {
         if (active) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
+        std.log.debug("Channel@{}.Flow_ok ->", .{conn.channel});
     }
-    // METHOD =============================
+
+    // flow_ok
+    pub fn awaitFlowOk(conn: *Connector) !FlowOk {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == CHANNEL_CLASS and method_header.method == FLOW_OK_METHOD) {
+                            const bitset0 = conn.rx_buffer.readU8();
+                            const active = if (bitset0 & (1 << 0) == 0) true else false;
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Channel@{}.Flow_ok", .{conn.channel});
+                            return FlowOk{
+                                .active = active,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // close
+
+    pub const Close = struct {
+        reply_code: u16,
+        reply_text: []const u8,
+        class_id: u16,
+        method_id: u16,
+    };
     pub const CLOSE_METHOD = 40;
-    pub fn close_sync(
+    pub fn closeSync(
         conn: *Connector,
         reply_code: u16,
         reply_text: []const u8,
         class_id: u16,
         method_id: u16,
-    ) !void {
+    ) !CloseOk {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(CHANNEL_CLASS, Channel.CLOSE_METHOD);
+        conn.tx_buffer.writeMethodHeader(CHANNEL_CLASS, CLOSE_METHOD);
         conn.tx_buffer.writeU16(reply_code);
         conn.tx_buffer.writeShortString(reply_text);
         conn.tx_buffer.writeU16(class_id);
         conn.tx_buffer.writeU16(method_id);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        var received_response = false;
-        while (!received_response) {
-            const expecting: ClassMethod = .{ .class = CHANNEL_CLASS, .method = Channel.CLOSE_OK_METHOD };
-            received_response = try conn.dispatch(expecting);
-        }
+        std.log.debug("Channel@{}.Close ->", .{conn.channel});
+        return awaitCloseOk(conn);
     }
-    // METHOD =============================
+
+    // close
+    pub fn awaitClose(conn: *Connector) !Close {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == CHANNEL_CLASS and method_header.method == CLOSE_METHOD) {
+                            const reply_code = conn.rx_buffer.readU16();
+                            const reply_text = conn.rx_buffer.readShortString();
+                            const class_id = conn.rx_buffer.readU16();
+                            const method_id = conn.rx_buffer.readU16();
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Channel@{}.Close", .{conn.channel});
+                            return Close{
+                                .reply_code = reply_code,
+                                .reply_text = reply_text,
+                                .class_id = class_id,
+                                .method_id = method_id,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // close-ok
+
+    pub const CloseOk = struct {};
     pub const CLOSE_OK_METHOD = 41;
-    pub fn close_ok_resp(
+    pub fn closeOkAsync(
         conn: *Connector,
     ) !void {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
         conn.tx_buffer.writeMethodHeader(CHANNEL_CLASS, Channel.CLOSE_OK_METHOD);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
+        std.log.debug("Channel@{}.Close_ok ->", .{conn.channel});
+    }
+
+    // close_ok
+    pub fn awaitCloseOk(conn: *Connector) !CloseOk {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == CHANNEL_CLASS and method_header.method == CLOSE_OK_METHOD) {
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Channel@{}.Close_ok", .{conn.channel});
+                            return CloseOk{};
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
     }
 };
-pub const exchange_interface = struct {
-    declare: ?fn (
-        *Connector,
+
+// exchange
+pub const Exchange = struct {
+    pub const EXCHANGE_CLASS = 40;
+
+    // declare
+
+    pub const Declare = struct {
+        reserved_1: u16,
         exchange: []const u8,
         tipe: []const u8,
         passive: bool,
         durable: bool,
+        reserved_2: bool,
+        reserved_3: bool,
         no_wait: bool,
-        arguments: ?*Table,
-    ) anyerror!void,
-    declare_ok: ?fn (
-        *Connector,
-    ) anyerror!void,
-    delete: ?fn (
-        *Connector,
-        exchange: []const u8,
-        if_unused: bool,
-        no_wait: bool,
-    ) anyerror!void,
-    delete_ok: ?fn (
-        *Connector,
-    ) anyerror!void,
-};
-
-pub var EXCHANGE_IMPL = exchange_interface{
-    .declare = null,
-    .declare_ok = null,
-    .delete = null,
-    .delete_ok = null,
-};
-
-pub const EXCHANGE_CLASS = 40; // CLASS
-pub const Exchange = struct {
-    const Self = @This();
-    // METHOD =============================
+        arguments: Table,
+    };
     pub const DECLARE_METHOD = 10;
-    pub fn declare_sync(
+    pub fn declareSync(
         conn: *Connector,
         exchange: []const u8,
         tipe: []const u8,
@@ -1362,9 +1456,9 @@ pub const Exchange = struct {
         durable: bool,
         no_wait: bool,
         arguments: ?*Table,
-    ) !void {
+    ) !DeclareOk {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(EXCHANGE_CLASS, Exchange.DECLARE_METHOD);
+        conn.tx_buffer.writeMethodHeader(EXCHANGE_CLASS, DECLARE_METHOD);
         const reserved_1 = 0;
         conn.tx_buffer.writeU16(reserved_1);
         conn.tx_buffer.writeShortString(exchange);
@@ -1381,26 +1475,164 @@ pub const Exchange = struct {
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.writeTable(arguments);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        var received_response = false;
-        while (!received_response) {
-            const expecting: ClassMethod = .{ .class = EXCHANGE_CLASS, .method = Exchange.DECLARE_OK_METHOD };
-            received_response = try conn.dispatch(expecting);
-        }
+        std.log.debug("Exchange@{}.Declare ->", .{conn.channel});
+        return awaitDeclareOk(conn);
     }
-    // METHOD =============================
+
+    // declare
+    pub fn awaitDeclare(conn: *Connector) !Declare {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == EXCHANGE_CLASS and method_header.method == DECLARE_METHOD) {
+                            const reserved_1 = conn.rx_buffer.readU16();
+                            const exchange = conn.rx_buffer.readShortString();
+                            const tipe = conn.rx_buffer.readShortString();
+                            const bitset0 = conn.rx_buffer.readU8();
+                            const passive = if (bitset0 & (1 << 0) == 0) true else false;
+                            const durable = if (bitset0 & (1 << 1) == 0) true else false;
+                            const reserved_2 = if (bitset0 & (1 << 2) == 0) true else false;
+                            const reserved_3 = if (bitset0 & (1 << 3) == 0) true else false;
+                            const no_wait = if (bitset0 & (1 << 4) == 0) true else false;
+                            var arguments = conn.rx_buffer.readTable();
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Exchange@{}.Declare", .{conn.channel});
+                            return Declare{
+                                .reserved_1 = reserved_1,
+                                .exchange = exchange,
+                                .tipe = tipe,
+                                .passive = passive,
+                                .durable = durable,
+                                .reserved_2 = reserved_2,
+                                .reserved_3 = reserved_3,
+                                .no_wait = no_wait,
+                                .arguments = arguments,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // declare-ok
+
+    pub const DeclareOk = struct {};
     pub const DECLARE_OK_METHOD = 11;
-    // METHOD =============================
+    pub fn declareOkAsync(
+        conn: *Connector,
+    ) !void {
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(EXCHANGE_CLASS, Exchange.DECLARE_OK_METHOD);
+        conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
+        std.log.debug("Exchange@{}.Declare_ok ->", .{conn.channel});
+    }
+
+    // declare_ok
+    pub fn awaitDeclareOk(conn: *Connector) !DeclareOk {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == EXCHANGE_CLASS and method_header.method == DECLARE_OK_METHOD) {
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Exchange@{}.Declare_ok", .{conn.channel});
+                            return DeclareOk{};
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // delete
+
+    pub const Delete = struct {
+        reserved_1: u16,
+        exchange: []const u8,
+        if_unused: bool,
+        no_wait: bool,
+    };
     pub const DELETE_METHOD = 20;
-    pub fn delete_sync(
+    pub fn deleteSync(
         conn: *Connector,
         exchange: []const u8,
         if_unused: bool,
         no_wait: bool,
-    ) !void {
+    ) !DeleteOk {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(EXCHANGE_CLASS, Exchange.DELETE_METHOD);
+        conn.tx_buffer.writeMethodHeader(EXCHANGE_CLASS, DELETE_METHOD);
         const reserved_1 = 0;
         conn.tx_buffer.writeU16(reserved_1);
         conn.tx_buffer.writeShortString(exchange);
@@ -1410,96 +1642,156 @@ pub const Exchange = struct {
         if (no_wait) bitset0 |= (_bit << 1) else bitset0 &= ~(_bit << 1);
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        var received_response = false;
-        while (!received_response) {
-            const expecting: ClassMethod = .{ .class = EXCHANGE_CLASS, .method = Exchange.DELETE_OK_METHOD };
-            received_response = try conn.dispatch(expecting);
-        }
+        std.log.debug("Exchange@{}.Delete ->", .{conn.channel});
+        return awaitDeleteOk(conn);
     }
-    // METHOD =============================
+
+    // delete
+    pub fn awaitDelete(conn: *Connector) !Delete {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == EXCHANGE_CLASS and method_header.method == DELETE_METHOD) {
+                            const reserved_1 = conn.rx_buffer.readU16();
+                            const exchange = conn.rx_buffer.readShortString();
+                            const bitset0 = conn.rx_buffer.readU8();
+                            const if_unused = if (bitset0 & (1 << 0) == 0) true else false;
+                            const no_wait = if (bitset0 & (1 << 1) == 0) true else false;
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Exchange@{}.Delete", .{conn.channel});
+                            return Delete{
+                                .reserved_1 = reserved_1,
+                                .exchange = exchange,
+                                .if_unused = if_unused,
+                                .no_wait = no_wait,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // delete-ok
+
+    pub const DeleteOk = struct {};
     pub const DELETE_OK_METHOD = 21;
+    pub fn deleteOkAsync(
+        conn: *Connector,
+    ) !void {
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(EXCHANGE_CLASS, Exchange.DELETE_OK_METHOD);
+        conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
+        std.log.debug("Exchange@{}.Delete_ok ->", .{conn.channel});
+    }
+
+    // delete_ok
+    pub fn awaitDeleteOk(conn: *Connector) !DeleteOk {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == EXCHANGE_CLASS and method_header.method == DELETE_OK_METHOD) {
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Exchange@{}.Delete_ok", .{conn.channel});
+                            return DeleteOk{};
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
 };
-pub const queue_interface = struct {
-    declare: ?fn (
-        *Connector,
+
+// queue
+pub const Queue = struct {
+    pub const QUEUE_CLASS = 50;
+
+    // declare
+
+    pub const Declare = struct {
+        reserved_1: u16,
         queue: []const u8,
         passive: bool,
         durable: bool,
         exclusive: bool,
         auto_delete: bool,
         no_wait: bool,
-        arguments: ?*Table,
-    ) anyerror!void,
-    declare_ok: ?fn (
-        *Connector,
-        queue: []const u8,
-        message_count: u32,
-        consumer_count: u32,
-    ) anyerror!void,
-    bind: ?fn (
-        *Connector,
-        queue: []const u8,
-        exchange: []const u8,
-        routing_key: []const u8,
-        no_wait: bool,
-        arguments: ?*Table,
-    ) anyerror!void,
-    bind_ok: ?fn (
-        *Connector,
-    ) anyerror!void,
-    unbind: ?fn (
-        *Connector,
-        queue: []const u8,
-        exchange: []const u8,
-        routing_key: []const u8,
-        arguments: ?*Table,
-    ) anyerror!void,
-    unbind_ok: ?fn (
-        *Connector,
-    ) anyerror!void,
-    purge: ?fn (
-        *Connector,
-        queue: []const u8,
-        no_wait: bool,
-    ) anyerror!void,
-    purge_ok: ?fn (
-        *Connector,
-        message_count: u32,
-    ) anyerror!void,
-    delete: ?fn (
-        *Connector,
-        queue: []const u8,
-        if_unused: bool,
-        if_empty: bool,
-        no_wait: bool,
-    ) anyerror!void,
-    delete_ok: ?fn (
-        *Connector,
-        message_count: u32,
-    ) anyerror!void,
-};
-
-pub var QUEUE_IMPL = queue_interface{
-    .declare = null,
-    .declare_ok = null,
-    .bind = null,
-    .bind_ok = null,
-    .unbind = null,
-    .unbind_ok = null,
-    .purge = null,
-    .purge_ok = null,
-    .delete = null,
-    .delete_ok = null,
-};
-
-pub const QUEUE_CLASS = 50; // CLASS
-pub const Queue = struct {
-    const Self = @This();
-    // METHOD =============================
+        arguments: Table,
+    };
     pub const DECLARE_METHOD = 10;
-    pub fn declare_sync(
+    pub fn declareSync(
         conn: *Connector,
         queue: []const u8,
         passive: bool,
@@ -1508,9 +1800,9 @@ pub const Queue = struct {
         auto_delete: bool,
         no_wait: bool,
         arguments: ?*Table,
-    ) !void {
+    ) !DeclareOk {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.DECLARE_METHOD);
+        conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, DECLARE_METHOD);
         const reserved_1 = 0;
         conn.tx_buffer.writeU16(reserved_1);
         conn.tx_buffer.writeShortString(queue);
@@ -1524,28 +1816,183 @@ pub const Queue = struct {
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.writeTable(arguments);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        var received_response = false;
-        while (!received_response) {
-            const expecting: ClassMethod = .{ .class = QUEUE_CLASS, .method = Queue.DECLARE_OK_METHOD };
-            received_response = try conn.dispatch(expecting);
-        }
+        std.log.debug("Queue@{}.Declare ->", .{conn.channel});
+        return awaitDeclareOk(conn);
     }
-    // METHOD =============================
+
+    // declare
+    pub fn awaitDeclare(conn: *Connector) !Declare {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == QUEUE_CLASS and method_header.method == DECLARE_METHOD) {
+                            const reserved_1 = conn.rx_buffer.readU16();
+                            const queue = conn.rx_buffer.readShortString();
+                            const bitset0 = conn.rx_buffer.readU8();
+                            const passive = if (bitset0 & (1 << 0) == 0) true else false;
+                            const durable = if (bitset0 & (1 << 1) == 0) true else false;
+                            const exclusive = if (bitset0 & (1 << 2) == 0) true else false;
+                            const auto_delete = if (bitset0 & (1 << 3) == 0) true else false;
+                            const no_wait = if (bitset0 & (1 << 4) == 0) true else false;
+                            var arguments = conn.rx_buffer.readTable();
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Queue@{}.Declare", .{conn.channel});
+                            return Declare{
+                                .reserved_1 = reserved_1,
+                                .queue = queue,
+                                .passive = passive,
+                                .durable = durable,
+                                .exclusive = exclusive,
+                                .auto_delete = auto_delete,
+                                .no_wait = no_wait,
+                                .arguments = arguments,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // declare-ok
+
+    pub const DeclareOk = struct {
+        queue: []const u8,
+        message_count: u32,
+        consumer_count: u32,
+    };
     pub const DECLARE_OK_METHOD = 11;
-    // METHOD =============================
+    pub fn declareOkAsync(
+        conn: *Connector,
+        queue: []const u8,
+        message_count: u32,
+        consumer_count: u32,
+    ) !void {
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.DECLARE_OK_METHOD);
+        conn.tx_buffer.writeShortString(queue);
+        conn.tx_buffer.writeU32(message_count);
+        conn.tx_buffer.writeU32(consumer_count);
+        conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
+        std.log.debug("Queue@{}.Declare_ok ->", .{conn.channel});
+    }
+
+    // declare_ok
+    pub fn awaitDeclareOk(conn: *Connector) !DeclareOk {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == QUEUE_CLASS and method_header.method == DECLARE_OK_METHOD) {
+                            const queue = conn.rx_buffer.readShortString();
+                            const message_count = conn.rx_buffer.readU32();
+                            const consumer_count = conn.rx_buffer.readU32();
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Queue@{}.Declare_ok", .{conn.channel});
+                            return DeclareOk{
+                                .queue = queue,
+                                .message_count = message_count,
+                                .consumer_count = consumer_count,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // bind
+
+    pub const Bind = struct {
+        reserved_1: u16,
+        queue: []const u8,
+        exchange: []const u8,
+        routing_key: []const u8,
+        no_wait: bool,
+        arguments: Table,
+    };
     pub const BIND_METHOD = 20;
-    pub fn bind_sync(
+    pub fn bindSync(
         conn: *Connector,
         queue: []const u8,
         exchange: []const u8,
         routing_key: []const u8,
         no_wait: bool,
         arguments: ?*Table,
-    ) !void {
+    ) !BindOk {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.BIND_METHOD);
+        conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, BIND_METHOD);
         const reserved_1 = 0;
         conn.tx_buffer.writeU16(reserved_1);
         conn.tx_buffer.writeShortString(queue);
@@ -1557,27 +2004,160 @@ pub const Queue = struct {
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.writeTable(arguments);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        var received_response = false;
-        while (!received_response) {
-            const expecting: ClassMethod = .{ .class = QUEUE_CLASS, .method = Queue.BIND_OK_METHOD };
-            received_response = try conn.dispatch(expecting);
-        }
+        std.log.debug("Queue@{}.Bind ->", .{conn.channel});
+        return awaitBindOk(conn);
     }
-    // METHOD =============================
+
+    // bind
+    pub fn awaitBind(conn: *Connector) !Bind {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == QUEUE_CLASS and method_header.method == BIND_METHOD) {
+                            const reserved_1 = conn.rx_buffer.readU16();
+                            const queue = conn.rx_buffer.readShortString();
+                            const exchange = conn.rx_buffer.readShortString();
+                            const routing_key = conn.rx_buffer.readShortString();
+                            const bitset0 = conn.rx_buffer.readU8();
+                            const no_wait = if (bitset0 & (1 << 0) == 0) true else false;
+                            var arguments = conn.rx_buffer.readTable();
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Queue@{}.Bind", .{conn.channel});
+                            return Bind{
+                                .reserved_1 = reserved_1,
+                                .queue = queue,
+                                .exchange = exchange,
+                                .routing_key = routing_key,
+                                .no_wait = no_wait,
+                                .arguments = arguments,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // bind-ok
+
+    pub const BindOk = struct {};
     pub const BIND_OK_METHOD = 21;
-    // METHOD =============================
+    pub fn bindOkAsync(
+        conn: *Connector,
+    ) !void {
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.BIND_OK_METHOD);
+        conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
+        std.log.debug("Queue@{}.Bind_ok ->", .{conn.channel});
+    }
+
+    // bind_ok
+    pub fn awaitBindOk(conn: *Connector) !BindOk {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == QUEUE_CLASS and method_header.method == BIND_OK_METHOD) {
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Queue@{}.Bind_ok", .{conn.channel});
+                            return BindOk{};
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // unbind
+
+    pub const Unbind = struct {
+        reserved_1: u16,
+        queue: []const u8,
+        exchange: []const u8,
+        routing_key: []const u8,
+        arguments: Table,
+    };
     pub const UNBIND_METHOD = 50;
-    pub fn unbind_sync(
+    pub fn unbindSync(
         conn: *Connector,
         queue: []const u8,
         exchange: []const u8,
         routing_key: []const u8,
         arguments: ?*Table,
-    ) !void {
+    ) !UnbindOk {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.UNBIND_METHOD);
+        conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, UNBIND_METHOD);
         const reserved_1 = 0;
         conn.tx_buffer.writeU16(reserved_1);
         conn.tx_buffer.writeShortString(queue);
@@ -1585,25 +2165,153 @@ pub const Queue = struct {
         conn.tx_buffer.writeShortString(routing_key);
         conn.tx_buffer.writeTable(arguments);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        var received_response = false;
-        while (!received_response) {
-            const expecting: ClassMethod = .{ .class = QUEUE_CLASS, .method = Queue.UNBIND_OK_METHOD };
-            received_response = try conn.dispatch(expecting);
-        }
+        std.log.debug("Queue@{}.Unbind ->", .{conn.channel});
+        return awaitUnbindOk(conn);
     }
-    // METHOD =============================
+
+    // unbind
+    pub fn awaitUnbind(conn: *Connector) !Unbind {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == QUEUE_CLASS and method_header.method == UNBIND_METHOD) {
+                            const reserved_1 = conn.rx_buffer.readU16();
+                            const queue = conn.rx_buffer.readShortString();
+                            const exchange = conn.rx_buffer.readShortString();
+                            const routing_key = conn.rx_buffer.readShortString();
+                            var arguments = conn.rx_buffer.readTable();
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Queue@{}.Unbind", .{conn.channel});
+                            return Unbind{
+                                .reserved_1 = reserved_1,
+                                .queue = queue,
+                                .exchange = exchange,
+                                .routing_key = routing_key,
+                                .arguments = arguments,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // unbind-ok
+
+    pub const UnbindOk = struct {};
     pub const UNBIND_OK_METHOD = 51;
-    // METHOD =============================
+    pub fn unbindOkAsync(
+        conn: *Connector,
+    ) !void {
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.UNBIND_OK_METHOD);
+        conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
+        std.log.debug("Queue@{}.Unbind_ok ->", .{conn.channel});
+    }
+
+    // unbind_ok
+    pub fn awaitUnbindOk(conn: *Connector) !UnbindOk {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == QUEUE_CLASS and method_header.method == UNBIND_OK_METHOD) {
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Queue@{}.Unbind_ok", .{conn.channel});
+                            return UnbindOk{};
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // purge
+
+    pub const Purge = struct {
+        reserved_1: u16,
+        queue: []const u8,
+        no_wait: bool,
+    };
     pub const PURGE_METHOD = 30;
-    pub fn purge_sync(
+    pub fn purgeSync(
         conn: *Connector,
         queue: []const u8,
         no_wait: bool,
-    ) !void {
+    ) !PurgeOk {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.PURGE_METHOD);
+        conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, PURGE_METHOD);
         const reserved_1 = 0;
         conn.tx_buffer.writeU16(reserved_1);
         conn.tx_buffer.writeShortString(queue);
@@ -1612,27 +2320,161 @@ pub const Queue = struct {
         if (no_wait) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        var received_response = false;
-        while (!received_response) {
-            const expecting: ClassMethod = .{ .class = QUEUE_CLASS, .method = Queue.PURGE_OK_METHOD };
-            received_response = try conn.dispatch(expecting);
-        }
+        std.log.debug("Queue@{}.Purge ->", .{conn.channel});
+        return awaitPurgeOk(conn);
     }
-    // METHOD =============================
+
+    // purge
+    pub fn awaitPurge(conn: *Connector) !Purge {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == QUEUE_CLASS and method_header.method == PURGE_METHOD) {
+                            const reserved_1 = conn.rx_buffer.readU16();
+                            const queue = conn.rx_buffer.readShortString();
+                            const bitset0 = conn.rx_buffer.readU8();
+                            const no_wait = if (bitset0 & (1 << 0) == 0) true else false;
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Queue@{}.Purge", .{conn.channel});
+                            return Purge{
+                                .reserved_1 = reserved_1,
+                                .queue = queue,
+                                .no_wait = no_wait,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // purge-ok
+
+    pub const PurgeOk = struct {
+        message_count: u32,
+    };
     pub const PURGE_OK_METHOD = 31;
-    // METHOD =============================
+    pub fn purgeOkAsync(
+        conn: *Connector,
+        message_count: u32,
+    ) !void {
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.PURGE_OK_METHOD);
+        conn.tx_buffer.writeU32(message_count);
+        conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
+        std.log.debug("Queue@{}.Purge_ok ->", .{conn.channel});
+    }
+
+    // purge_ok
+    pub fn awaitPurgeOk(conn: *Connector) !PurgeOk {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == QUEUE_CLASS and method_header.method == PURGE_OK_METHOD) {
+                            const message_count = conn.rx_buffer.readU32();
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Queue@{}.Purge_ok", .{conn.channel});
+                            return PurgeOk{
+                                .message_count = message_count,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // delete
+
+    pub const Delete = struct {
+        reserved_1: u16,
+        queue: []const u8,
+        if_unused: bool,
+        if_empty: bool,
+        no_wait: bool,
+    };
     pub const DELETE_METHOD = 40;
-    pub fn delete_sync(
+    pub fn deleteSync(
         conn: *Connector,
         queue: []const u8,
         if_unused: bool,
         if_empty: bool,
         no_wait: bool,
-    ) !void {
+    ) !DeleteOk {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.DELETE_METHOD);
+        conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, DELETE_METHOD);
         const reserved_1 = 0;
         conn.tx_buffer.writeU16(reserved_1);
         conn.tx_buffer.writeShortString(queue);
@@ -1643,144 +2485,167 @@ pub const Queue = struct {
         if (no_wait) bitset0 |= (_bit << 2) else bitset0 &= ~(_bit << 2);
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        var received_response = false;
-        while (!received_response) {
-            const expecting: ClassMethod = .{ .class = QUEUE_CLASS, .method = Queue.DELETE_OK_METHOD };
-            received_response = try conn.dispatch(expecting);
-        }
+        std.log.debug("Queue@{}.Delete ->", .{conn.channel});
+        return awaitDeleteOk(conn);
     }
-    // METHOD =============================
+
+    // delete
+    pub fn awaitDelete(conn: *Connector) !Delete {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == QUEUE_CLASS and method_header.method == DELETE_METHOD) {
+                            const reserved_1 = conn.rx_buffer.readU16();
+                            const queue = conn.rx_buffer.readShortString();
+                            const bitset0 = conn.rx_buffer.readU8();
+                            const if_unused = if (bitset0 & (1 << 0) == 0) true else false;
+                            const if_empty = if (bitset0 & (1 << 1) == 0) true else false;
+                            const no_wait = if (bitset0 & (1 << 2) == 0) true else false;
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Queue@{}.Delete", .{conn.channel});
+                            return Delete{
+                                .reserved_1 = reserved_1,
+                                .queue = queue,
+                                .if_unused = if_unused,
+                                .if_empty = if_empty,
+                                .no_wait = no_wait,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // delete-ok
+
+    pub const DeleteOk = struct {
+        message_count: u32,
+    };
     pub const DELETE_OK_METHOD = 41;
+    pub fn deleteOkAsync(
+        conn: *Connector,
+        message_count: u32,
+    ) !void {
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.DELETE_OK_METHOD);
+        conn.tx_buffer.writeU32(message_count);
+        conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
+        std.log.debug("Queue@{}.Delete_ok ->", .{conn.channel});
+    }
+
+    // delete_ok
+    pub fn awaitDeleteOk(conn: *Connector) !DeleteOk {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == QUEUE_CLASS and method_header.method == DELETE_OK_METHOD) {
+                            const message_count = conn.rx_buffer.readU32();
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Queue@{}.Delete_ok", .{conn.channel});
+                            return DeleteOk{
+                                .message_count = message_count,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
 };
-pub const basic_interface = struct {
-    qos: ?fn (
-        *Connector,
+
+// basic
+pub const Basic = struct {
+    pub const BASIC_CLASS = 60;
+
+    // qos
+
+    pub const Qos = struct {
         prefetch_size: u32,
         prefetch_count: u16,
         global: bool,
-    ) anyerror!void,
-    qos_ok: ?fn (
-        *Connector,
-    ) anyerror!void,
-    consume: ?fn (
-        *Connector,
-        queue: []const u8,
-        consumer_tag: []const u8,
-        no_local: bool,
-        no_ack: bool,
-        exclusive: bool,
-        no_wait: bool,
-        arguments: ?*Table,
-    ) anyerror!void,
-    consume_ok: ?fn (
-        *Connector,
-        consumer_tag: []const u8,
-    ) anyerror!void,
-    cancel: ?fn (
-        *Connector,
-        consumer_tag: []const u8,
-        no_wait: bool,
-    ) anyerror!void,
-    cancel_ok: ?fn (
-        *Connector,
-        consumer_tag: []const u8,
-    ) anyerror!void,
-    publish: ?fn (
-        *Connector,
-        exchange: []const u8,
-        routing_key: []const u8,
-        mandatory: bool,
-        immediate: bool,
-    ) anyerror!void,
-    @"return": ?fn (
-        *Connector,
-        reply_code: u16,
-        reply_text: []const u8,
-        exchange: []const u8,
-        routing_key: []const u8,
-    ) anyerror!void,
-    deliver: ?fn (
-        *Connector,
-        consumer_tag: []const u8,
-        delivery_tag: u64,
-        redelivered: bool,
-        exchange: []const u8,
-        routing_key: []const u8,
-    ) anyerror!void,
-    get: ?fn (
-        *Connector,
-        queue: []const u8,
-        no_ack: bool,
-    ) anyerror!void,
-    get_ok: ?fn (
-        *Connector,
-        delivery_tag: u64,
-        redelivered: bool,
-        exchange: []const u8,
-        routing_key: []const u8,
-        message_count: u32,
-    ) anyerror!void,
-    get_empty: ?fn (
-        *Connector,
-    ) anyerror!void,
-    ack: ?fn (
-        *Connector,
-        delivery_tag: u64,
-        multiple: bool,
-    ) anyerror!void,
-    reject: ?fn (
-        *Connector,
-        delivery_tag: u64,
-        requeue: bool,
-    ) anyerror!void,
-    recover_async: ?fn (
-        *Connector,
-        requeue: bool,
-    ) anyerror!void,
-    recover: ?fn (
-        *Connector,
-        requeue: bool,
-    ) anyerror!void,
-    recover_ok: ?fn (
-        *Connector,
-    ) anyerror!void,
-};
-
-pub var BASIC_IMPL = basic_interface{
-    .qos = null,
-    .qos_ok = null,
-    .consume = null,
-    .consume_ok = null,
-    .cancel = null,
-    .cancel_ok = null,
-    .publish = null,
-    .@"return" = null,
-    .deliver = null,
-    .get = null,
-    .get_ok = null,
-    .get_empty = null,
-    .ack = null,
-    .reject = null,
-    .recover_async = null,
-    .recover = null,
-    .recover_ok = null,
-};
-
-pub const BASIC_CLASS = 60; // CLASS
-pub const Basic = struct {
-    const Self = @This();
-    // METHOD =============================
+    };
     pub const QOS_METHOD = 10;
-    pub fn qos_sync(
+    pub fn qosSync(
         conn: *Connector,
         prefetch_size: u32,
         prefetch_count: u16,
         global: bool,
-    ) !void {
+    ) !QosOk {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.QOS_METHOD);
+        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, QOS_METHOD);
         conn.tx_buffer.writeU32(prefetch_size);
         conn.tx_buffer.writeU16(prefetch_count);
         var bitset0: u8 = 0;
@@ -1788,19 +2653,149 @@ pub const Basic = struct {
         if (global) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        var received_response = false;
-        while (!received_response) {
-            const expecting: ClassMethod = .{ .class = BASIC_CLASS, .method = Basic.QOS_OK_METHOD };
-            received_response = try conn.dispatch(expecting);
-        }
+        std.log.debug("Basic@{}.Qos ->", .{conn.channel});
+        return awaitQosOk(conn);
     }
-    // METHOD =============================
+
+    // qos
+    pub fn awaitQos(conn: *Connector) !Qos {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == BASIC_CLASS and method_header.method == QOS_METHOD) {
+                            const prefetch_size = conn.rx_buffer.readU32();
+                            const prefetch_count = conn.rx_buffer.readU16();
+                            const bitset0 = conn.rx_buffer.readU8();
+                            const global = if (bitset0 & (1 << 0) == 0) true else false;
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Basic@{}.Qos", .{conn.channel});
+                            return Qos{
+                                .prefetch_size = prefetch_size,
+                                .prefetch_count = prefetch_count,
+                                .global = global,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // qos-ok
+
+    pub const QosOk = struct {};
     pub const QOS_OK_METHOD = 11;
-    // METHOD =============================
+    pub fn qosOkAsync(
+        conn: *Connector,
+    ) !void {
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.QOS_OK_METHOD);
+        conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
+        std.log.debug("Basic@{}.Qos_ok ->", .{conn.channel});
+    }
+
+    // qos_ok
+    pub fn awaitQosOk(conn: *Connector) !QosOk {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == BASIC_CLASS and method_header.method == QOS_OK_METHOD) {
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Basic@{}.Qos_ok", .{conn.channel});
+                            return QosOk{};
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // consume
+
+    pub const Consume = struct {
+        reserved_1: u16,
+        queue: []const u8,
+        consumer_tag: []const u8,
+        no_local: bool,
+        no_ack: bool,
+        exclusive: bool,
+        no_wait: bool,
+        arguments: Table,
+    };
     pub const CONSUME_METHOD = 20;
-    pub fn consume_sync(
+    pub fn consumeSync(
         conn: *Connector,
         queue: []const u8,
         consumer_tag: []const u8,
@@ -1809,9 +2804,9 @@ pub const Basic = struct {
         exclusive: bool,
         no_wait: bool,
         arguments: ?*Table,
-    ) !void {
+    ) !ConsumeOk {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.CONSUME_METHOD);
+        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, CONSUME_METHOD);
         const reserved_1 = 0;
         conn.tx_buffer.writeU16(reserved_1);
         conn.tx_buffer.writeShortString(queue);
@@ -1825,44 +2820,317 @@ pub const Basic = struct {
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.writeTable(arguments);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        var received_response = false;
-        while (!received_response) {
-            const expecting: ClassMethod = .{ .class = BASIC_CLASS, .method = Basic.CONSUME_OK_METHOD };
-            received_response = try conn.dispatch(expecting);
-        }
+        std.log.debug("Basic@{}.Consume ->", .{conn.channel});
+        return awaitConsumeOk(conn);
     }
-    // METHOD =============================
+
+    // consume
+    pub fn awaitConsume(conn: *Connector) !Consume {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == BASIC_CLASS and method_header.method == CONSUME_METHOD) {
+                            const reserved_1 = conn.rx_buffer.readU16();
+                            const queue = conn.rx_buffer.readShortString();
+                            const consumer_tag = conn.rx_buffer.readShortString();
+                            const bitset0 = conn.rx_buffer.readU8();
+                            const no_local = if (bitset0 & (1 << 0) == 0) true else false;
+                            const no_ack = if (bitset0 & (1 << 1) == 0) true else false;
+                            const exclusive = if (bitset0 & (1 << 2) == 0) true else false;
+                            const no_wait = if (bitset0 & (1 << 3) == 0) true else false;
+                            var arguments = conn.rx_buffer.readTable();
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Basic@{}.Consume", .{conn.channel});
+                            return Consume{
+                                .reserved_1 = reserved_1,
+                                .queue = queue,
+                                .consumer_tag = consumer_tag,
+                                .no_local = no_local,
+                                .no_ack = no_ack,
+                                .exclusive = exclusive,
+                                .no_wait = no_wait,
+                                .arguments = arguments,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // consume-ok
+
+    pub const ConsumeOk = struct {
+        consumer_tag: []const u8,
+    };
     pub const CONSUME_OK_METHOD = 21;
-    // METHOD =============================
+    pub fn consumeOkAsync(
+        conn: *Connector,
+        consumer_tag: []const u8,
+    ) !void {
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.CONSUME_OK_METHOD);
+        conn.tx_buffer.writeShortString(consumer_tag);
+        conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
+        std.log.debug("Basic@{}.Consume_ok ->", .{conn.channel});
+    }
+
+    // consume_ok
+    pub fn awaitConsumeOk(conn: *Connector) !ConsumeOk {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == BASIC_CLASS and method_header.method == CONSUME_OK_METHOD) {
+                            const consumer_tag = conn.rx_buffer.readShortString();
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Basic@{}.Consume_ok", .{conn.channel});
+                            return ConsumeOk{
+                                .consumer_tag = consumer_tag,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // cancel
+
+    pub const Cancel = struct {
+        consumer_tag: []const u8,
+        no_wait: bool,
+    };
     pub const CANCEL_METHOD = 30;
-    pub fn cancel_sync(
+    pub fn cancelSync(
         conn: *Connector,
         consumer_tag: []const u8,
         no_wait: bool,
-    ) !void {
+    ) !CancelOk {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.CANCEL_METHOD);
+        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, CANCEL_METHOD);
         conn.tx_buffer.writeShortString(consumer_tag);
         var bitset0: u8 = 0;
         const _bit: u8 = 1;
         if (no_wait) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        var received_response = false;
-        while (!received_response) {
-            const expecting: ClassMethod = .{ .class = BASIC_CLASS, .method = Basic.CANCEL_OK_METHOD };
-            received_response = try conn.dispatch(expecting);
-        }
+        std.log.debug("Basic@{}.Cancel ->", .{conn.channel});
+        return awaitCancelOk(conn);
     }
-    // METHOD =============================
+
+    // cancel
+    pub fn awaitCancel(conn: *Connector) !Cancel {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == BASIC_CLASS and method_header.method == CANCEL_METHOD) {
+                            const consumer_tag = conn.rx_buffer.readShortString();
+                            const bitset0 = conn.rx_buffer.readU8();
+                            const no_wait = if (bitset0 & (1 << 0) == 0) true else false;
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Basic@{}.Cancel", .{conn.channel});
+                            return Cancel{
+                                .consumer_tag = consumer_tag,
+                                .no_wait = no_wait,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // cancel-ok
+
+    pub const CancelOk = struct {
+        consumer_tag: []const u8,
+    };
     pub const CANCEL_OK_METHOD = 31;
-    // METHOD =============================
+    pub fn cancelOkAsync(
+        conn: *Connector,
+        consumer_tag: []const u8,
+    ) !void {
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.CANCEL_OK_METHOD);
+        conn.tx_buffer.writeShortString(consumer_tag);
+        conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
+        std.log.debug("Basic@{}.Cancel_ok ->", .{conn.channel});
+    }
+
+    // cancel_ok
+    pub fn awaitCancelOk(conn: *Connector) !CancelOk {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == BASIC_CLASS and method_header.method == CANCEL_OK_METHOD) {
+                            const consumer_tag = conn.rx_buffer.readShortString();
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Basic@{}.Cancel_ok", .{conn.channel});
+                            return CancelOk{
+                                .consumer_tag = consumer_tag,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // publish
+
+    pub const Publish = struct {
+        reserved_1: u16,
+        exchange: []const u8,
+        routing_key: []const u8,
+        mandatory: bool,
+        immediate: bool,
+    };
     pub const PUBLISH_METHOD = 40;
-    pub fn publish_resp(
+    pub fn publishAsync(
         conn: *Connector,
         exchange: []const u8,
         routing_key: []const u8,
@@ -1881,22 +3149,271 @@ pub const Basic = struct {
         if (immediate) bitset0 |= (_bit << 1) else bitset0 &= ~(_bit << 1);
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
+        std.log.debug("Basic@{}.Publish ->", .{conn.channel});
     }
-    // METHOD =============================
+
+    // publish
+    pub fn awaitPublish(conn: *Connector) !Publish {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == BASIC_CLASS and method_header.method == PUBLISH_METHOD) {
+                            const reserved_1 = conn.rx_buffer.readU16();
+                            const exchange = conn.rx_buffer.readShortString();
+                            const routing_key = conn.rx_buffer.readShortString();
+                            const bitset0 = conn.rx_buffer.readU8();
+                            const mandatory = if (bitset0 & (1 << 0) == 0) true else false;
+                            const immediate = if (bitset0 & (1 << 1) == 0) true else false;
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Basic@{}.Publish", .{conn.channel});
+                            return Publish{
+                                .reserved_1 = reserved_1,
+                                .exchange = exchange,
+                                .routing_key = routing_key,
+                                .mandatory = mandatory,
+                                .immediate = immediate,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // return
+
+    pub const Return = struct {
+        reply_code: u16,
+        reply_text: []const u8,
+        exchange: []const u8,
+        routing_key: []const u8,
+    };
     pub const RETURN_METHOD = 50;
-    // METHOD =============================
+    pub fn returnAsync(
+        conn: *Connector,
+        reply_code: u16,
+        reply_text: []const u8,
+        exchange: []const u8,
+        routing_key: []const u8,
+    ) !void {
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.RETURN_METHOD);
+        conn.tx_buffer.writeU16(reply_code);
+        conn.tx_buffer.writeShortString(reply_text);
+        conn.tx_buffer.writeShortString(exchange);
+        conn.tx_buffer.writeShortString(routing_key);
+        conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
+        std.log.debug("Basic@{}.Return ->", .{conn.channel});
+    }
+
+    // @"return"
+    pub fn awaitReturn(conn: *Connector) !Return {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == BASIC_CLASS and method_header.method == RETURN_METHOD) {
+                            const reply_code = conn.rx_buffer.readU16();
+                            const reply_text = conn.rx_buffer.readShortString();
+                            const exchange = conn.rx_buffer.readShortString();
+                            const routing_key = conn.rx_buffer.readShortString();
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Basic@{}.Return", .{conn.channel});
+                            return Return{
+                                .reply_code = reply_code,
+                                .reply_text = reply_text,
+                                .exchange = exchange,
+                                .routing_key = routing_key,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // deliver
+
+    pub const Deliver = struct {
+        consumer_tag: []const u8,
+        delivery_tag: u64,
+        redelivered: bool,
+        exchange: []const u8,
+        routing_key: []const u8,
+    };
     pub const DELIVER_METHOD = 60;
-    // METHOD =============================
+    pub fn deliverAsync(
+        conn: *Connector,
+        consumer_tag: []const u8,
+        delivery_tag: u64,
+        redelivered: bool,
+        exchange: []const u8,
+        routing_key: []const u8,
+    ) !void {
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.DELIVER_METHOD);
+        conn.tx_buffer.writeShortString(consumer_tag);
+        conn.tx_buffer.writeU64(delivery_tag);
+        var bitset0: u8 = 0;
+        const _bit: u8 = 1;
+        if (redelivered) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
+        conn.tx_buffer.writeU8(bitset0);
+        conn.tx_buffer.writeShortString(exchange);
+        conn.tx_buffer.writeShortString(routing_key);
+        conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
+        std.log.debug("Basic@{}.Deliver ->", .{conn.channel});
+    }
+
+    // deliver
+    pub fn awaitDeliver(conn: *Connector) !Deliver {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == BASIC_CLASS and method_header.method == DELIVER_METHOD) {
+                            const consumer_tag = conn.rx_buffer.readShortString();
+                            const delivery_tag = conn.rx_buffer.readU64();
+                            const bitset0 = conn.rx_buffer.readU8();
+                            const redelivered = if (bitset0 & (1 << 0) == 0) true else false;
+                            const exchange = conn.rx_buffer.readShortString();
+                            const routing_key = conn.rx_buffer.readShortString();
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Basic@{}.Deliver", .{conn.channel});
+                            return Deliver{
+                                .consumer_tag = consumer_tag,
+                                .delivery_tag = delivery_tag,
+                                .redelivered = redelivered,
+                                .exchange = exchange,
+                                .routing_key = routing_key,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // get
+
+    pub const Get = struct {
+        reserved_1: u16,
+        queue: []const u8,
+        no_ack: bool,
+    };
     pub const GET_METHOD = 70;
-    pub fn get_sync(
+    pub fn getSync(
         conn: *Connector,
         queue: []const u8,
         no_ack: bool,
-    ) !void {
+    ) !GetEmpty {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.GET_METHOD);
+        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, GET_METHOD);
         const reserved_1 = 0;
         conn.tx_buffer.writeU16(reserved_1);
         conn.tx_buffer.writeShortString(queue);
@@ -1905,21 +3422,246 @@ pub const Basic = struct {
         if (no_ack) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        var received_response = false;
-        while (!received_response) {
-            const expecting: ClassMethod = .{ .class = BASIC_CLASS, .method = Basic.GET_OK_METHOD };
-            received_response = try conn.dispatch(expecting);
-        }
+        std.log.debug("Basic@{}.Get ->", .{conn.channel});
+        return awaitGetEmpty(conn);
     }
-    // METHOD =============================
+
+    // get
+    pub fn awaitGet(conn: *Connector) !Get {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == BASIC_CLASS and method_header.method == GET_METHOD) {
+                            const reserved_1 = conn.rx_buffer.readU16();
+                            const queue = conn.rx_buffer.readShortString();
+                            const bitset0 = conn.rx_buffer.readU8();
+                            const no_ack = if (bitset0 & (1 << 0) == 0) true else false;
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Basic@{}.Get", .{conn.channel});
+                            return Get{
+                                .reserved_1 = reserved_1,
+                                .queue = queue,
+                                .no_ack = no_ack,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // get-ok
+
+    pub const GetOk = struct {
+        delivery_tag: u64,
+        redelivered: bool,
+        exchange: []const u8,
+        routing_key: []const u8,
+        message_count: u32,
+    };
     pub const GET_OK_METHOD = 71;
-    // METHOD =============================
+    pub fn getOkAsync(
+        conn: *Connector,
+        delivery_tag: u64,
+        redelivered: bool,
+        exchange: []const u8,
+        routing_key: []const u8,
+        message_count: u32,
+    ) !void {
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.GET_OK_METHOD);
+        conn.tx_buffer.writeU64(delivery_tag);
+        var bitset0: u8 = 0;
+        const _bit: u8 = 1;
+        if (redelivered) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
+        conn.tx_buffer.writeU8(bitset0);
+        conn.tx_buffer.writeShortString(exchange);
+        conn.tx_buffer.writeShortString(routing_key);
+        conn.tx_buffer.writeU32(message_count);
+        conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
+        std.log.debug("Basic@{}.Get_ok ->", .{conn.channel});
+    }
+
+    // get_ok
+    pub fn awaitGetOk(conn: *Connector) !GetOk {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == BASIC_CLASS and method_header.method == GET_OK_METHOD) {
+                            const delivery_tag = conn.rx_buffer.readU64();
+                            const bitset0 = conn.rx_buffer.readU8();
+                            const redelivered = if (bitset0 & (1 << 0) == 0) true else false;
+                            const exchange = conn.rx_buffer.readShortString();
+                            const routing_key = conn.rx_buffer.readShortString();
+                            const message_count = conn.rx_buffer.readU32();
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Basic@{}.Get_ok", .{conn.channel});
+                            return GetOk{
+                                .delivery_tag = delivery_tag,
+                                .redelivered = redelivered,
+                                .exchange = exchange,
+                                .routing_key = routing_key,
+                                .message_count = message_count,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // get-empty
+
+    pub const GetEmpty = struct {
+        reserved_1: []const u8,
+    };
     pub const GET_EMPTY_METHOD = 72;
-    // METHOD =============================
+    pub fn getEmptyAsync(
+        conn: *Connector,
+    ) !void {
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.GET_EMPTY_METHOD);
+        const reserved_1 = "";
+        conn.tx_buffer.writeShortString(reserved_1);
+        conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
+        std.log.debug("Basic@{}.Get_empty ->", .{conn.channel});
+    }
+
+    // get_empty
+    pub fn awaitGetEmpty(conn: *Connector) !GetEmpty {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == BASIC_CLASS and method_header.method == GET_EMPTY_METHOD) {
+                            const reserved_1 = conn.rx_buffer.readShortString();
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Basic@{}.Get_empty", .{conn.channel});
+                            return GetEmpty{
+                                .reserved_1 = reserved_1,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // ack
+
+    pub const Ack = struct {
+        delivery_tag: u64,
+        multiple: bool,
+    };
     pub const ACK_METHOD = 80;
-    pub fn ack_resp(
+    pub fn ackAsync(
         conn: *Connector,
         delivery_tag: u64,
         multiple: bool,
@@ -1932,12 +3674,75 @@ pub const Basic = struct {
         if (multiple) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
+        std.log.debug("Basic@{}.Ack ->", .{conn.channel});
     }
-    // METHOD =============================
+
+    // ack
+    pub fn awaitAck(conn: *Connector) !Ack {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == BASIC_CLASS and method_header.method == ACK_METHOD) {
+                            const delivery_tag = conn.rx_buffer.readU64();
+                            const bitset0 = conn.rx_buffer.readU8();
+                            const multiple = if (bitset0 & (1 << 0) == 0) true else false;
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Basic@{}.Ack", .{conn.channel});
+                            return Ack{
+                                .delivery_tag = delivery_tag,
+                                .multiple = multiple,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // reject
+
+    pub const Reject = struct {
+        delivery_tag: u64,
+        requeue: bool,
+    };
     pub const REJECT_METHOD = 90;
-    pub fn reject_resp(
+    pub fn rejectAsync(
         conn: *Connector,
         delivery_tag: u64,
         requeue: bool,
@@ -1950,12 +3755,74 @@ pub const Basic = struct {
         if (requeue) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
+        std.log.debug("Basic@{}.Reject ->", .{conn.channel});
     }
-    // METHOD =============================
+
+    // reject
+    pub fn awaitReject(conn: *Connector) !Reject {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == BASIC_CLASS and method_header.method == REJECT_METHOD) {
+                            const delivery_tag = conn.rx_buffer.readU64();
+                            const bitset0 = conn.rx_buffer.readU8();
+                            const requeue = if (bitset0 & (1 << 0) == 0) true else false;
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Basic@{}.Reject", .{conn.channel});
+                            return Reject{
+                                .delivery_tag = delivery_tag,
+                                .requeue = requeue,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // recover-async
+
+    pub const RecoverAsync = struct {
+        requeue: bool,
+    };
     pub const RECOVER_ASYNC_METHOD = 100;
-    pub fn recover_async_resp(
+    pub fn recoverAsyncAsync(
         conn: *Connector,
         requeue: bool,
     ) !void {
@@ -1966,12 +3833,72 @@ pub const Basic = struct {
         if (requeue) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
+        std.log.debug("Basic@{}.Recover_async ->", .{conn.channel});
     }
-    // METHOD =============================
+
+    // recover_async
+    pub fn awaitRecoverAsync(conn: *Connector) !RecoverAsync {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == BASIC_CLASS and method_header.method == RECOVER_ASYNC_METHOD) {
+                            const bitset0 = conn.rx_buffer.readU8();
+                            const requeue = if (bitset0 & (1 << 0) == 0) true else false;
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Basic@{}.Recover_async", .{conn.channel});
+                            return RecoverAsync{
+                                .requeue = requeue,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // recover
+
+    pub const Recover = struct {
+        requeue: bool,
+    };
     pub const RECOVER_METHOD = 110;
-    pub fn recover_resp(
+    pub fn recoverAsync(
         conn: *Connector,
         requeue: bool,
     ) !void {
@@ -1982,97 +3909,525 @@ pub const Basic = struct {
         if (requeue) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
+        std.log.debug("Basic@{}.Recover ->", .{conn.channel});
     }
-    // METHOD =============================
+
+    // recover
+    pub fn awaitRecover(conn: *Connector) !Recover {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == BASIC_CLASS and method_header.method == RECOVER_METHOD) {
+                            const bitset0 = conn.rx_buffer.readU8();
+                            const requeue = if (bitset0 & (1 << 0) == 0) true else false;
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Basic@{}.Recover", .{conn.channel});
+                            return Recover{
+                                .requeue = requeue,
+                            };
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // recover-ok
+
+    pub const RecoverOk = struct {};
     pub const RECOVER_OK_METHOD = 111;
-};
-pub const tx_interface = struct {
-    select: ?fn (
-        *Connector,
-    ) anyerror!void,
-    select_ok: ?fn (
-        *Connector,
-    ) anyerror!void,
-    commit: ?fn (
-        *Connector,
-    ) anyerror!void,
-    commit_ok: ?fn (
-        *Connector,
-    ) anyerror!void,
-    rollback: ?fn (
-        *Connector,
-    ) anyerror!void,
-    rollback_ok: ?fn (
-        *Connector,
-    ) anyerror!void,
+    pub fn recoverOkAsync(
+        conn: *Connector,
+    ) !void {
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.RECOVER_OK_METHOD);
+        conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
+        std.log.debug("Basic@{}.Recover_ok ->", .{conn.channel});
+    }
+
+    // recover_ok
+    pub fn awaitRecoverOk(conn: *Connector) !RecoverOk {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == BASIC_CLASS and method_header.method == RECOVER_OK_METHOD) {
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Basic@{}.Recover_ok", .{conn.channel});
+                            return RecoverOk{};
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
 };
 
-pub var TX_IMPL = tx_interface{
-    .select = null,
-    .select_ok = null,
-    .commit = null,
-    .commit_ok = null,
-    .rollback = null,
-    .rollback_ok = null,
-};
-
-pub const TX_CLASS = 90; // CLASS
+// tx
 pub const Tx = struct {
-    const Self = @This();
-    // METHOD =============================
+    pub const TX_CLASS = 90;
+
+    // select
+
+    pub const Select = struct {};
     pub const SELECT_METHOD = 10;
-    pub fn select_sync(
+    pub fn selectSync(
         conn: *Connector,
-    ) !void {
+    ) !SelectOk {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(TX_CLASS, Tx.SELECT_METHOD);
+        conn.tx_buffer.writeMethodHeader(TX_CLASS, SELECT_METHOD);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        var received_response = false;
-        while (!received_response) {
-            const expecting: ClassMethod = .{ .class = TX_CLASS, .method = Tx.SELECT_OK_METHOD };
-            received_response = try conn.dispatch(expecting);
-        }
+        std.log.debug("Tx@{}.Select ->", .{conn.channel});
+        return awaitSelectOk(conn);
     }
-    // METHOD =============================
+
+    // select
+    pub fn awaitSelect(conn: *Connector) !Select {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == TX_CLASS and method_header.method == SELECT_METHOD) {
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Tx@{}.Select", .{conn.channel});
+                            return Select{};
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // select-ok
+
+    pub const SelectOk = struct {};
     pub const SELECT_OK_METHOD = 11;
-    // METHOD =============================
+    pub fn selectOkAsync(
+        conn: *Connector,
+    ) !void {
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(TX_CLASS, Tx.SELECT_OK_METHOD);
+        conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
+        std.log.debug("Tx@{}.Select_ok ->", .{conn.channel});
+    }
+
+    // select_ok
+    pub fn awaitSelectOk(conn: *Connector) !SelectOk {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == TX_CLASS and method_header.method == SELECT_OK_METHOD) {
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Tx@{}.Select_ok", .{conn.channel});
+                            return SelectOk{};
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // commit
+
+    pub const Commit = struct {};
     pub const COMMIT_METHOD = 20;
-    pub fn commit_sync(
+    pub fn commitSync(
         conn: *Connector,
-    ) !void {
+    ) !CommitOk {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(TX_CLASS, Tx.COMMIT_METHOD);
+        conn.tx_buffer.writeMethodHeader(TX_CLASS, COMMIT_METHOD);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        var received_response = false;
-        while (!received_response) {
-            const expecting: ClassMethod = .{ .class = TX_CLASS, .method = Tx.COMMIT_OK_METHOD };
-            received_response = try conn.dispatch(expecting);
-        }
+        std.log.debug("Tx@{}.Commit ->", .{conn.channel});
+        return awaitCommitOk(conn);
     }
-    // METHOD =============================
+
+    // commit
+    pub fn awaitCommit(conn: *Connector) !Commit {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == TX_CLASS and method_header.method == COMMIT_METHOD) {
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Tx@{}.Commit", .{conn.channel});
+                            return Commit{};
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // commit-ok
+
+    pub const CommitOk = struct {};
     pub const COMMIT_OK_METHOD = 21;
-    // METHOD =============================
-    pub const ROLLBACK_METHOD = 30;
-    pub fn rollback_sync(
+    pub fn commitOkAsync(
         conn: *Connector,
     ) !void {
         conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(TX_CLASS, Tx.ROLLBACK_METHOD);
+        conn.tx_buffer.writeMethodHeader(TX_CLASS, Tx.COMMIT_OK_METHOD);
         conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
         const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        var received_response = false;
-        while (!received_response) {
-            const expecting: ClassMethod = .{ .class = TX_CLASS, .method = Tx.ROLLBACK_OK_METHOD };
-            received_response = try conn.dispatch(expecting);
-        }
+        std.log.debug("Tx@{}.Commit_ok ->", .{conn.channel});
     }
-    // METHOD =============================
+
+    // commit_ok
+    pub fn awaitCommitOk(conn: *Connector) !CommitOk {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == TX_CLASS and method_header.method == COMMIT_OK_METHOD) {
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Tx@{}.Commit_ok", .{conn.channel});
+                            return CommitOk{};
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // rollback
+
+    pub const Rollback = struct {};
+    pub const ROLLBACK_METHOD = 30;
+    pub fn rollbackSync(
+        conn: *Connector,
+    ) !RollbackOk {
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(TX_CLASS, ROLLBACK_METHOD);
+        conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
+        std.log.debug("Tx@{}.Rollback ->", .{conn.channel});
+        return awaitRollbackOk(conn);
+    }
+
+    // rollback
+    pub fn awaitRollback(conn: *Connector) !Rollback {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == TX_CLASS and method_header.method == ROLLBACK_METHOD) {
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Tx@{}.Rollback", .{conn.channel});
+                            return Rollback{};
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
+
+    // rollback-ok
+
+    pub const RollbackOk = struct {};
     pub const ROLLBACK_OK_METHOD = 31;
+    pub fn rollbackOkAsync(
+        conn: *Connector,
+    ) !void {
+        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
+        conn.tx_buffer.writeMethodHeader(TX_CLASS, Tx.ROLLBACK_OK_METHOD);
+        conn.tx_buffer.updateFrameLength();
+        // TODO: do we need to retry write (if n isn't as high as we expect)?
+        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        conn.tx_buffer.reset();
+        std.log.debug("Tx@{}.Rollback_ok ->", .{conn.channel});
+    }
+
+    // rollback_ok
+    pub fn awaitRollbackOk(conn: *Connector) !RollbackOk {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (method_header.class == TX_CLASS and method_header.method == ROLLBACK_OK_METHOD) {
+                            try conn.rx_buffer.readEOF();
+                            std.log.debug("\t<- Tx@{}.Rollback_ok", .{conn.channel});
+                            return RollbackOk{};
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                try Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                try Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("got unexpected {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
 };
