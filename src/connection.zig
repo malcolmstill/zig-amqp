@@ -95,7 +95,7 @@ pub const Connection = struct {
         const next_available_channel = try self.nextChannel();
         var ch = Channel.init(next_available_channel, self);
 
-        var open_ok = try proto.Channel.openSync(&ch.connector);
+        _ = try proto.Channel.openSync(&ch.connector);
 
         return ch;
     }
