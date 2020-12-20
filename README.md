@@ -35,10 +35,45 @@ pub fn main() !void {
 
 ## Status
 
-The project is alpha with only basic functionality working. Contributions welcome.
+The project is alpha with only basic functionality working and almost certainly is not
+ready for you to use. Contributions welcome and I can prioritise features that people
+require.
 
 ## Goals
 
 - Easy to use API
 - Simple / clean code
 - Minimal allocations / customisable allocation
+- Fast
+
+## Dependencies
+
+### Runtime
+
+- None...and the binaries are small (other than a server to speak to)
+
+```
+➜  zig-amqp git:(master) ✗ zig build-exe src/example.zig -O ReleaseSafe --strip 
+➜  zig-amqp git:(master) ✗ ldd example                                        
+        not a dynamic executable
+➜  zig-amqp git:(master) ✗ ls -l example                                      
+-rwxr-xr-x. 1 malcolm malcolm 44872 Dec 20 04:26 example
+➜  zig-amqp git:(master) ✗ upx example; echo "If we're really size averse"
+                       Ultimate Packer for eXecutables
+                          Copyright (C) 1996 - 2020
+UPX 3.96        Markus Oberhumer, Laszlo Molnar & John Reiser   Jan 23rd 2020
+
+        File size         Ratio      Format      Name
+   --------------------   ------   -----------   -----------
+example  5/6  [***********************************************...]   36.1%  -      44872 ->     19920   44.39%   linux/amd64   example
+
+Packed 1 file.
+```
+
+### Build
+
+- A zig compiler (tested on at least 0.7.0)
+
+### Regenerating `src/protocol.zig`
+
+- python 3
