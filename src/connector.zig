@@ -137,21 +137,22 @@ pub const Connector = struct {
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
-                        if (comptime std.meta.trait.hasFn("read")(T)) {
+                        if (T.CLASS == method_header.class and T.METHOD == method_header.method) {
                             return T.read(conn);
                         } else {
-                            @compileError("Type has no read function");
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                _ = try proto.Connection.Close.read(conn);
+                                try proto.Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                _ = try proto.Channel.Close.read(conn);
+                                try proto.Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("awaitBody: unexpected method {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
                         }
-                        if (method_header.class == 10 and method_header.method == 50) {
-                            try proto.Connection.closeOkAsync(conn);
-                            return error.ConnectionClose;
-                        }
-                        if (method_header.class == 20 and method_header.method == 40) {
-                            try proto.Channel.closeOkAsync(conn);
-                            return error.ChannelClose;
-                        }
-                        std.log.debug("awaitBody: unexpected method {}.{}\n", .{ method_header.class, method_header.method });
-                        return error.ImplementAsyncHandle;
                     },
                     .Heartbeat => {
                         std.log.debug("\t<- Heartbeat", .{});
