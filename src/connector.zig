@@ -122,4 +122,52 @@ pub const Connector = struct {
         }
         unreachable;
     }
+
+    pub fn awaitMethod(conn: *Self, comptime T: type) !T {
+        while (true) {
+            if (!conn.rx_buffer.frameReady()) {
+                // TODO: do we need to retry read (if n isn't as high as we expect)?
+                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                conn.rx_buffer.incrementEnd(n);
+                if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
+                continue;
+            }
+            while (conn.rx_buffer.frameReady()) {
+                const frame_header = try conn.rx_buffer.readFrameHeader();
+                switch (frame_header.@"type") {
+                    .Method => {
+                        const method_header = try conn.rx_buffer.readMethodHeader();
+                        if (T.CLASS == method_header.class and T.METHOD == method_header.method) {
+                            return T.read(conn);
+                        } else {
+                            if (method_header.class == 10 and method_header.method == 50) {
+                                _ = try proto.Connection.Close.read(conn);
+                                try proto.Connection.closeOkAsync(conn);
+                                return error.ConnectionClose;
+                            }
+                            if (method_header.class == 20 and method_header.method == 40) {
+                                _ = try proto.Channel.Close.read(conn);
+                                try proto.Channel.closeOkAsync(conn);
+                                return error.ChannelClose;
+                            }
+                            std.log.debug("awaitBody: unexpected method {}.{}\n", .{ method_header.class, method_header.method });
+                            return error.ImplementAsyncHandle;
+                        }
+                    },
+                    .Heartbeat => {
+                        std.log.debug("\t<- Heartbeat", .{});
+                        try conn.rx_buffer.readEOF();
+                        try conn.sendHeartbeat();
+                    },
+                    .Header => {
+                        _ = try conn.rx_buffer.readHeader(frame_header.size);
+                    },
+                    .Body => {
+                        _ = try conn.rx_buffer.readBody(frame_header.size);
+                    },
+                }
+            }
+        }
+        unreachable;
+    }
 };

@@ -14,6 +14,6 @@ pub fn main() !void {
 
     var i: usize = 0;
     while (i < 10_000) : (i += 1) {
-        try ch.basicPublish("", "simple_publish", "hello world", .{});
+        try ch.basicPublish("", "simple_publish", "AAAABBBB", .{});
     }
 }
