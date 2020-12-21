@@ -5,6 +5,7 @@ const Connection = @import("connection.zig").Connection;
 const Queue = @import("queue.zig").Queue;
 const Basic = @import("basic.zig").Basic;
 const Table = @import("table.zig").Table;
+const WireBuffer = @import("wire.zig").WireBuffer;
 
 pub const Channel = struct {
     connector: Connector,
@@ -12,9 +13,15 @@ pub const Channel = struct {
 
     const Self = @This();
 
-    pub fn init(id: u16, connection: *Connection) Channel {
+    pub fn init(id: u16, connection: *Connection, rx_memory: []u8, tx_memory: []u8) Channel {
         var ch = Channel{
-            .connector = connection.connector,
+            .connector = Connector{
+                .file = connection.connector.file,
+                .rx_buffer = WireBuffer.init(rx_memory),
+                .tx_buffer = WireBuffer.init(tx_memory),
+                .channel = id,
+                .connection = connection,
+            },
             .channel_id = id,
         };
 
@@ -68,3 +75,7 @@ pub const Channel = struct {
         };
     }
 };
+
+pub fn atest(ch: *Channel, x: usize) void {
+    std.debug.warn("{}\n", .{ch.file});
+}

@@ -91,9 +91,9 @@ pub const Connection = struct {
         self.file.close();
     }
 
-    pub fn channel(self: *Self) !Channel {
+    pub fn channel(self: *Self, rx_memory: []u8, tx_memory: []u8) !Channel {
         const next_available_channel = try self.nextChannel();
-        var ch = Channel.init(next_available_channel, self);
+        var ch = Channel.init(next_available_channel, self, rx_memory, tx_memory);
 
         _ = try proto.Channel.openSync(&ch.connector);
 

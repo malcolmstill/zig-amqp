@@ -134,6 +134,10 @@ pub const Connector = struct {
             }
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.rx_buffer.readFrameHeader();
+                if (frame_header.channel != conn.channel) {
+                    // copy to appropriate channel
+                    return error.ErrorWrongChannel;
+                }
                 switch (frame_header.@"type") {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
