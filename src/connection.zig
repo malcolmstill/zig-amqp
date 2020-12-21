@@ -163,9 +163,9 @@ test "read / write / shift volatility" {
 
     // volatile values should be valid until at least the next call that
     // modifies the underlying buffers
-    var block = try proto.Connection.awaitBlocked(&server_connector);
+    var block = try server_connector.awaitMethod(proto.Connection.Blocked);
     testing.expect(mem.eql(u8, block.reason, "hello"));
-    var block2 = try proto.Connection.awaitBlocked(&server_connector);
+    var block2 = try proto.Connection.awaitBlocked(&server_connector); // alternative form of await
     testing.expect(mem.eql(u8, block2.reason, "world"));
 
     // Due to volatility, block.reason may not remain "hello"
@@ -176,6 +176,6 @@ test "read / write / shift volatility" {
     //    and then await again, we find that block.reason is now "overw" instead of "hello"
     try proto.Connection.blockedAsync(&client_connector, "overwritten");
     server_connector.rx_buffer.shift();
-    var block3 = try proto.Connection.awaitBlocked(&server_connector);
+    var block3 = try server_connector.awaitMethod(proto.Connection.Blocked);
     testing.expect(mem.eql(u8, block.reason, "overw"));
 }

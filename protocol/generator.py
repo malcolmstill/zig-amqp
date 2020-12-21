@@ -218,11 +218,16 @@ def generateClasses(parsed):
 
 def generateReturnType(parsed, class_name, method):
     response_name = method['name']
+    method_name_camel = nameCleanCamel(response_name)
 
     print(f"")
-    print(f"pub const {nameCleanCamel(response_name)} = struct {{")
+    print(f"pub const {method_name_camel} = struct {{")
     for field_name, field in method['fields'].items():
         print(f"{nameClean(field_name)}: {AMQP_TO_ZIG[typeLookup(parsed, field['domain'])]},")
+    print(f"")
+    print(f"pub fn read(conn: *Connector) !{method_name_camel} {{")
+    generateReadStruct(parsed, class_name, method)
+    print(f"}}")
     print(f"}};")
 
 def typeLookup(parsed, domain):
@@ -282,33 +287,10 @@ def generateSynchronousMethodFunction(parsed, class_name, method):
     print(f"return await{nameCleanCamel(method['response'])}(conn);")
     print(f"}}")
 
-def generateAwaitMethod(parsed, class_name, method):
-    class_name_upper = nameCleanUpper(class_name)
+def generateReadStruct(parsed, class_name, method):
     class_name_cap = nameCleanCap(class_name)
-
-    bit_field_count = 0
-    method_name = nameClean(method['name'])
     method_name_cap = nameCleanCap(method['name'])
-    # index = method['index']
-    # class_index = parsed['classes'][class_name]['index']
-    print(f"\n// {method_name}")
-    print(f"pub fn await{nameCleanCamel(method['name'])}(conn: *Connector) !{nameCleanCamel(method['name'])} {{")
-    print(f"while (true) {{")
-    print(f"        if (!conn.rx_buffer.frameReady()) {{")
-    print(f"// TODO: do we need to retry read (if n isn't as high as we expect)?")
-    print(f"        const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());")
-    print(f"        conn.rx_buffer.incrementEnd(n);")
-    print(f"        if (conn.rx_buffer.isFull()) conn.rx_buffer.shift(); ")
-    print(f"        continue;") # We continue as we might need more data
-    print(f"    }}")
-    print(f"while (conn.rx_buffer.frameReady()) {{")
-    print(f"const frame_header = try conn.rx_buffer.readFrameHeader();")
-
-    print(f"switch (frame_header.@\"type\") {{")
-    print(f"    .Method => {{")
-    print(f"const method_header = try conn.rx_buffer.readMethodHeader();")
-
-    print(f"if (method_header.class == {class_name_upper}_CLASS and method_header.method == {nameCleanUpper(method['name'])}_METHOD) {{")
+    bit_field_count = 0
 
     for field_name, field in method['fields'].items():
         Type = typeLookup(parsed, field['domain'])
@@ -333,38 +315,11 @@ def generateAwaitMethod(parsed, class_name, method):
             print(f".{nameClean(field_name)} = {nameClean(field_name)},")
     print(f"}};")
 
-    # End if:
-    print(f"}} else {{")
-    print(f"if (method_header.class == {parsed['classes']['connection']['index']} and method_header.method == {parsed['classes']['connection']['methods']['close']['index']}) {{")
-    print(f"try Connection.closeOkAsync(conn);")
-    print(f"return error.ConnectionClose;")
-    print(f"}}")
-
-    print(f"if (method_header.class == {parsed['classes']['channel']['index']} and method_header.method == {parsed['classes']['channel']['methods']['close']['index']}) {{")
-    print(f"try Channel.closeOkAsync(conn);")
-    print(f"return error.ChannelClose;")
-    print(f"}}")
-    print(f"std.log.debug(\"got unexpected {{}}.{{}}\\n\", .{{method_header.class, method_header.method}});")
-    print(f"return error.ImplementAsyncHandle;")
-    # End else:
-    print(f"}}")
-
-
-    print(f"}},")
-
-    print(f".Heartbeat => {{")
-    print(f"std.log.debug(\"\\t<- Heartbeat\", .{{}});")
-    print(f"                try conn.rx_buffer.readEOF();")
-    print(f"try conn.sendHeartbeat();")
-    print(f"            }}, ")
-    print(f"            .Header => {{ _ = try conn.rx_buffer.readHeader(frame_header.size); }},")
-    print(f"            .Body => {{ _ = try conn.rx_buffer.readBody(frame_header.size); }},")
-    print(f"        }}")
-    # End while(frameReady)
-    print(f"}}")
-    # End while(true)
-    print(f"}}")
-    print(f"unreachable;")
+def generateAwaitMethod(parsed, class_name, method):
+    method_name = nameClean(method['name'])
+    print(f"\n// {method_name}")
+    print(f"pub fn await{nameCleanCamel(method['name'])}(conn: *Connector) !{nameCleanCamel(method['name'])} {{")
+    print(f"return conn.awaitMethod({nameCleanCamel(method['name'])});")
     print(f"}}")
 
 def generateAsynchronousMethodFunction(parsed, class_name, method):
