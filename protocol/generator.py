@@ -219,9 +219,13 @@ def generateClasses(parsed):
 def generateReturnType(parsed, class_name, method):
     response_name = method['name']
     method_name_camel = nameCleanCamel(response_name)
+    class_index = parsed['classes'][class_name]['index']
 
     print(f"")
     print(f"pub const {method_name_camel} = struct {{")
+    print(f"pub const CLASS = {class_index};")
+    print(f"pub const METHOD = {method['index']};")
+    print(f"")
     for field_name, field in method['fields'].items():
         print(f"{nameClean(field_name)}: {AMQP_TO_ZIG[typeLookup(parsed, field['domain'])]},")
     print(f"")

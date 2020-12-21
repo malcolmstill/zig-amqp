@@ -37,6 +37,9 @@ pub const Connection = struct {
     // start
 
     pub const Start = struct {
+        pub const CLASS = 10;
+        pub const METHOD = 10;
+
         version_major: u8,
         version_minor: u8,
         server_properties: Table,
@@ -92,6 +95,9 @@ pub const Connection = struct {
     // start-ok
 
     pub const StartOk = struct {
+        pub const CLASS = 10;
+        pub const METHOD = 11;
+
         client_properties: Table,
         mechanism: []const u8,
         response: []const u8,
@@ -141,6 +147,9 @@ pub const Connection = struct {
     // secure
 
     pub const Secure = struct {
+        pub const CLASS = 10;
+        pub const METHOD = 20;
+
         challenge: []const u8,
 
         pub fn read(conn: *Connector) !Secure {
@@ -176,6 +185,9 @@ pub const Connection = struct {
     // secure-ok
 
     pub const SecureOk = struct {
+        pub const CLASS = 10;
+        pub const METHOD = 21;
+
         response: []const u8,
 
         pub fn read(conn: *Connector) !SecureOk {
@@ -210,6 +222,9 @@ pub const Connection = struct {
     // tune
 
     pub const Tune = struct {
+        pub const CLASS = 10;
+        pub const METHOD = 30;
+
         channel_max: u16,
         frame_max: u32,
         heartbeat: u16,
@@ -255,6 +270,9 @@ pub const Connection = struct {
     // tune-ok
 
     pub const TuneOk = struct {
+        pub const CLASS = 10;
+        pub const METHOD = 31;
+
         channel_max: u16,
         frame_max: u32,
         heartbeat: u16,
@@ -299,6 +317,9 @@ pub const Connection = struct {
     // open
 
     pub const Open = struct {
+        pub const CLASS = 10;
+        pub const METHOD = 40;
+
         virtual_host: []const u8,
         reserved_1: []const u8,
         reserved_2: bool,
@@ -348,6 +369,9 @@ pub const Connection = struct {
     // open-ok
 
     pub const OpenOk = struct {
+        pub const CLASS = 10;
+        pub const METHOD = 41;
+
         reserved_1: []const u8,
 
         pub fn read(conn: *Connector) !OpenOk {
@@ -382,6 +406,9 @@ pub const Connection = struct {
     // close
 
     pub const Close = struct {
+        pub const CLASS = 10;
+        pub const METHOD = 50;
+
         reply_code: u16,
         reply_text: []const u8,
         class_id: u16,
@@ -432,6 +459,9 @@ pub const Connection = struct {
     // close-ok
 
     pub const CloseOk = struct {
+        pub const CLASS = 10;
+        pub const METHOD = 51;
+
         pub fn read(conn: *Connector) !CloseOk {
             try conn.rx_buffer.readEOF();
             std.log.debug("\t<- Connection@{}.Close_ok", .{conn.channel});
@@ -459,6 +489,9 @@ pub const Connection = struct {
     // blocked
 
     pub const Blocked = struct {
+        pub const CLASS = 10;
+        pub const METHOD = 60;
+
         reason: []const u8,
 
         pub fn read(conn: *Connector) !Blocked {
@@ -493,6 +526,9 @@ pub const Connection = struct {
     // unblocked
 
     pub const Unblocked = struct {
+        pub const CLASS = 10;
+        pub const METHOD = 61;
+
         pub fn read(conn: *Connector) !Unblocked {
             try conn.rx_buffer.readEOF();
             std.log.debug("\t<- Connection@{}.Unblocked", .{conn.channel});
@@ -525,6 +561,9 @@ pub const Channel = struct {
     // open
 
     pub const Open = struct {
+        pub const CLASS = 20;
+        pub const METHOD = 10;
+
         reserved_1: []const u8,
 
         pub fn read(conn: *Connector) !Open {
@@ -560,6 +599,9 @@ pub const Channel = struct {
     // open-ok
 
     pub const OpenOk = struct {
+        pub const CLASS = 20;
+        pub const METHOD = 11;
+
         reserved_1: []const u8,
 
         pub fn read(conn: *Connector) !OpenOk {
@@ -594,6 +636,9 @@ pub const Channel = struct {
     // flow
 
     pub const Flow = struct {
+        pub const CLASS = 20;
+        pub const METHOD = 20;
+
         active: bool,
 
         pub fn read(conn: *Connector) !Flow {
@@ -633,6 +678,9 @@ pub const Channel = struct {
     // flow-ok
 
     pub const FlowOk = struct {
+        pub const CLASS = 20;
+        pub const METHOD = 21;
+
         active: bool,
 
         pub fn read(conn: *Connector) !FlowOk {
@@ -671,6 +719,9 @@ pub const Channel = struct {
     // close
 
     pub const Close = struct {
+        pub const CLASS = 20;
+        pub const METHOD = 40;
+
         reply_code: u16,
         reply_text: []const u8,
         class_id: u16,
@@ -721,6 +772,9 @@ pub const Channel = struct {
     // close-ok
 
     pub const CloseOk = struct {
+        pub const CLASS = 20;
+        pub const METHOD = 41;
+
         pub fn read(conn: *Connector) !CloseOk {
             try conn.rx_buffer.readEOF();
             std.log.debug("\t<- Channel@{}.Close_ok", .{conn.channel});
@@ -753,6 +807,9 @@ pub const Exchange = struct {
     // declare
 
     pub const Declare = struct {
+        pub const CLASS = 40;
+        pub const METHOD = 10;
+
         reserved_1: u16,
         exchange: []const u8,
         tipe: []const u8,
@@ -832,6 +889,9 @@ pub const Exchange = struct {
     // declare-ok
 
     pub const DeclareOk = struct {
+        pub const CLASS = 40;
+        pub const METHOD = 11;
+
         pub fn read(conn: *Connector) !DeclareOk {
             try conn.rx_buffer.readEOF();
             std.log.debug("\t<- Exchange@{}.Declare_ok", .{conn.channel});
@@ -859,6 +919,9 @@ pub const Exchange = struct {
     // delete
 
     pub const Delete = struct {
+        pub const CLASS = 40;
+        pub const METHOD = 20;
+
         reserved_1: u16,
         exchange: []const u8,
         if_unused: bool,
@@ -913,6 +976,9 @@ pub const Exchange = struct {
     // delete-ok
 
     pub const DeleteOk = struct {
+        pub const CLASS = 40;
+        pub const METHOD = 21;
+
         pub fn read(conn: *Connector) !DeleteOk {
             try conn.rx_buffer.readEOF();
             std.log.debug("\t<- Exchange@{}.Delete_ok", .{conn.channel});
@@ -945,6 +1011,9 @@ pub const Queue = struct {
     // declare
 
     pub const Declare = struct {
+        pub const CLASS = 50;
+        pub const METHOD = 10;
+
         reserved_1: u16,
         queue: []const u8,
         passive: bool,
@@ -1019,6 +1088,9 @@ pub const Queue = struct {
     // declare-ok
 
     pub const DeclareOk = struct {
+        pub const CLASS = 50;
+        pub const METHOD = 11;
+
         queue: []const u8,
         message_count: u32,
         consumer_count: u32,
@@ -1063,6 +1135,9 @@ pub const Queue = struct {
     // bind
 
     pub const Bind = struct {
+        pub const CLASS = 50;
+        pub const METHOD = 20;
+
         reserved_1: u16,
         queue: []const u8,
         exchange: []const u8,
@@ -1127,6 +1202,9 @@ pub const Queue = struct {
     // bind-ok
 
     pub const BindOk = struct {
+        pub const CLASS = 50;
+        pub const METHOD = 21;
+
         pub fn read(conn: *Connector) !BindOk {
             try conn.rx_buffer.readEOF();
             std.log.debug("\t<- Queue@{}.Bind_ok", .{conn.channel});
@@ -1154,6 +1232,9 @@ pub const Queue = struct {
     // unbind
 
     pub const Unbind = struct {
+        pub const CLASS = 50;
+        pub const METHOD = 50;
+
         reserved_1: u16,
         queue: []const u8,
         exchange: []const u8,
@@ -1209,6 +1290,9 @@ pub const Queue = struct {
     // unbind-ok
 
     pub const UnbindOk = struct {
+        pub const CLASS = 50;
+        pub const METHOD = 51;
+
         pub fn read(conn: *Connector) !UnbindOk {
             try conn.rx_buffer.readEOF();
             std.log.debug("\t<- Queue@{}.Unbind_ok", .{conn.channel});
@@ -1236,6 +1320,9 @@ pub const Queue = struct {
     // purge
 
     pub const Purge = struct {
+        pub const CLASS = 50;
+        pub const METHOD = 30;
+
         reserved_1: u16,
         queue: []const u8,
         no_wait: bool,
@@ -1285,6 +1372,9 @@ pub const Queue = struct {
     // purge-ok
 
     pub const PurgeOk = struct {
+        pub const CLASS = 50;
+        pub const METHOD = 31;
+
         message_count: u32,
 
         pub fn read(conn: *Connector) !PurgeOk {
@@ -1319,6 +1409,9 @@ pub const Queue = struct {
     // delete
 
     pub const Delete = struct {
+        pub const CLASS = 50;
+        pub const METHOD = 40;
+
         reserved_1: u16,
         queue: []const u8,
         if_unused: bool,
@@ -1378,6 +1471,9 @@ pub const Queue = struct {
     // delete-ok
 
     pub const DeleteOk = struct {
+        pub const CLASS = 50;
+        pub const METHOD = 41;
+
         message_count: u32,
 
         pub fn read(conn: *Connector) !DeleteOk {
@@ -1417,6 +1513,9 @@ pub const Basic = struct {
     // qos
 
     pub const Qos = struct {
+        pub const CLASS = 60;
+        pub const METHOD = 10;
+
         prefetch_size: u32,
         prefetch_count: u16,
         global: bool,
@@ -1466,6 +1565,9 @@ pub const Basic = struct {
     // qos-ok
 
     pub const QosOk = struct {
+        pub const CLASS = 60;
+        pub const METHOD = 11;
+
         pub fn read(conn: *Connector) !QosOk {
             try conn.rx_buffer.readEOF();
             std.log.debug("\t<- Basic@{}.Qos_ok", .{conn.channel});
@@ -1493,6 +1595,9 @@ pub const Basic = struct {
     // consume
 
     pub const Consume = struct {
+        pub const CLASS = 60;
+        pub const METHOD = 20;
+
         reserved_1: u16,
         queue: []const u8,
         consumer_tag: []const u8,
@@ -1567,6 +1672,9 @@ pub const Basic = struct {
     // consume-ok
 
     pub const ConsumeOk = struct {
+        pub const CLASS = 60;
+        pub const METHOD = 21;
+
         consumer_tag: []const u8,
 
         pub fn read(conn: *Connector) !ConsumeOk {
@@ -1601,6 +1709,9 @@ pub const Basic = struct {
     // cancel
 
     pub const Cancel = struct {
+        pub const CLASS = 60;
+        pub const METHOD = 30;
+
         consumer_tag: []const u8,
         no_wait: bool,
 
@@ -1645,6 +1756,9 @@ pub const Basic = struct {
     // cancel-ok
 
     pub const CancelOk = struct {
+        pub const CLASS = 60;
+        pub const METHOD = 31;
+
         consumer_tag: []const u8,
 
         pub fn read(conn: *Connector) !CancelOk {
@@ -1679,6 +1793,9 @@ pub const Basic = struct {
     // publish
 
     pub const Publish = struct {
+        pub const CLASS = 60;
+        pub const METHOD = 40;
+
         reserved_1: u16,
         exchange: []const u8,
         routing_key: []const u8,
@@ -1737,6 +1854,9 @@ pub const Basic = struct {
     // return
 
     pub const Return = struct {
+        pub const CLASS = 60;
+        pub const METHOD = 50;
+
         reply_code: u16,
         reply_text: []const u8,
         exchange: []const u8,
@@ -1786,6 +1906,9 @@ pub const Basic = struct {
     // deliver
 
     pub const Deliver = struct {
+        pub const CLASS = 60;
+        pub const METHOD = 60;
+
         consumer_tag: []const u8,
         delivery_tag: u64,
         redelivered: bool,
@@ -1844,6 +1967,9 @@ pub const Basic = struct {
     // get
 
     pub const Get = struct {
+        pub const CLASS = 60;
+        pub const METHOD = 70;
+
         reserved_1: u16,
         queue: []const u8,
         no_ack: bool,
@@ -1893,6 +2019,9 @@ pub const Basic = struct {
     // get-ok
 
     pub const GetOk = struct {
+        pub const CLASS = 60;
+        pub const METHOD = 71;
+
         delivery_tag: u64,
         redelivered: bool,
         exchange: []const u8,
@@ -1951,6 +2080,9 @@ pub const Basic = struct {
     // get-empty
 
     pub const GetEmpty = struct {
+        pub const CLASS = 60;
+        pub const METHOD = 72;
+
         reserved_1: []const u8,
 
         pub fn read(conn: *Connector) !GetEmpty {
@@ -1985,6 +2117,9 @@ pub const Basic = struct {
     // ack
 
     pub const Ack = struct {
+        pub const CLASS = 60;
+        pub const METHOD = 80;
+
         delivery_tag: u64,
         multiple: bool,
 
@@ -2028,6 +2163,9 @@ pub const Basic = struct {
     // reject
 
     pub const Reject = struct {
+        pub const CLASS = 60;
+        pub const METHOD = 90;
+
         delivery_tag: u64,
         requeue: bool,
 
@@ -2071,6 +2209,9 @@ pub const Basic = struct {
     // recover-async
 
     pub const RecoverAsync = struct {
+        pub const CLASS = 60;
+        pub const METHOD = 100;
+
         requeue: bool,
 
         pub fn read(conn: *Connector) !RecoverAsync {
@@ -2109,6 +2250,9 @@ pub const Basic = struct {
     // recover
 
     pub const Recover = struct {
+        pub const CLASS = 60;
+        pub const METHOD = 110;
+
         requeue: bool,
 
         pub fn read(conn: *Connector) !Recover {
@@ -2147,6 +2291,9 @@ pub const Basic = struct {
     // recover-ok
 
     pub const RecoverOk = struct {
+        pub const CLASS = 60;
+        pub const METHOD = 111;
+
         pub fn read(conn: *Connector) !RecoverOk {
             try conn.rx_buffer.readEOF();
             std.log.debug("\t<- Basic@{}.Recover_ok", .{conn.channel});
@@ -2179,6 +2326,9 @@ pub const Tx = struct {
     // select
 
     pub const Select = struct {
+        pub const CLASS = 90;
+        pub const METHOD = 10;
+
         pub fn read(conn: *Connector) !Select {
             try conn.rx_buffer.readEOF();
             std.log.debug("\t<- Tx@{}.Select", .{conn.channel});
@@ -2207,6 +2357,9 @@ pub const Tx = struct {
     // select-ok
 
     pub const SelectOk = struct {
+        pub const CLASS = 90;
+        pub const METHOD = 11;
+
         pub fn read(conn: *Connector) !SelectOk {
             try conn.rx_buffer.readEOF();
             std.log.debug("\t<- Tx@{}.Select_ok", .{conn.channel});
@@ -2234,6 +2387,9 @@ pub const Tx = struct {
     // commit
 
     pub const Commit = struct {
+        pub const CLASS = 90;
+        pub const METHOD = 20;
+
         pub fn read(conn: *Connector) !Commit {
             try conn.rx_buffer.readEOF();
             std.log.debug("\t<- Tx@{}.Commit", .{conn.channel});
@@ -2262,6 +2418,9 @@ pub const Tx = struct {
     // commit-ok
 
     pub const CommitOk = struct {
+        pub const CLASS = 90;
+        pub const METHOD = 21;
+
         pub fn read(conn: *Connector) !CommitOk {
             try conn.rx_buffer.readEOF();
             std.log.debug("\t<- Tx@{}.Commit_ok", .{conn.channel});
@@ -2289,6 +2448,9 @@ pub const Tx = struct {
     // rollback
 
     pub const Rollback = struct {
+        pub const CLASS = 90;
+        pub const METHOD = 30;
+
         pub fn read(conn: *Connector) !Rollback {
             try conn.rx_buffer.readEOF();
             std.log.debug("\t<- Tx@{}.Rollback", .{conn.channel});
@@ -2317,6 +2479,9 @@ pub const Tx = struct {
     // rollback-ok
 
     pub const RollbackOk = struct {
+        pub const CLASS = 90;
+        pub const METHOD = 31;
+
         pub fn read(conn: *Connector) !RollbackOk {
             try conn.rx_buffer.readEOF();
             std.log.debug("\t<- Tx@{}.Rollback_ok", .{conn.channel});
