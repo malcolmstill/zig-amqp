@@ -6,7 +6,7 @@ pub const init = @import("connection.zig").Connection.init;
 
 const testing = @import("std").testing;
 
-test "" {
+test {
     _ = @import("basic.zig");
     _ = @import("channel.zig");
     _ = @import("connection.zig");

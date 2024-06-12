@@ -1,0 +1,15 @@
+.{
+    .name = "simple_consumer",
+    .version = "0.0.0",
+
+    .dependencies = .{
+        .amqp = .{
+            .url = "../../",
+            .hash = "12201e2af5138be09dec4dfdd163cf8ef3c15c7c39e202661b64d71c6271a9d0886e",
+        },
+    },
+
+    .paths = .{
+        "",
+    },
+}

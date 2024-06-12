@@ -16,14 +16,14 @@ pub fn main() !void {
     var consumer2 = try ch2.basicConsume("simple_publish", .{ .no_ack = true }, null);
     var i: usize = 0;
     while (true) : (i += 1) {
-        var message1 = try consumer1.next();
-        var header1 = message1.header;
-        var body1 = message1.body;
-        std.debug.warn("@1: {}\n", .{body1});
+        const message1 = try consumer1.next();
+        _ = message1.header;
+        const body1 = message1.body;
+        std.debug.print("@1: {any}\n", .{body1});
 
-        var message2 = try consumer2.next();
-        var header2 = message2.header;
-        var body2 = message2.body;
-        std.debug.warn("@2: {}\n", .{body2});
+        const message2 = try consumer2.next();
+        _ = message2.header;
+        const body2 = message2.body;
+        std.debug.print("@2: {any}\n", .{body2});
     }
 }

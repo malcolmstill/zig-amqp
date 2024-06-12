@@ -24,7 +24,7 @@ pub const Channel = struct {
     }
 
     pub fn queueDeclare(self: *Self, name: []const u8, options: Queue.Options, args: ?*Table) !Queue {
-        var declare = try proto.Queue.declareSync(
+        _ = try proto.Queue.declareSync(
             &self.connector,
             name,
             options.passive,
@@ -52,7 +52,7 @@ pub const Channel = struct {
     }
 
     pub fn basicConsume(self: *Self, name: []const u8, options: Basic.Consume.Options, args: ?*Table) !Basic.Consumer {
-        var consume = try proto.Basic.consumeSync(
+        _ = try proto.Basic.consumeSync(
             &self.connector,
             name,
             "",

@@ -1,6 +1,5 @@
 const std = @import("std");
-const os = std.os;
-const fs = std.fs;
+const posix = std.posix;
 const proto = @import("protocol.zig");
 const wire = @import("wire.zig");
 const Header = @import("wire.zig").Header;
@@ -9,7 +8,7 @@ const Connection = @import("connection.zig").Connection;
 
 // TODO: think up a better name for this
 pub const Connector = struct {
-    file: fs.File = undefined,
+    file: std.net.Stream = undefined,
     // TODO: we're going to run into trouble real fast if we reallocate the buffers
     //       and we have a bunch of copies of Connector everywhere. I think we just
     //       need to store a pointer to the Connection
@@ -22,19 +21,19 @@ pub const Connector = struct {
 
     pub fn sendHeader(self: *Self, size: u64, class: u16) !void {
         self.tx_buffer.writeHeader(self.channel, size, class);
-        _ = try std.os.write(self.file.handle, self.tx_buffer.extent());
+        _ = try posix.write(self.file.handle, self.tx_buffer.extent());
         self.tx_buffer.reset();
     }
 
     pub fn sendBody(self: *Self, body: []const u8) !void {
         self.tx_buffer.writeBody(self.channel, body);
-        _ = try std.os.write(self.file.handle, self.tx_buffer.extent());
+        _ = try posix.write(self.file.handle, self.tx_buffer.extent());
         self.tx_buffer.reset();
     }
 
     pub fn sendHeartbeat(self: *Self) !void {
         self.tx_buffer.writeHeartbeat();
-        _ = try std.os.write(self.file.handle, self.tx_buffer.extent());
+        _ = try posix.write(self.file.handle, self.tx_buffer.extent());
         self.tx_buffer.reset();
         std.log.debug("Heartbeat ->", .{});
     }
@@ -43,14 +42,14 @@ pub const Connector = struct {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
                 // TODO: do we need to retry read (if n isn't as high as we expect)?
-                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                const n = try posix.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
                 continue;
             }
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.rx_buffer.readFrameHeader();
-                switch (frame_header.@"type") {
+                switch (frame_header.type) {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
                         if (method_header.class == 10 and method_header.method == 50) {
@@ -61,7 +60,7 @@ pub const Connector = struct {
                             try proto.Channel.closeOkAsync(conn);
                             return error.ChannelClose;
                         }
-                        std.log.debug("awaitHeader: unexpected method {}.{}\n", .{ method_header.class, method_header.method });
+                        std.log.debug("awaitHeader: unexpected method {any}.{any}\n", .{ method_header.class, method_header.method });
                         return error.ImplementAsyncHandle;
                     },
                     .Heartbeat => {
@@ -85,14 +84,14 @@ pub const Connector = struct {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
                 // TODO: do we need to retry read (if n isn't as high as we expect)?
-                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                const n = try posix.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
                 continue;
             }
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.rx_buffer.readFrameHeader();
-                switch (frame_header.@"type") {
+                switch (frame_header.type) {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
                         if (method_header.class == 10 and method_header.method == 50) {
@@ -103,7 +102,7 @@ pub const Connector = struct {
                             try proto.Channel.closeOkAsync(conn);
                             return error.ChannelClose;
                         }
-                        std.log.debug("awaitBody: unexpected method {}.{}\n", .{ method_header.class, method_header.method });
+                        std.log.debug("awaitBody: unexpected method {any}.{any}\n", .{ method_header.class, method_header.method });
                         return error.ImplementAsyncHandle;
                     },
                     .Heartbeat => {
@@ -127,14 +126,14 @@ pub const Connector = struct {
         while (true) {
             if (!conn.rx_buffer.frameReady()) {
                 // TODO: do we need to retry read (if n isn't as high as we expect)?
-                const n = try os.read(conn.file.handle, conn.rx_buffer.remaining());
+                const n = try posix.read(conn.file.handle, conn.rx_buffer.remaining());
                 conn.rx_buffer.incrementEnd(n);
                 if (conn.rx_buffer.isFull()) conn.rx_buffer.shift();
                 continue;
             }
             while (conn.rx_buffer.frameReady()) {
                 const frame_header = try conn.rx_buffer.readFrameHeader();
-                switch (frame_header.@"type") {
+                switch (frame_header.type) {
                     .Method => {
                         const method_header = try conn.rx_buffer.readMethodHeader();
                         if (T.CLASS == method_header.class and T.METHOD == method_header.method) {
@@ -150,7 +149,7 @@ pub const Connector = struct {
                                 try proto.Channel.closeOkAsync(conn);
                                 return error.ChannelClose;
                             }
-                            std.log.debug("awaitBody: unexpected method {}.{}\n", .{ method_header.class, method_header.method });
+                            std.log.debug("awaitBody: unexpected method {any}.{any}\n", .{ method_header.class, method_header.method });
                             return error.ImplementAsyncHandle;
                         }
                     },

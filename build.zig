@@ -1,14 +1,31 @@
-const Builder = @import("std").build.Builder;
+const std = @import("std");
 
-pub fn build(b: *Builder) void {
-    const mode = b.standardReleaseOptions();
-    const lib = b.addStaticLibrary("zig-amqp", "src/amqp.zig");
-    lib.setBuildMode(mode);
-    lib.install();
+pub fn build(b: *std.Build) void {
+    const target = b.standardTargetOptions(.{});
+    const optimize = b.standardOptimizeOption(.{});
 
-    var main_tests = b.addTest("src/amqp.zig");
-    main_tests.setBuildMode(mode);
+    const lib = b.addStaticLibrary(.{
+        .name = "zig-amqp",
+        .root_source_file = .{ .path = "src/amqp.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
+    b.installArtifact(lib);
+
+    _ = b.addModule("amqp", .{
+        .root_source_file = .{ .path = "src/amqp.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
+
+    const main_tests = b.addTest(.{
+        .root_source_file = .{ .path = "src/amqp.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
+
+    const run_lib_unit_tests = b.addRunArtifact(main_tests);
 
     const test_step = b.step("test", "Run library tests");
-    test_step.dependOn(&main_tests.step);
+    test_step.dependOn(&run_lib_unit_tests.step);
 }
