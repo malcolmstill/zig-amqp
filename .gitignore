@@ -5,6 +5,7 @@ bin/
 
 zig-cache/
 zig-out/
+.zig-cache/
 
 inject.sh
 

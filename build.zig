@@ -6,20 +6,20 @@ pub fn build(b: *std.Build) void {
 
     const lib = b.addStaticLibrary(.{
         .name = "zig-amqp",
-        .root_source_file = .{ .path = "src/amqp.zig" },
+        .root_source_file = b.path("src/amqp.zig"),
         .target = target,
         .optimize = optimize,
     });
     b.installArtifact(lib);
 
     _ = b.addModule("amqp", .{
-        .root_source_file = .{ .path = "src/amqp.zig" },
+        .root_source_file = b.path("src/amqp.zig"),
         .target = target,
         .optimize = optimize,
     });
 
     const main_tests = b.addTest(.{
-        .root_source_file = .{ .path = "src/amqp.zig" },
+        .root_source_file = b.path("src/amqp.zig"),
         .target = target,
         .optimize = optimize,
     });
