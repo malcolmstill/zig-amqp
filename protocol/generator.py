@@ -70,7 +70,7 @@ CONSTNESS = {
         'bit': "const",
         'longlong': "const",
         'short': "const",
-        'table': "var",
+        'table': "const",
         'long': "const",
         'octet': "const",
         'timestamp': 'const',
@@ -185,8 +185,6 @@ def buildField(field):
 
 def generate(file):
     print(f'const std = @import("std");')
-    print(f'const fs = std.fs;')
-    print(f'const os = std.os;')
     print(f'const Connector = @import("connector.zig").Connector;')
     print(f'const WireBuffer = @import("wire.zig").WireBuffer;')
     print(f'const Table = @import("table.zig").Table;')
@@ -284,9 +282,9 @@ def generateSynchronousMethodFunction(parsed, class_name, method):
     # Send message
     print(f"conn.tx_buffer.updateFrameLength();")
     print(f"// TODO: do we need to retry write (if n isn't as high as we expect)?")
-    print(f"const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());")
+    print(f"_ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());")
     print(f"conn.tx_buffer.reset();")
-    print(f"std.log.debug(\"{klass_cap}@{{}}.{nameCleanCap(method_name)} ->\", .{{conn.channel}});")
+    print(f"std.log.debug(\"{klass_cap}@{{any}}.{nameCleanCap(method_name)} ->\", .{{conn.channel}});")
 
     print(f"return await{nameCleanCamel(method['response'])}(conn);")
     print(f"}}")
@@ -308,7 +306,7 @@ def generateReadStruct(parsed, class_name, method):
             print(f"{CONSTNESS[Type]} {nameClean(field_name)} = conn.rx_buffer.{READS[Type]}(); ")
 
     print(f"try conn.rx_buffer.readEOF();")
-    print(f"std.log.debug(\"\\t<- {class_name_cap}@{{}}.{method_name_cap}\", .{{conn.channel}});")
+    print(f"std.log.debug(\"\\t<- {class_name_cap}@{{any}}.{method_name_cap}\", .{{conn.channel}});")
 
     print(f"return {nameCleanCamel(method['name'])} {{")
     for field_name, field in method['fields'].items():
@@ -362,9 +360,9 @@ def generateAsynchronousMethodFunction(parsed, class_name, method):
     # Send message
     print(f"conn.tx_buffer.updateFrameLength();")
     print(f"// TODO: do we need to retry write (if n isn't as high as we expect)?")
-    print(f"const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());")
+    print(f"_ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());")
     print(f"conn.tx_buffer.reset();")
-    print(f"std.log.debug(\"{klass_cap}@{{}}.{nameCleanCap(method_name)} ->\", .{{conn.channel}});")
+    print(f"std.log.debug(\"{klass_cap}@{{any}}.{nameCleanCap(method_name)} ->\", .{{conn.channel}});")
     print(f"}}")
 
 def nameClean(name):

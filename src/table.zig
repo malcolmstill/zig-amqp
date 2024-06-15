@@ -29,7 +29,7 @@ pub const Table = struct {
     // can't error here.
     pub fn lookup(self: *Self, comptime T: type, key: []const u8) ?T {
         defer self.buf.reset();
-        const length = self.buf.readU32();
+        _ = self.buf.readU32();
 
         while (self.buf.isMoreData()) {
             const current_key = self.buf.readShortString();
@@ -37,7 +37,7 @@ pub const Table = struct {
             const t = self.buf.readU8();
             switch (t) {
                 'F' => {
-                    var table = self.buf.readTable();
+                    const table = self.buf.readTable();
                     if (@TypeOf(table) == T and correct_key) return table;
                 },
                 't' => {
@@ -94,13 +94,13 @@ pub const Table = struct {
     }
 
     fn updateLength(self: *Self) void {
-        mem.writeInt(u32, @ptrCast(*[@sizeOf(u32)]u8, &self.buf.mem[0]), @intCast(u32, self.buf.head - @sizeOf(u32)), .Big);
+        mem.writeInt(u32, @ptrCast(&self.buf.mem[0]), @intCast(self.buf.head - @sizeOf(u32)), .big);
     }
 
     pub fn print(self: *Self) void {
         for (self.buf.mem[0..self.buf.head]) |x| {
-            std.debug.warn("0x{x:0>2} ", .{x});
+            std.debug.print("0x{x:0>2} ", .{x});
         }
-        std.debug.warn("\n", .{});
+        std.debug.print("\n", .{});
     }
 };

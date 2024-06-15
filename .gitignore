@@ -4,6 +4,7 @@ example.o
 bin/
 
 zig-cache/
+zig-out/
 
 inject.sh
 

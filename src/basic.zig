@@ -17,9 +17,9 @@ pub const Basic = struct {
 
         const Self = @This();
         pub fn next(self: *Self) !Message {
-            var deliver = proto.Basic.awaitDeliver(&self.connector);
-            var header = try self.connector.awaitHeader();
-            var body = try self.connector.awaitBody();
+            _ = try proto.Basic.awaitDeliver(&self.connector);
+            const header = try self.connector.awaitHeader();
+            const body = try self.connector.awaitBody();
 
             // TODO: a body may come in more than one part
             return Message{

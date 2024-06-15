@@ -24,11 +24,11 @@ pub const WireBuffer = struct {
     }
 
     pub fn printSpan(self: *Self) void {
-        for (self.mem[self.head..self.end]) |byte, i| {
-            std.debug.warn("{x:0>2}", .{byte});
-            if ((i + 1) % 8 == 0) std.debug.warn("\n", .{}) else std.debug.warn(" ", .{});
+        for (self.mem[self.head..self.end], 0..) |byte, i| {
+            std.debug.print("{x:0>2}", .{byte});
+            if ((i + 1) % 8 == 0) std.debug.print("\n", .{}) else std.debug.print(" ", .{});
         }
-        std.debug.warn("\n", .{});
+        std.debug.print("\n", .{});
     }
 
     // move head back to beginning of buffer
@@ -43,7 +43,7 @@ pub const WireBuffer = struct {
     // shift moves data between head and end to the front of mem
     pub fn shift(self: *Self) void {
         const new_end = self.end - self.head;
-        mem.copy(u8, self.mem[0..new_end], self.mem[self.head..self.end]);
+        mem.copyForwards(u8, self.mem[0..new_end], self.mem[self.head..self.end]);
         self.head = 0;
         self.end = new_end;
     }
@@ -73,10 +73,10 @@ pub const WireBuffer = struct {
         const frame_type = self.readU8();
         const channel = self.readU16();
         const size = self.readU32();
-        // std.debug.warn("frame_type: {}, channel: {}, size: {}\n", .{frame_type, channel, size});
+        // std.debug.print("frame_type: {any}, channel: {any}, size: {any}\n", .{frame_type, channel, size});
 
         return FrameHeader{
-            .@"type" = @intToEnum(FrameType, frame_type),
+            .type = @enumFromInt(frame_type),
             .channel = channel,
             .size = size,
         };
@@ -105,7 +105,7 @@ pub const WireBuffer = struct {
     }
 
     pub fn writeFrameHeader(self: *Self, frame_type: FrameType, channel: u16, size: u32) void {
-        self.writeU8(@enumToInt(frame_type));
+        self.writeU8(@intFromEnum(frame_type));
         self.writeU16(channel);
         self.writeU32(size); // This will be overwritten later
     }
@@ -114,7 +114,7 @@ pub const WireBuffer = struct {
         self.writeEOF();
         const head = self.head;
         self.head = 3;
-        self.writeU32(@intCast(u32, head - 8)); // size is head - header length (7 bytes) - frame end (1 bytes)
+        self.writeU32(@intCast(head - 8)); // size is head - header length (7 bytes) - frame end (1 bytes)
         self.head = head;
     }
 
@@ -170,7 +170,7 @@ pub const WireBuffer = struct {
 
     pub fn writeBody(self: *Self, channel: u16, body: []const u8) void {
         self.writeFrameHeader(.Body, channel, 0);
-        std.mem.copy(u8, self.mem[self.head..], body);
+        std.mem.copyForwards(u8, self.mem[self.head..], body);
         self.head += body.len;
         self.updateFrameLength();
     }
@@ -181,46 +181,46 @@ pub const WireBuffer = struct {
     }
 
     pub fn readU8(self: *Self) u8 {
-        const r = @ptrCast(u8, self.mem[self.head]);
+        const r: u8 = self.mem[self.head];
         self.head += 1;
         return r;
     }
 
     pub fn writeU8(self: *Self, byte: u8) void {
-        std.mem.writeInt(u8, &self.mem[self.head], byte, .Big);
+        std.mem.writeInt(u8, &self.mem[self.head], byte, .big);
         self.head += 1;
     }
 
     pub fn readU16(self: *Self) u16 {
-        const r = std.mem.readInt(u16, @ptrCast(*const [@sizeOf(u16)]u8, &self.mem[self.head]), .Big);
+        const r = std.mem.readInt(u16, @ptrCast(&self.mem[self.head]), .big);
         self.head += @sizeOf(u16);
         return r;
     }
 
     pub fn writeU16(self: *Self, short: u16) void {
-        std.mem.writeInt(u16, @ptrCast(*[@sizeOf(u16)]u8, &self.mem[self.head]), short, .Big);
+        std.mem.writeInt(u16, @ptrCast(&self.mem[self.head]), short, .big);
         self.head += 2;
     }
 
     pub fn readU32(self: *Self) u32 {
-        const r = std.mem.readInt(u32, @ptrCast(*const [@sizeOf(u32)]u8, &self.mem[self.head]), .Big);
+        const r = std.mem.readInt(u32, @ptrCast(&self.mem[self.head]), .big);
         self.head += @sizeOf(u32);
         return r;
     }
 
     pub fn writeU32(self: *Self, number: u32) void {
-        std.mem.writeInt(u32, @ptrCast(*[@sizeOf(u32)]u8, &self.mem[self.head]), number, .Big);
+        std.mem.writeInt(u32, @ptrCast(&self.mem[self.head]), number, .big);
         self.head += @sizeOf(u32);
     }
 
     pub fn readU64(self: *Self) u64 {
-        const r = std.mem.readInt(u64, @ptrCast(*const [@sizeOf(u64)]u8, &self.mem[self.head]), .Big);
+        const r = std.mem.readInt(u64, @ptrCast(&self.mem[self.head]), .big);
         self.head += @sizeOf(u64);
         return r;
     }
 
     pub fn writeU64(self: *Self, number: u64) void {
-        std.mem.writeInt(u64, @ptrCast(*[@sizeOf(u64)]u8, &self.mem[self.head]), number, .Big);
+        std.mem.writeInt(u64, @ptrCast(&self.mem[self.head]), number, .big);
         self.head += @sizeOf(u64);
     }
 
@@ -242,8 +242,8 @@ pub const WireBuffer = struct {
     }
 
     pub fn writeShortString(self: *Self, string: []const u8) void {
-        self.writeU8(@intCast(u8, string.len));
-        std.mem.copy(u8, self.mem[self.head..], string);
+        self.writeU8(@intCast(string.len));
+        std.mem.copyForwards(u8, self.mem[self.head..], string);
         self.head += string.len;
     }
 
@@ -255,8 +255,8 @@ pub const WireBuffer = struct {
     }
 
     pub fn writeLongString(self: *Self, string: []const u8) void {
-        self.writeU32(@intCast(u32, string.len));
-        std.mem.copy(u8, self.mem[self.head..], string);
+        self.writeU32(@intCast(string.len));
+        std.mem.copyForwards(u8, self.mem[self.head..], string);
         self.head += string.len;
     }
 
@@ -271,7 +271,7 @@ pub const WireBuffer = struct {
         const length = self.readU32();
 
         while (self.head - table_start < (length + @sizeOf(u32))) {
-            const key = self.readShortString();
+            _ = self.readShortString();
             const t = self.readU8();
 
             switch (t) {
@@ -279,13 +279,13 @@ pub const WireBuffer = struct {
                     _ = self.readTable();
                 },
                 't' => {
-                    const b = self.readBool();
+                    _ = self.readBool();
                 },
                 's' => {
-                    const s = self.readShortString();
+                    _ = self.readShortString();
                 },
                 'S' => {
-                    const s = self.readLongString();
+                    _ = self.readLongString();
                 },
                 else => continue,
             }
@@ -308,7 +308,7 @@ pub const WireBuffer = struct {
     pub fn writeTable(self: *Self, table: ?*Table) void {
         if (table) |t| {
             const table_bytes = t.buf.extent();
-            std.mem.copy(u8, self.mem[self.head..], table_bytes);
+            std.mem.copyForwards(u8, self.mem[self.head..], table_bytes);
             self.head += table_bytes.len;
         } else {
             self.writeU32(0);
@@ -317,7 +317,7 @@ pub const WireBuffer = struct {
 };
 
 pub const FrameHeader = struct {
-    @"type": FrameType = .Method,
+    type: FrameType = .Method,
     channel: u16 = 0,
     size: u32 = 0,
 };
@@ -349,12 +349,12 @@ test "buffer is full" {
     var memory: [16]u8 = [_]u8{0} ** 16;
     var buf = WireBuffer.init(memory[0..]);
 
-    testing.expect(buf.isFull() == false);
+    try testing.expect(buf.isFull() == false);
     buf.incrementEnd(16); // simluate writing 16 bytes into buffer
 
     // The buffer should now be full
-    testing.expect(buf.isFull() == true);
-    testing.expect(buf.remaining().len == 0);
+    try testing.expect(buf.isFull() == true);
+    try testing.expect(buf.remaining().len == 0);
 }
 
 test "basic write / read" {
@@ -379,18 +379,18 @@ test "basic write / read" {
     tx_buf.writeTable(&tx_table);
 
     // Simulate transmission
-    mem.copy(u8, rx_buf.remaining(), tx_buf.extent());
+    mem.copyForwards(u8, rx_buf.remaining(), tx_buf.extent());
     rx_buf.incrementEnd(tx_buf.extent().len);
 
     // Read from rx_buf (image this is the client's buffer)
-    testing.expect(rx_buf.readU8() == 22);
-    testing.expect(rx_buf.readU16() == 23);
-    testing.expect(rx_buf.readU32() == 24);
-    testing.expect(mem.eql(u8, rx_buf.readShortString(), "Hello"));
-    testing.expect(mem.eql(u8, rx_buf.readLongString(), "World"));
-    testing.expect(rx_buf.readBool() == true);
+    try testing.expect(rx_buf.readU8() == 22);
+    try testing.expect(rx_buf.readU16() == 23);
+    try testing.expect(rx_buf.readU32() == 24);
+    try testing.expect(mem.eql(u8, rx_buf.readShortString(), "Hello"));
+    try testing.expect(mem.eql(u8, rx_buf.readLongString(), "World"));
+    try testing.expect(rx_buf.readBool() == true);
     var rx_table = rx_buf.readTable();
-    testing.expect(rx_table.lookup(bool, "flag1").? == true);
-    testing.expect(rx_table.lookup(bool, "flag2").? == false);
-    testing.expect(mem.eql(u8, rx_table.lookup([]u8, "longstring").?, "zig is the best"));
+    try testing.expect(rx_table.lookup(bool, "flag1").? == true);
+    try testing.expect(rx_table.lookup(bool, "flag2").? == false);
+    try testing.expect(mem.eql(u8, rx_table.lookup([]u8, "longstring").?, "zig is the best"));
 }

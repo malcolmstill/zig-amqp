@@ -63,7 +63,7 @@ require.
 
 ### Build
 
-- A zig compiler (tested on at least 0.7.0)
+- A zig compiler (tested on at least 0.13.0)
 
 ### Regenerating `src/protocol.zig`
 

@@ -1,6 +1,4 @@
 const std = @import("std");
-const fs = std.fs;
-const os = std.os;
 const Connector = @import("connector.zig").Connector;
 const WireBuffer = @import("wire.zig").WireBuffer;
 const Table = @import("table.zig").Table;
@@ -49,11 +47,11 @@ pub const Connection = struct {
         pub fn read(conn: *Connector) !Start {
             const version_major = conn.rx_buffer.readU8();
             const version_minor = conn.rx_buffer.readU8();
-            var server_properties = conn.rx_buffer.readTable();
+            const server_properties = conn.rx_buffer.readTable();
             const mechanisms = conn.rx_buffer.readLongString();
             const locales = conn.rx_buffer.readLongString();
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Connection@{}.Start", .{conn.channel});
+            std.log.debug("\t<- Connection@{any}.Start", .{conn.channel});
             return Start{
                 .version_major = version_major,
                 .version_minor = version_minor,
@@ -81,9 +79,9 @@ pub const Connection = struct {
         conn.tx_buffer.writeLongString(locales);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Connection@{}.Start ->", .{conn.channel});
+        std.log.debug("Connection@{any}.Start ->", .{conn.channel});
         return awaitStartOk(conn);
     }
 
@@ -104,12 +102,12 @@ pub const Connection = struct {
         locale: []const u8,
 
         pub fn read(conn: *Connector) !StartOk {
-            var client_properties = conn.rx_buffer.readTable();
+            const client_properties = conn.rx_buffer.readTable();
             const mechanism = conn.rx_buffer.readShortString();
             const response = conn.rx_buffer.readLongString();
             const locale = conn.rx_buffer.readShortString();
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Connection@{}.Start_ok", .{conn.channel});
+            std.log.debug("\t<- Connection@{any}.Start_ok", .{conn.channel});
             return StartOk{
                 .client_properties = client_properties,
                 .mechanism = mechanism,
@@ -134,9 +132,9 @@ pub const Connection = struct {
         conn.tx_buffer.writeShortString(locale);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Connection@{}.Start_ok ->", .{conn.channel});
+        std.log.debug("Connection@{any}.Start_ok ->", .{conn.channel});
     }
 
     // start_ok
@@ -155,7 +153,7 @@ pub const Connection = struct {
         pub fn read(conn: *Connector) !Secure {
             const challenge = conn.rx_buffer.readLongString();
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Connection@{}.Secure", .{conn.channel});
+            std.log.debug("\t<- Connection@{any}.Secure", .{conn.channel});
             return Secure{
                 .challenge = challenge,
             };
@@ -171,9 +169,9 @@ pub const Connection = struct {
         conn.tx_buffer.writeLongString(challenge);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Connection@{}.Secure ->", .{conn.channel});
+        std.log.debug("Connection@{any}.Secure ->", .{conn.channel});
         return awaitSecureOk(conn);
     }
 
@@ -193,7 +191,7 @@ pub const Connection = struct {
         pub fn read(conn: *Connector) !SecureOk {
             const response = conn.rx_buffer.readLongString();
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Connection@{}.Secure_ok", .{conn.channel});
+            std.log.debug("\t<- Connection@{any}.Secure_ok", .{conn.channel});
             return SecureOk{
                 .response = response,
             };
@@ -209,9 +207,9 @@ pub const Connection = struct {
         conn.tx_buffer.writeLongString(response);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Connection@{}.Secure_ok ->", .{conn.channel});
+        std.log.debug("Connection@{any}.Secure_ok ->", .{conn.channel});
     }
 
     // secure_ok
@@ -234,7 +232,7 @@ pub const Connection = struct {
             const frame_max = conn.rx_buffer.readU32();
             const heartbeat = conn.rx_buffer.readU16();
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Connection@{}.Tune", .{conn.channel});
+            std.log.debug("\t<- Connection@{any}.Tune", .{conn.channel});
             return Tune{
                 .channel_max = channel_max,
                 .frame_max = frame_max,
@@ -256,9 +254,9 @@ pub const Connection = struct {
         conn.tx_buffer.writeU16(heartbeat);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Connection@{}.Tune ->", .{conn.channel});
+        std.log.debug("Connection@{any}.Tune ->", .{conn.channel});
         return awaitTuneOk(conn);
     }
 
@@ -282,7 +280,7 @@ pub const Connection = struct {
             const frame_max = conn.rx_buffer.readU32();
             const heartbeat = conn.rx_buffer.readU16();
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Connection@{}.Tune_ok", .{conn.channel});
+            std.log.debug("\t<- Connection@{any}.Tune_ok", .{conn.channel});
             return TuneOk{
                 .channel_max = channel_max,
                 .frame_max = frame_max,
@@ -304,9 +302,9 @@ pub const Connection = struct {
         conn.tx_buffer.writeU16(heartbeat);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Connection@{}.Tune_ok ->", .{conn.channel});
+        std.log.debug("Connection@{any}.Tune_ok ->", .{conn.channel});
     }
 
     // tune_ok
@@ -330,7 +328,7 @@ pub const Connection = struct {
             const bitset0 = conn.rx_buffer.readU8();
             const reserved_2 = if (bitset0 & (1 << 0) == 0) true else false;
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Connection@{}.Open", .{conn.channel});
+            std.log.debug("\t<- Connection@{any}.Open", .{conn.channel});
             return Open{
                 .virtual_host = virtual_host,
                 .reserved_1 = reserved_1,
@@ -355,9 +353,9 @@ pub const Connection = struct {
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Connection@{}.Open ->", .{conn.channel});
+        std.log.debug("Connection@{any}.Open ->", .{conn.channel});
         return awaitOpenOk(conn);
     }
 
@@ -377,7 +375,7 @@ pub const Connection = struct {
         pub fn read(conn: *Connector) !OpenOk {
             const reserved_1 = conn.rx_buffer.readShortString();
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Connection@{}.Open_ok", .{conn.channel});
+            std.log.debug("\t<- Connection@{any}.Open_ok", .{conn.channel});
             return OpenOk{
                 .reserved_1 = reserved_1,
             };
@@ -393,9 +391,9 @@ pub const Connection = struct {
         conn.tx_buffer.writeShortString(reserved_1);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Connection@{}.Open_ok ->", .{conn.channel});
+        std.log.debug("Connection@{any}.Open_ok ->", .{conn.channel});
     }
 
     // open_ok
@@ -420,7 +418,7 @@ pub const Connection = struct {
             const class_id = conn.rx_buffer.readU16();
             const method_id = conn.rx_buffer.readU16();
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Connection@{}.Close", .{conn.channel});
+            std.log.debug("\t<- Connection@{any}.Close", .{conn.channel});
             return Close{
                 .reply_code = reply_code,
                 .reply_text = reply_text,
@@ -445,9 +443,9 @@ pub const Connection = struct {
         conn.tx_buffer.writeU16(method_id);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Connection@{}.Close ->", .{conn.channel});
+        std.log.debug("Connection@{any}.Close ->", .{conn.channel});
         return awaitCloseOk(conn);
     }
 
@@ -464,7 +462,7 @@ pub const Connection = struct {
 
         pub fn read(conn: *Connector) !CloseOk {
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Connection@{}.Close_ok", .{conn.channel});
+            std.log.debug("\t<- Connection@{any}.Close_ok", .{conn.channel});
             return CloseOk{};
         }
     };
@@ -476,9 +474,9 @@ pub const Connection = struct {
         conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.CLOSE_OK_METHOD);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Connection@{}.Close_ok ->", .{conn.channel});
+        std.log.debug("Connection@{any}.Close_ok ->", .{conn.channel});
     }
 
     // close_ok
@@ -497,7 +495,7 @@ pub const Connection = struct {
         pub fn read(conn: *Connector) !Blocked {
             const reason = conn.rx_buffer.readShortString();
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Connection@{}.Blocked", .{conn.channel});
+            std.log.debug("\t<- Connection@{any}.Blocked", .{conn.channel});
             return Blocked{
                 .reason = reason,
             };
@@ -513,9 +511,9 @@ pub const Connection = struct {
         conn.tx_buffer.writeShortString(reason);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Connection@{}.Blocked ->", .{conn.channel});
+        std.log.debug("Connection@{any}.Blocked ->", .{conn.channel});
     }
 
     // blocked
@@ -531,7 +529,7 @@ pub const Connection = struct {
 
         pub fn read(conn: *Connector) !Unblocked {
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Connection@{}.Unblocked", .{conn.channel});
+            std.log.debug("\t<- Connection@{any}.Unblocked", .{conn.channel});
             return Unblocked{};
         }
     };
@@ -543,9 +541,9 @@ pub const Connection = struct {
         conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.UNBLOCKED_METHOD);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Connection@{}.Unblocked ->", .{conn.channel});
+        std.log.debug("Connection@{any}.Unblocked ->", .{conn.channel});
     }
 
     // unblocked
@@ -569,7 +567,7 @@ pub const Channel = struct {
         pub fn read(conn: *Connector) !Open {
             const reserved_1 = conn.rx_buffer.readShortString();
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Channel@{}.Open", .{conn.channel});
+            std.log.debug("\t<- Channel@{any}.Open", .{conn.channel});
             return Open{
                 .reserved_1 = reserved_1,
             };
@@ -585,9 +583,9 @@ pub const Channel = struct {
         conn.tx_buffer.writeShortString(reserved_1);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Channel@{}.Open ->", .{conn.channel});
+        std.log.debug("Channel@{any}.Open ->", .{conn.channel});
         return awaitOpenOk(conn);
     }
 
@@ -607,7 +605,7 @@ pub const Channel = struct {
         pub fn read(conn: *Connector) !OpenOk {
             const reserved_1 = conn.rx_buffer.readLongString();
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Channel@{}.Open_ok", .{conn.channel});
+            std.log.debug("\t<- Channel@{any}.Open_ok", .{conn.channel});
             return OpenOk{
                 .reserved_1 = reserved_1,
             };
@@ -623,9 +621,9 @@ pub const Channel = struct {
         conn.tx_buffer.writeLongString(reserved_1);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Channel@{}.Open_ok ->", .{conn.channel});
+        std.log.debug("Channel@{any}.Open_ok ->", .{conn.channel});
     }
 
     // open_ok
@@ -645,7 +643,7 @@ pub const Channel = struct {
             const bitset0 = conn.rx_buffer.readU8();
             const active = if (bitset0 & (1 << 0) == 0) true else false;
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Channel@{}.Flow", .{conn.channel});
+            std.log.debug("\t<- Channel@{any}.Flow", .{conn.channel});
             return Flow{
                 .active = active,
             };
@@ -664,9 +662,9 @@ pub const Channel = struct {
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Channel@{}.Flow ->", .{conn.channel});
+        std.log.debug("Channel@{any}.Flow ->", .{conn.channel});
         return awaitFlowOk(conn);
     }
 
@@ -687,7 +685,7 @@ pub const Channel = struct {
             const bitset0 = conn.rx_buffer.readU8();
             const active = if (bitset0 & (1 << 0) == 0) true else false;
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Channel@{}.Flow_ok", .{conn.channel});
+            std.log.debug("\t<- Channel@{any}.Flow_ok", .{conn.channel});
             return FlowOk{
                 .active = active,
             };
@@ -706,9 +704,9 @@ pub const Channel = struct {
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Channel@{}.Flow_ok ->", .{conn.channel});
+        std.log.debug("Channel@{any}.Flow_ok ->", .{conn.channel});
     }
 
     // flow_ok
@@ -733,7 +731,7 @@ pub const Channel = struct {
             const class_id = conn.rx_buffer.readU16();
             const method_id = conn.rx_buffer.readU16();
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Channel@{}.Close", .{conn.channel});
+            std.log.debug("\t<- Channel@{any}.Close", .{conn.channel});
             return Close{
                 .reply_code = reply_code,
                 .reply_text = reply_text,
@@ -758,9 +756,9 @@ pub const Channel = struct {
         conn.tx_buffer.writeU16(method_id);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Channel@{}.Close ->", .{conn.channel});
+        std.log.debug("Channel@{any}.Close ->", .{conn.channel});
         return awaitCloseOk(conn);
     }
 
@@ -777,7 +775,7 @@ pub const Channel = struct {
 
         pub fn read(conn: *Connector) !CloseOk {
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Channel@{}.Close_ok", .{conn.channel});
+            std.log.debug("\t<- Channel@{any}.Close_ok", .{conn.channel});
             return CloseOk{};
         }
     };
@@ -789,9 +787,9 @@ pub const Channel = struct {
         conn.tx_buffer.writeMethodHeader(CHANNEL_CLASS, Channel.CLOSE_OK_METHOD);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Channel@{}.Close_ok ->", .{conn.channel});
+        std.log.debug("Channel@{any}.Close_ok ->", .{conn.channel});
     }
 
     // close_ok
@@ -830,9 +828,9 @@ pub const Exchange = struct {
             const reserved_2 = if (bitset0 & (1 << 2) == 0) true else false;
             const reserved_3 = if (bitset0 & (1 << 3) == 0) true else false;
             const no_wait = if (bitset0 & (1 << 4) == 0) true else false;
-            var arguments = conn.rx_buffer.readTable();
+            const arguments = conn.rx_buffer.readTable();
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Exchange@{}.Declare", .{conn.channel});
+            std.log.debug("\t<- Exchange@{any}.Declare", .{conn.channel});
             return Declare{
                 .reserved_1 = reserved_1,
                 .exchange = exchange,
@@ -875,9 +873,9 @@ pub const Exchange = struct {
         conn.tx_buffer.writeTable(arguments);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Exchange@{}.Declare ->", .{conn.channel});
+        std.log.debug("Exchange@{any}.Declare ->", .{conn.channel});
         return awaitDeclareOk(conn);
     }
 
@@ -894,7 +892,7 @@ pub const Exchange = struct {
 
         pub fn read(conn: *Connector) !DeclareOk {
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Exchange@{}.Declare_ok", .{conn.channel});
+            std.log.debug("\t<- Exchange@{any}.Declare_ok", .{conn.channel});
             return DeclareOk{};
         }
     };
@@ -906,9 +904,9 @@ pub const Exchange = struct {
         conn.tx_buffer.writeMethodHeader(EXCHANGE_CLASS, Exchange.DECLARE_OK_METHOD);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Exchange@{}.Declare_ok ->", .{conn.channel});
+        std.log.debug("Exchange@{any}.Declare_ok ->", .{conn.channel});
     }
 
     // declare_ok
@@ -934,7 +932,7 @@ pub const Exchange = struct {
             const if_unused = if (bitset0 & (1 << 0) == 0) true else false;
             const no_wait = if (bitset0 & (1 << 1) == 0) true else false;
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Exchange@{}.Delete", .{conn.channel});
+            std.log.debug("\t<- Exchange@{any}.Delete", .{conn.channel});
             return Delete{
                 .reserved_1 = reserved_1,
                 .exchange = exchange,
@@ -962,9 +960,9 @@ pub const Exchange = struct {
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Exchange@{}.Delete ->", .{conn.channel});
+        std.log.debug("Exchange@{any}.Delete ->", .{conn.channel});
         return awaitDeleteOk(conn);
     }
 
@@ -981,7 +979,7 @@ pub const Exchange = struct {
 
         pub fn read(conn: *Connector) !DeleteOk {
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Exchange@{}.Delete_ok", .{conn.channel});
+            std.log.debug("\t<- Exchange@{any}.Delete_ok", .{conn.channel});
             return DeleteOk{};
         }
     };
@@ -993,9 +991,9 @@ pub const Exchange = struct {
         conn.tx_buffer.writeMethodHeader(EXCHANGE_CLASS, Exchange.DELETE_OK_METHOD);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Exchange@{}.Delete_ok ->", .{conn.channel});
+        std.log.debug("Exchange@{any}.Delete_ok ->", .{conn.channel});
     }
 
     // delete_ok
@@ -1032,9 +1030,9 @@ pub const Queue = struct {
             const exclusive = if (bitset0 & (1 << 2) == 0) true else false;
             const auto_delete = if (bitset0 & (1 << 3) == 0) true else false;
             const no_wait = if (bitset0 & (1 << 4) == 0) true else false;
-            var arguments = conn.rx_buffer.readTable();
+            const arguments = conn.rx_buffer.readTable();
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Queue@{}.Declare", .{conn.channel});
+            std.log.debug("\t<- Queue@{any}.Declare", .{conn.channel});
             return Declare{
                 .reserved_1 = reserved_1,
                 .queue = queue,
@@ -1074,9 +1072,9 @@ pub const Queue = struct {
         conn.tx_buffer.writeTable(arguments);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Queue@{}.Declare ->", .{conn.channel});
+        std.log.debug("Queue@{any}.Declare ->", .{conn.channel});
         return awaitDeclareOk(conn);
     }
 
@@ -1100,7 +1098,7 @@ pub const Queue = struct {
             const message_count = conn.rx_buffer.readU32();
             const consumer_count = conn.rx_buffer.readU32();
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Queue@{}.Declare_ok", .{conn.channel});
+            std.log.debug("\t<- Queue@{any}.Declare_ok", .{conn.channel});
             return DeclareOk{
                 .queue = queue,
                 .message_count = message_count,
@@ -1122,9 +1120,9 @@ pub const Queue = struct {
         conn.tx_buffer.writeU32(consumer_count);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Queue@{}.Declare_ok ->", .{conn.channel});
+        std.log.debug("Queue@{any}.Declare_ok ->", .{conn.channel});
     }
 
     // declare_ok
@@ -1152,9 +1150,9 @@ pub const Queue = struct {
             const routing_key = conn.rx_buffer.readShortString();
             const bitset0 = conn.rx_buffer.readU8();
             const no_wait = if (bitset0 & (1 << 0) == 0) true else false;
-            var arguments = conn.rx_buffer.readTable();
+            const arguments = conn.rx_buffer.readTable();
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Queue@{}.Bind", .{conn.channel});
+            std.log.debug("\t<- Queue@{any}.Bind", .{conn.channel});
             return Bind{
                 .reserved_1 = reserved_1,
                 .queue = queue,
@@ -1188,9 +1186,9 @@ pub const Queue = struct {
         conn.tx_buffer.writeTable(arguments);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Queue@{}.Bind ->", .{conn.channel});
+        std.log.debug("Queue@{any}.Bind ->", .{conn.channel});
         return awaitBindOk(conn);
     }
 
@@ -1207,7 +1205,7 @@ pub const Queue = struct {
 
         pub fn read(conn: *Connector) !BindOk {
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Queue@{}.Bind_ok", .{conn.channel});
+            std.log.debug("\t<- Queue@{any}.Bind_ok", .{conn.channel});
             return BindOk{};
         }
     };
@@ -1219,9 +1217,9 @@ pub const Queue = struct {
         conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.BIND_OK_METHOD);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Queue@{}.Bind_ok ->", .{conn.channel});
+        std.log.debug("Queue@{any}.Bind_ok ->", .{conn.channel});
     }
 
     // bind_ok
@@ -1246,9 +1244,9 @@ pub const Queue = struct {
             const queue = conn.rx_buffer.readShortString();
             const exchange = conn.rx_buffer.readShortString();
             const routing_key = conn.rx_buffer.readShortString();
-            var arguments = conn.rx_buffer.readTable();
+            const arguments = conn.rx_buffer.readTable();
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Queue@{}.Unbind", .{conn.channel});
+            std.log.debug("\t<- Queue@{any}.Unbind", .{conn.channel});
             return Unbind{
                 .reserved_1 = reserved_1,
                 .queue = queue,
@@ -1276,9 +1274,9 @@ pub const Queue = struct {
         conn.tx_buffer.writeTable(arguments);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Queue@{}.Unbind ->", .{conn.channel});
+        std.log.debug("Queue@{any}.Unbind ->", .{conn.channel});
         return awaitUnbindOk(conn);
     }
 
@@ -1295,7 +1293,7 @@ pub const Queue = struct {
 
         pub fn read(conn: *Connector) !UnbindOk {
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Queue@{}.Unbind_ok", .{conn.channel});
+            std.log.debug("\t<- Queue@{any}.Unbind_ok", .{conn.channel});
             return UnbindOk{};
         }
     };
@@ -1307,9 +1305,9 @@ pub const Queue = struct {
         conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.UNBIND_OK_METHOD);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Queue@{}.Unbind_ok ->", .{conn.channel});
+        std.log.debug("Queue@{any}.Unbind_ok ->", .{conn.channel});
     }
 
     // unbind_ok
@@ -1333,7 +1331,7 @@ pub const Queue = struct {
             const bitset0 = conn.rx_buffer.readU8();
             const no_wait = if (bitset0 & (1 << 0) == 0) true else false;
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Queue@{}.Purge", .{conn.channel});
+            std.log.debug("\t<- Queue@{any}.Purge", .{conn.channel});
             return Purge{
                 .reserved_1 = reserved_1,
                 .queue = queue,
@@ -1358,9 +1356,9 @@ pub const Queue = struct {
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Queue@{}.Purge ->", .{conn.channel});
+        std.log.debug("Queue@{any}.Purge ->", .{conn.channel});
         return awaitPurgeOk(conn);
     }
 
@@ -1380,7 +1378,7 @@ pub const Queue = struct {
         pub fn read(conn: *Connector) !PurgeOk {
             const message_count = conn.rx_buffer.readU32();
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Queue@{}.Purge_ok", .{conn.channel});
+            std.log.debug("\t<- Queue@{any}.Purge_ok", .{conn.channel});
             return PurgeOk{
                 .message_count = message_count,
             };
@@ -1396,9 +1394,9 @@ pub const Queue = struct {
         conn.tx_buffer.writeU32(message_count);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Queue@{}.Purge_ok ->", .{conn.channel});
+        std.log.debug("Queue@{any}.Purge_ok ->", .{conn.channel});
     }
 
     // purge_ok
@@ -1426,7 +1424,7 @@ pub const Queue = struct {
             const if_empty = if (bitset0 & (1 << 1) == 0) true else false;
             const no_wait = if (bitset0 & (1 << 2) == 0) true else false;
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Queue@{}.Delete", .{conn.channel});
+            std.log.debug("\t<- Queue@{any}.Delete", .{conn.channel});
             return Delete{
                 .reserved_1 = reserved_1,
                 .queue = queue,
@@ -1457,9 +1455,9 @@ pub const Queue = struct {
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Queue@{}.Delete ->", .{conn.channel});
+        std.log.debug("Queue@{any}.Delete ->", .{conn.channel});
         return awaitDeleteOk(conn);
     }
 
@@ -1479,7 +1477,7 @@ pub const Queue = struct {
         pub fn read(conn: *Connector) !DeleteOk {
             const message_count = conn.rx_buffer.readU32();
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Queue@{}.Delete_ok", .{conn.channel});
+            std.log.debug("\t<- Queue@{any}.Delete_ok", .{conn.channel});
             return DeleteOk{
                 .message_count = message_count,
             };
@@ -1495,9 +1493,9 @@ pub const Queue = struct {
         conn.tx_buffer.writeU32(message_count);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Queue@{}.Delete_ok ->", .{conn.channel});
+        std.log.debug("Queue@{any}.Delete_ok ->", .{conn.channel});
     }
 
     // delete_ok
@@ -1526,7 +1524,7 @@ pub const Basic = struct {
             const bitset0 = conn.rx_buffer.readU8();
             const global = if (bitset0 & (1 << 0) == 0) true else false;
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Basic@{}.Qos", .{conn.channel});
+            std.log.debug("\t<- Basic@{any}.Qos", .{conn.channel});
             return Qos{
                 .prefetch_size = prefetch_size,
                 .prefetch_count = prefetch_count,
@@ -1551,9 +1549,9 @@ pub const Basic = struct {
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Basic@{}.Qos ->", .{conn.channel});
+        std.log.debug("Basic@{any}.Qos ->", .{conn.channel});
         return awaitQosOk(conn);
     }
 
@@ -1570,7 +1568,7 @@ pub const Basic = struct {
 
         pub fn read(conn: *Connector) !QosOk {
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Basic@{}.Qos_ok", .{conn.channel});
+            std.log.debug("\t<- Basic@{any}.Qos_ok", .{conn.channel});
             return QosOk{};
         }
     };
@@ -1582,9 +1580,9 @@ pub const Basic = struct {
         conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.QOS_OK_METHOD);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Basic@{}.Qos_ok ->", .{conn.channel});
+        std.log.debug("Basic@{any}.Qos_ok ->", .{conn.channel});
     }
 
     // qos_ok
@@ -1616,9 +1614,9 @@ pub const Basic = struct {
             const no_ack = if (bitset0 & (1 << 1) == 0) true else false;
             const exclusive = if (bitset0 & (1 << 2) == 0) true else false;
             const no_wait = if (bitset0 & (1 << 3) == 0) true else false;
-            var arguments = conn.rx_buffer.readTable();
+            const arguments = conn.rx_buffer.readTable();
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Basic@{}.Consume", .{conn.channel});
+            std.log.debug("\t<- Basic@{any}.Consume", .{conn.channel});
             return Consume{
                 .reserved_1 = reserved_1,
                 .queue = queue,
@@ -1658,9 +1656,9 @@ pub const Basic = struct {
         conn.tx_buffer.writeTable(arguments);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Basic@{}.Consume ->", .{conn.channel});
+        std.log.debug("Basic@{any}.Consume ->", .{conn.channel});
         return awaitConsumeOk(conn);
     }
 
@@ -1680,7 +1678,7 @@ pub const Basic = struct {
         pub fn read(conn: *Connector) !ConsumeOk {
             const consumer_tag = conn.rx_buffer.readShortString();
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Basic@{}.Consume_ok", .{conn.channel});
+            std.log.debug("\t<- Basic@{any}.Consume_ok", .{conn.channel});
             return ConsumeOk{
                 .consumer_tag = consumer_tag,
             };
@@ -1696,9 +1694,9 @@ pub const Basic = struct {
         conn.tx_buffer.writeShortString(consumer_tag);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Basic@{}.Consume_ok ->", .{conn.channel});
+        std.log.debug("Basic@{any}.Consume_ok ->", .{conn.channel});
     }
 
     // consume_ok
@@ -1720,7 +1718,7 @@ pub const Basic = struct {
             const bitset0 = conn.rx_buffer.readU8();
             const no_wait = if (bitset0 & (1 << 0) == 0) true else false;
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Basic@{}.Cancel", .{conn.channel});
+            std.log.debug("\t<- Basic@{any}.Cancel", .{conn.channel});
             return Cancel{
                 .consumer_tag = consumer_tag,
                 .no_wait = no_wait,
@@ -1742,9 +1740,9 @@ pub const Basic = struct {
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Basic@{}.Cancel ->", .{conn.channel});
+        std.log.debug("Basic@{any}.Cancel ->", .{conn.channel});
         return awaitCancelOk(conn);
     }
 
@@ -1764,7 +1762,7 @@ pub const Basic = struct {
         pub fn read(conn: *Connector) !CancelOk {
             const consumer_tag = conn.rx_buffer.readShortString();
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Basic@{}.Cancel_ok", .{conn.channel});
+            std.log.debug("\t<- Basic@{any}.Cancel_ok", .{conn.channel});
             return CancelOk{
                 .consumer_tag = consumer_tag,
             };
@@ -1780,9 +1778,9 @@ pub const Basic = struct {
         conn.tx_buffer.writeShortString(consumer_tag);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Basic@{}.Cancel_ok ->", .{conn.channel});
+        std.log.debug("Basic@{any}.Cancel_ok ->", .{conn.channel});
     }
 
     // cancel_ok
@@ -1810,7 +1808,7 @@ pub const Basic = struct {
             const mandatory = if (bitset0 & (1 << 0) == 0) true else false;
             const immediate = if (bitset0 & (1 << 1) == 0) true else false;
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Basic@{}.Publish", .{conn.channel});
+            std.log.debug("\t<- Basic@{any}.Publish", .{conn.channel});
             return Publish{
                 .reserved_1 = reserved_1,
                 .exchange = exchange,
@@ -1841,9 +1839,9 @@ pub const Basic = struct {
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Basic@{}.Publish ->", .{conn.channel});
+        std.log.debug("Basic@{any}.Publish ->", .{conn.channel});
     }
 
     // publish
@@ -1868,7 +1866,7 @@ pub const Basic = struct {
             const exchange = conn.rx_buffer.readShortString();
             const routing_key = conn.rx_buffer.readShortString();
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Basic@{}.Return", .{conn.channel});
+            std.log.debug("\t<- Basic@{any}.Return", .{conn.channel});
             return Return{
                 .reply_code = reply_code,
                 .reply_text = reply_text,
@@ -1893,9 +1891,9 @@ pub const Basic = struct {
         conn.tx_buffer.writeShortString(routing_key);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Basic@{}.Return ->", .{conn.channel});
+        std.log.debug("Basic@{any}.Return ->", .{conn.channel});
     }
 
     // @"return"
@@ -1923,7 +1921,7 @@ pub const Basic = struct {
             const exchange = conn.rx_buffer.readShortString();
             const routing_key = conn.rx_buffer.readShortString();
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Basic@{}.Deliver", .{conn.channel});
+            std.log.debug("\t<- Basic@{any}.Deliver", .{conn.channel});
             return Deliver{
                 .consumer_tag = consumer_tag,
                 .delivery_tag = delivery_tag,
@@ -1954,9 +1952,9 @@ pub const Basic = struct {
         conn.tx_buffer.writeShortString(routing_key);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Basic@{}.Deliver ->", .{conn.channel});
+        std.log.debug("Basic@{any}.Deliver ->", .{conn.channel});
     }
 
     // deliver
@@ -1980,7 +1978,7 @@ pub const Basic = struct {
             const bitset0 = conn.rx_buffer.readU8();
             const no_ack = if (bitset0 & (1 << 0) == 0) true else false;
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Basic@{}.Get", .{conn.channel});
+            std.log.debug("\t<- Basic@{any}.Get", .{conn.channel});
             return Get{
                 .reserved_1 = reserved_1,
                 .queue = queue,
@@ -2005,9 +2003,9 @@ pub const Basic = struct {
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Basic@{}.Get ->", .{conn.channel});
+        std.log.debug("Basic@{any}.Get ->", .{conn.channel});
         return awaitGetEmpty(conn);
     }
 
@@ -2036,7 +2034,7 @@ pub const Basic = struct {
             const routing_key = conn.rx_buffer.readShortString();
             const message_count = conn.rx_buffer.readU32();
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Basic@{}.Get_ok", .{conn.channel});
+            std.log.debug("\t<- Basic@{any}.Get_ok", .{conn.channel});
             return GetOk{
                 .delivery_tag = delivery_tag,
                 .redelivered = redelivered,
@@ -2067,9 +2065,9 @@ pub const Basic = struct {
         conn.tx_buffer.writeU32(message_count);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Basic@{}.Get_ok ->", .{conn.channel});
+        std.log.debug("Basic@{any}.Get_ok ->", .{conn.channel});
     }
 
     // get_ok
@@ -2088,7 +2086,7 @@ pub const Basic = struct {
         pub fn read(conn: *Connector) !GetEmpty {
             const reserved_1 = conn.rx_buffer.readShortString();
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Basic@{}.Get_empty", .{conn.channel});
+            std.log.debug("\t<- Basic@{any}.Get_empty", .{conn.channel});
             return GetEmpty{
                 .reserved_1 = reserved_1,
             };
@@ -2104,9 +2102,9 @@ pub const Basic = struct {
         conn.tx_buffer.writeShortString(reserved_1);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Basic@{}.Get_empty ->", .{conn.channel});
+        std.log.debug("Basic@{any}.Get_empty ->", .{conn.channel});
     }
 
     // get_empty
@@ -2128,7 +2126,7 @@ pub const Basic = struct {
             const bitset0 = conn.rx_buffer.readU8();
             const multiple = if (bitset0 & (1 << 0) == 0) true else false;
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Basic@{}.Ack", .{conn.channel});
+            std.log.debug("\t<- Basic@{any}.Ack", .{conn.channel});
             return Ack{
                 .delivery_tag = delivery_tag,
                 .multiple = multiple,
@@ -2150,9 +2148,9 @@ pub const Basic = struct {
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Basic@{}.Ack ->", .{conn.channel});
+        std.log.debug("Basic@{any}.Ack ->", .{conn.channel});
     }
 
     // ack
@@ -2174,7 +2172,7 @@ pub const Basic = struct {
             const bitset0 = conn.rx_buffer.readU8();
             const requeue = if (bitset0 & (1 << 0) == 0) true else false;
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Basic@{}.Reject", .{conn.channel});
+            std.log.debug("\t<- Basic@{any}.Reject", .{conn.channel});
             return Reject{
                 .delivery_tag = delivery_tag,
                 .requeue = requeue,
@@ -2196,9 +2194,9 @@ pub const Basic = struct {
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Basic@{}.Reject ->", .{conn.channel});
+        std.log.debug("Basic@{any}.Reject ->", .{conn.channel});
     }
 
     // reject
@@ -2218,7 +2216,7 @@ pub const Basic = struct {
             const bitset0 = conn.rx_buffer.readU8();
             const requeue = if (bitset0 & (1 << 0) == 0) true else false;
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Basic@{}.Recover_async", .{conn.channel});
+            std.log.debug("\t<- Basic@{any}.Recover_async", .{conn.channel});
             return RecoverAsync{
                 .requeue = requeue,
             };
@@ -2237,9 +2235,9 @@ pub const Basic = struct {
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Basic@{}.Recover_async ->", .{conn.channel});
+        std.log.debug("Basic@{any}.Recover_async ->", .{conn.channel});
     }
 
     // recover_async
@@ -2259,7 +2257,7 @@ pub const Basic = struct {
             const bitset0 = conn.rx_buffer.readU8();
             const requeue = if (bitset0 & (1 << 0) == 0) true else false;
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Basic@{}.Recover", .{conn.channel});
+            std.log.debug("\t<- Basic@{any}.Recover", .{conn.channel});
             return Recover{
                 .requeue = requeue,
             };
@@ -2278,9 +2276,9 @@ pub const Basic = struct {
         conn.tx_buffer.writeU8(bitset0);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Basic@{}.Recover ->", .{conn.channel});
+        std.log.debug("Basic@{any}.Recover ->", .{conn.channel});
     }
 
     // recover
@@ -2296,7 +2294,7 @@ pub const Basic = struct {
 
         pub fn read(conn: *Connector) !RecoverOk {
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Basic@{}.Recover_ok", .{conn.channel});
+            std.log.debug("\t<- Basic@{any}.Recover_ok", .{conn.channel});
             return RecoverOk{};
         }
     };
@@ -2308,9 +2306,9 @@ pub const Basic = struct {
         conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.RECOVER_OK_METHOD);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Basic@{}.Recover_ok ->", .{conn.channel});
+        std.log.debug("Basic@{any}.Recover_ok ->", .{conn.channel});
     }
 
     // recover_ok
@@ -2331,7 +2329,7 @@ pub const Tx = struct {
 
         pub fn read(conn: *Connector) !Select {
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Tx@{}.Select", .{conn.channel});
+            std.log.debug("\t<- Tx@{any}.Select", .{conn.channel});
             return Select{};
         }
     };
@@ -2343,9 +2341,9 @@ pub const Tx = struct {
         conn.tx_buffer.writeMethodHeader(TX_CLASS, SELECT_METHOD);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Tx@{}.Select ->", .{conn.channel});
+        std.log.debug("Tx@{any}.Select ->", .{conn.channel});
         return awaitSelectOk(conn);
     }
 
@@ -2362,7 +2360,7 @@ pub const Tx = struct {
 
         pub fn read(conn: *Connector) !SelectOk {
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Tx@{}.Select_ok", .{conn.channel});
+            std.log.debug("\t<- Tx@{any}.Select_ok", .{conn.channel});
             return SelectOk{};
         }
     };
@@ -2374,9 +2372,9 @@ pub const Tx = struct {
         conn.tx_buffer.writeMethodHeader(TX_CLASS, Tx.SELECT_OK_METHOD);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Tx@{}.Select_ok ->", .{conn.channel});
+        std.log.debug("Tx@{any}.Select_ok ->", .{conn.channel});
     }
 
     // select_ok
@@ -2392,7 +2390,7 @@ pub const Tx = struct {
 
         pub fn read(conn: *Connector) !Commit {
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Tx@{}.Commit", .{conn.channel});
+            std.log.debug("\t<- Tx@{any}.Commit", .{conn.channel});
             return Commit{};
         }
     };
@@ -2404,9 +2402,9 @@ pub const Tx = struct {
         conn.tx_buffer.writeMethodHeader(TX_CLASS, COMMIT_METHOD);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Tx@{}.Commit ->", .{conn.channel});
+        std.log.debug("Tx@{any}.Commit ->", .{conn.channel});
         return awaitCommitOk(conn);
     }
 
@@ -2423,7 +2421,7 @@ pub const Tx = struct {
 
         pub fn read(conn: *Connector) !CommitOk {
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Tx@{}.Commit_ok", .{conn.channel});
+            std.log.debug("\t<- Tx@{any}.Commit_ok", .{conn.channel});
             return CommitOk{};
         }
     };
@@ -2435,9 +2433,9 @@ pub const Tx = struct {
         conn.tx_buffer.writeMethodHeader(TX_CLASS, Tx.COMMIT_OK_METHOD);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Tx@{}.Commit_ok ->", .{conn.channel});
+        std.log.debug("Tx@{any}.Commit_ok ->", .{conn.channel});
     }
 
     // commit_ok
@@ -2453,7 +2451,7 @@ pub const Tx = struct {
 
         pub fn read(conn: *Connector) !Rollback {
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Tx@{}.Rollback", .{conn.channel});
+            std.log.debug("\t<- Tx@{any}.Rollback", .{conn.channel});
             return Rollback{};
         }
     };
@@ -2465,9 +2463,9 @@ pub const Tx = struct {
         conn.tx_buffer.writeMethodHeader(TX_CLASS, ROLLBACK_METHOD);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Tx@{}.Rollback ->", .{conn.channel});
+        std.log.debug("Tx@{any}.Rollback ->", .{conn.channel});
         return awaitRollbackOk(conn);
     }
 
@@ -2484,7 +2482,7 @@ pub const Tx = struct {
 
         pub fn read(conn: *Connector) !RollbackOk {
             try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Tx@{}.Rollback_ok", .{conn.channel});
+            std.log.debug("\t<- Tx@{any}.Rollback_ok", .{conn.channel});
             return RollbackOk{};
         }
     };
@@ -2496,9 +2494,9 @@ pub const Tx = struct {
         conn.tx_buffer.writeMethodHeader(TX_CLASS, Tx.ROLLBACK_OK_METHOD);
         conn.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        const n = try std.os.write(conn.file.handle, conn.tx_buffer.extent());
+        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
         conn.tx_buffer.reset();
-        std.log.debug("Tx@{}.Rollback_ok ->", .{conn.channel});
+        std.log.debug("Tx@{any}.Rollback_ok ->", .{conn.channel});
     }
 
     // rollback_ok

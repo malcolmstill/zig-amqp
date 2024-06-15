@@ -14,9 +14,9 @@ pub fn main() !void {
     var consumer = try ch.basicConsume("simple_publish", .{ .no_ack = true }, null);
     var i: usize = 0;
     while (true) : (i += 1) {
-        var message = try consumer.next();
-        var header = message.header;
-        var body = message.body;
-        std.debug.warn("{}\n", .{body});
+        const message = try consumer.next();
+        _ = message.header;
+        const body = message.body;
+        std.debug.print("{s}\n", .{body});
     }
 }
