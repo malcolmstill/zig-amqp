@@ -14,8 +14,6 @@ pub const Connection = struct {
     in_use_channels: u2048, // Hear me out...
     max_channels: u16,
 
-    const Self = @This();
-
     pub fn init(rx_memory: []u8, tx_memory: []u8) Connection {
         return Connection{
             .connector = Connector{
@@ -28,14 +26,14 @@ pub const Connection = struct {
         };
     }
 
-    pub fn connect(self: *Self, address: net.Address) !void {
+    pub fn connect(connection: *Connection, address: net.Address) !void {
         const file = try net.tcpConnectToAddress(address);
         _ = try file.write("AMQP\x00\x00\x09\x01");
 
-        self.connector.file = file;
-        self.connector.connection = self;
+        connection.connector.file = file;
+        connection.connector.connection = connection;
 
-        var start = try proto.Connection.awaitStart(&self.connector);
+        var start = try proto.Connection.awaitStart(&connection.connector);
         const remote_host = start.server_properties.lookup([]u8, "cluster_name");
         std.log.debug("Connected to {any} AMQP server (version {any}.{any})\nmechanisms: {any}\nlocale: {any}\n", .{
             remote_host,
@@ -76,35 +74,35 @@ pub const Connection = struct {
         // UPDATE: the above TODO is what we now have, but we require extra
         //         buffers, and how do we size them. It would be nice to
         //         avoid allocations.
-        try proto.Connection.startOkAsync(&self.connector, &client_properties, "PLAIN", "\x00guest\x00guest", "en_US");
+        try proto.Connection.startOkAsync(&connection.connector, &client_properties, "PLAIN", "\x00guest\x00guest", "en_US");
 
-        const tune = try proto.Connection.awaitTune(&self.connector);
-        self.max_channels = tune.channel_max;
-        try proto.Connection.tuneOkAsync(&self.connector, @bitSizeOf(u2048) - 1, tune.frame_max, tune.heartbeat);
+        const tune = try proto.Connection.awaitTune(&connection.connector);
+        connection.max_channels = tune.channel_max;
+        try proto.Connection.tuneOkAsync(&connection.connector, @bitSizeOf(u2048) - 1, tune.frame_max, tune.heartbeat);
 
-        _ = try proto.Connection.openSync(&self.connector, "/");
+        _ = try proto.Connection.openSync(&connection.connector, "/");
     }
 
-    pub fn deinit(self: *Self) void {
-        self.file.close();
+    pub fn deinit(connection: *Connection) void {
+        connection.file.close();
     }
 
-    pub fn channel(self: *Self) !Channel {
-        const next_available_channel = try self.nextChannel();
-        var ch = Channel.init(next_available_channel, self);
+    pub fn channel(connection: *Connection) !Channel {
+        const next_available_channel = try connection.nextChannel();
+        var ch = Channel.init(next_available_channel, connection);
 
         _ = try proto.Channel.openSync(&ch.connector);
 
         return ch;
     }
 
-    fn nextChannel(self: *Self) !u16 {
+    fn nextChannel(connection: *Connection) !u16 {
         var i: u16 = 1;
-        while (i < self.max_channels and i < @bitSizeOf(u2048)) : (i += 1) {
+        while (i < connection.max_channels and i < @bitSizeOf(u2048)) : (i += 1) {
             const bit: u2048 = 1;
             const shift: u11 = @intCast(i);
-            if (self.in_use_channels & (bit << shift) == 0) {
-                self.in_use_channels |= (bit << shift);
+            if (connection.in_use_channels & (bit << shift) == 0) {
+                connection.in_use_channels |= (bit << shift);
                 return i;
             }
         }
@@ -112,11 +110,11 @@ pub const Connection = struct {
         return error.NoFreeChannel;
     }
 
-    pub fn freeChannel(self: *Self, channel_id: u16) void {
+    pub fn freeChannel(connection: *Connection, channel_id: u16) void {
         if (channel_id >= @bitSizeOf(u2048)) return; // Look it's late okay...
         const bit: u2048 = 1;
-        self.in_use_channels &= ~(bit << @intCast(channel_id));
-        if (std.builtin.mode == .Debug) std.debug.print("Freed channel {any}, in_use_channels: {any}\n", .{ channel_id, @popCount(self.in_use_channels) });
+        connection.in_use_channels &= ~(bit << @intCast(channel_id));
+        if (std.builtin.mode == .Debug) std.debug.print("Freed channel {any}, in_use_channels: {any}\n", .{ channel_id, @popCount(connection.in_use_channels) });
     }
 };
 

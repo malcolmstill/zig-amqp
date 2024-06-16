@@ -13,8 +13,6 @@ pub const WireBuffer = struct {
     head: usize = 0, // current reading position
     end: usize = 0,
 
-    const Self = @This();
-
     pub fn init(slice: []u8) WireBuffer {
         return WireBuffer{
             .mem = slice,
@@ -23,8 +21,8 @@ pub const WireBuffer = struct {
         };
     }
 
-    pub fn printSpan(self: *Self) void {
-        for (self.mem[self.head..self.end], 0..) |byte, i| {
+    pub fn printSpan(wire_buffer: *WireBuffer) void {
+        for (wire_buffer.mem[wire_buffer.head..wire_buffer.end], 0..) |byte, i| {
             std.debug.print("{x:0>2}", .{byte});
             if ((i + 1) % 8 == 0) std.debug.print("\n", .{}) else std.debug.print(" ", .{});
         }
@@ -32,47 +30,47 @@ pub const WireBuffer = struct {
     }
 
     // move head back to beginning of buffer
-    pub fn reset(self: *Self) void {
-        self.head = 0;
+    pub fn reset(wire_buffer: *WireBuffer) void {
+        wire_buffer.head = 0;
     }
 
-    pub fn isFull(self: *Self) bool {
-        return self.end == self.mem.len; // Should this actually be self.mem.len
+    pub fn isFull(wire_buffer: *WireBuffer) bool {
+        return wire_buffer.end == wire_buffer.mem.len; // Should this actually be wire_buffer.mem.len
     }
 
     // shift moves data between head and end to the front of mem
-    pub fn shift(self: *Self) void {
-        const new_end = self.end - self.head;
-        mem.copyForwards(u8, self.mem[0..new_end], self.mem[self.head..self.end]);
-        self.head = 0;
-        self.end = new_end;
+    pub fn shift(wire_buffer: *WireBuffer) void {
+        const new_end = wire_buffer.end - wire_buffer.head;
+        mem.copyForwards(u8, wire_buffer.mem[0..new_end], wire_buffer.mem[wire_buffer.head..wire_buffer.end]);
+        wire_buffer.head = 0;
+        wire_buffer.end = new_end;
     }
 
     // Returns a slice of everything between the start of mem and head
-    pub fn extent(self: *Self) []u8 {
-        return self.mem[0..self.head];
+    pub fn extent(wire_buffer: *WireBuffer) []u8 {
+        return wire_buffer.mem[0..wire_buffer.head];
     }
 
     // This doesn't return an error because we should always use this after
-    // reading into self.remaining() which already bounds amount.
-    pub fn incrementEnd(self: *Self, amount: usize) void {
-        self.end += amount;
+    // reading into wire_buffer.remaining() which already bounds amount.
+    pub fn incrementEnd(wire_buffer: *WireBuffer, amount: usize) void {
+        wire_buffer.end += amount;
     }
 
     // Returns a slice of everthing between end and the end of mem
-    pub fn remaining(self: *Self) []u8 {
-        return self.mem[self.end..];
+    pub fn remaining(wire_buffer: *WireBuffer) []u8 {
+        return wire_buffer.mem[wire_buffer.end..];
     }
 
-    pub fn isMoreData(self: *Self) bool {
-        return self.head < self.mem.len;
+    pub fn isMoreData(wire_buffer: *WireBuffer) bool {
+        return wire_buffer.head < wire_buffer.mem.len;
     }
 
-    pub fn readFrameHeader(self: *Self) !FrameHeader {
-        if (self.end - self.head < @sizeOf(FrameHeader)) return error.FrameHeaderReadFailure;
-        const frame_type = self.readU8();
-        const channel = self.readU16();
-        const size = self.readU32();
+    pub fn readFrameHeader(wire_buffer: *WireBuffer) !FrameHeader {
+        if (wire_buffer.end - wire_buffer.head < @sizeOf(FrameHeader)) return error.FrameHeaderReadFailure;
+        const frame_type = wire_buffer.readU8();
+        const channel = wire_buffer.readU16();
+        const size = wire_buffer.readU32();
         // std.debug.print("frame_type: {any}, channel: {any}, size: {any}\n", .{frame_type, channel, size});
 
         return FrameHeader{
@@ -84,43 +82,43 @@ pub const WireBuffer = struct {
 
     // Returns true if there is enough data read for
     // a full frame
-    pub fn frameReady(self: *Self) bool {
-        const save_head = self.head;
-        defer self.head = save_head;
-        const frame_header = self.readFrameHeader() catch |err| {
+    pub fn frameReady(wire_buffer: *WireBuffer) bool {
+        const save_head = wire_buffer.head;
+        defer wire_buffer.head = save_head;
+        const frame_header = wire_buffer.readFrameHeader() catch |err| {
             switch (err) {
                 error.FrameHeaderReadFailure => return false,
             }
         };
-        return (self.end - save_head) >= (8 + frame_header.size);
+        return (wire_buffer.end - save_head) >= (8 + frame_header.size);
     }
 
-    pub fn readEOF(self: *Self) !void {
-        const byte = self.readU8();
+    pub fn readEOF(wire_buffer: *WireBuffer) !void {
+        const byte = wire_buffer.readU8();
         if (byte != 0xCE) return error.ExpectedEOF;
     }
 
-    fn writeEOF(self: *Self) void {
-        self.writeU8(0xCE);
+    fn writeEOF(wire_buffer: *WireBuffer) void {
+        wire_buffer.writeU8(0xCE);
     }
 
-    pub fn writeFrameHeader(self: *Self, frame_type: FrameType, channel: u16, size: u32) void {
-        self.writeU8(@intFromEnum(frame_type));
-        self.writeU16(channel);
-        self.writeU32(size); // This will be overwritten later
+    pub fn writeFrameHeader(wire_buffer: *WireBuffer, frame_type: FrameType, channel: u16, size: u32) void {
+        wire_buffer.writeU8(@intFromEnum(frame_type));
+        wire_buffer.writeU16(channel);
+        wire_buffer.writeU32(size); // This will be overwritten later
     }
 
-    pub fn updateFrameLength(self: *Self) void {
-        self.writeEOF();
-        const head = self.head;
-        self.head = 3;
-        self.writeU32(@intCast(head - 8)); // size is head - header length (7 bytes) - frame end (1 bytes)
-        self.head = head;
+    pub fn updateFrameLength(wire_buffer: *WireBuffer) void {
+        wire_buffer.writeEOF();
+        const head = wire_buffer.head;
+        wire_buffer.head = 3;
+        wire_buffer.writeU32(@intCast(head - 8)); // size is head - header length (7 bytes) - frame end (1 bytes)
+        wire_buffer.head = head;
     }
 
-    pub fn readMethodHeader(self: *Self) !MethodHeader {
-        const class = self.readU16();
-        const method = self.readU16();
+    pub fn readMethodHeader(wire_buffer: *WireBuffer) !MethodHeader {
+        const class = wire_buffer.readU16();
+        const method = wire_buffer.readU16();
 
         return MethodHeader{
             .class = class,
@@ -128,19 +126,19 @@ pub const WireBuffer = struct {
         };
     }
 
-    pub fn writeMethodHeader(self: *Self, class: u16, method: u16) void {
-        self.writeU16(class);
-        self.writeU16(method);
+    pub fn writeMethodHeader(wire_buffer: *WireBuffer, class: u16, method: u16) void {
+        wire_buffer.writeU16(class);
+        wire_buffer.writeU16(method);
     }
 
-    pub fn readHeader(self: *Self, frame_size: usize) !Header {
-        const class = self.readU16();
-        const weight = self.readU16();
-        const body_size = self.readU64();
-        const property_flags = self.readU16();
-        const properties = self.mem[self.head .. self.head + (frame_size - 14)];
-        self.head += (frame_size - 14);
-        try self.readEOF();
+    pub fn readHeader(wire_buffer: *WireBuffer, frame_size: usize) !Header {
+        const class = wire_buffer.readU16();
+        const weight = wire_buffer.readU16();
+        const body_size = wire_buffer.readU64();
+        const property_flags = wire_buffer.readU16();
+        const properties = wire_buffer.mem[wire_buffer.head .. wire_buffer.head + (frame_size - 14)];
+        wire_buffer.head += (frame_size - 14);
+        try wire_buffer.readEOF();
 
         return Header{
             .class = class,
@@ -151,113 +149,113 @@ pub const WireBuffer = struct {
         };
     }
 
-    pub fn writeHeader(self: *Self, channel: u16, size: u64, class: u16) void {
-        self.writeFrameHeader(.Header, channel, 0);
-        self.writeU16(class);
-        self.writeU16(0);
-        self.writeU64(size);
-        self.writeU16(0);
-        self.updateFrameLength();
+    pub fn writeHeader(wire_buffer: *WireBuffer, channel: u16, size: u64, class: u16) void {
+        wire_buffer.writeFrameHeader(.Header, channel, 0);
+        wire_buffer.writeU16(class);
+        wire_buffer.writeU16(0);
+        wire_buffer.writeU64(size);
+        wire_buffer.writeU16(0);
+        wire_buffer.updateFrameLength();
     }
 
-    pub fn readBody(self: *Self, frame_size: usize) ![]u8 {
-        const body = self.mem[self.head .. self.head + frame_size];
-        self.head += frame_size;
-        try self.readEOF();
+    pub fn readBody(wire_buffer: *WireBuffer, frame_size: usize) ![]u8 {
+        const body = wire_buffer.mem[wire_buffer.head .. wire_buffer.head + frame_size];
+        wire_buffer.head += frame_size;
+        try wire_buffer.readEOF();
 
         return body;
     }
 
-    pub fn writeBody(self: *Self, channel: u16, body: []const u8) void {
-        self.writeFrameHeader(.Body, channel, 0);
-        std.mem.copyForwards(u8, self.mem[self.head..], body);
-        self.head += body.len;
-        self.updateFrameLength();
+    pub fn writeBody(wire_buffer: *WireBuffer, channel: u16, body: []const u8) void {
+        wire_buffer.writeFrameHeader(.Body, channel, 0);
+        std.mem.copyForwards(u8, wire_buffer.mem[wire_buffer.head..], body);
+        wire_buffer.head += body.len;
+        wire_buffer.updateFrameLength();
     }
 
-    pub fn writeHeartbeat(self: *Self) void {
-        self.writeFrameHeader(.Heartbeat, 0, 0);
-        self.updateFrameLength();
+    pub fn writeHeartbeat(wire_buffer: *WireBuffer) void {
+        wire_buffer.writeFrameHeader(.Heartbeat, 0, 0);
+        wire_buffer.updateFrameLength();
     }
 
-    pub fn readU8(self: *Self) u8 {
-        const r: u8 = self.mem[self.head];
-        self.head += 1;
+    pub fn readU8(wire_buffer: *WireBuffer) u8 {
+        const r: u8 = wire_buffer.mem[wire_buffer.head];
+        wire_buffer.head += 1;
         return r;
     }
 
-    pub fn writeU8(self: *Self, byte: u8) void {
-        std.mem.writeInt(u8, &self.mem[self.head], byte, .big);
-        self.head += 1;
+    pub fn writeU8(wire_buffer: *WireBuffer, byte: u8) void {
+        std.mem.writeInt(u8, &wire_buffer.mem[wire_buffer.head], byte, .big);
+        wire_buffer.head += 1;
     }
 
-    pub fn readU16(self: *Self) u16 {
-        const r = std.mem.readInt(u16, @ptrCast(&self.mem[self.head]), .big);
-        self.head += @sizeOf(u16);
+    pub fn readU16(wire_buffer: *WireBuffer) u16 {
+        const r = std.mem.readInt(u16, @ptrCast(&wire_buffer.mem[wire_buffer.head]), .big);
+        wire_buffer.head += @sizeOf(u16);
         return r;
     }
 
-    pub fn writeU16(self: *Self, short: u16) void {
-        std.mem.writeInt(u16, @ptrCast(&self.mem[self.head]), short, .big);
-        self.head += 2;
+    pub fn writeU16(wire_buffer: *WireBuffer, short: u16) void {
+        std.mem.writeInt(u16, @ptrCast(&wire_buffer.mem[wire_buffer.head]), short, .big);
+        wire_buffer.head += 2;
     }
 
-    pub fn readU32(self: *Self) u32 {
-        const r = std.mem.readInt(u32, @ptrCast(&self.mem[self.head]), .big);
-        self.head += @sizeOf(u32);
+    pub fn readU32(wire_buffer: *WireBuffer) u32 {
+        const r = std.mem.readInt(u32, @ptrCast(&wire_buffer.mem[wire_buffer.head]), .big);
+        wire_buffer.head += @sizeOf(u32);
         return r;
     }
 
-    pub fn writeU32(self: *Self, number: u32) void {
-        std.mem.writeInt(u32, @ptrCast(&self.mem[self.head]), number, .big);
-        self.head += @sizeOf(u32);
+    pub fn writeU32(wire_buffer: *WireBuffer, number: u32) void {
+        std.mem.writeInt(u32, @ptrCast(&wire_buffer.mem[wire_buffer.head]), number, .big);
+        wire_buffer.head += @sizeOf(u32);
     }
 
-    pub fn readU64(self: *Self) u64 {
-        const r = std.mem.readInt(u64, @ptrCast(&self.mem[self.head]), .big);
-        self.head += @sizeOf(u64);
+    pub fn readU64(wire_buffer: *WireBuffer) u64 {
+        const r = std.mem.readInt(u64, @ptrCast(&wire_buffer.mem[wire_buffer.head]), .big);
+        wire_buffer.head += @sizeOf(u64);
         return r;
     }
 
-    pub fn writeU64(self: *Self, number: u64) void {
-        std.mem.writeInt(u64, @ptrCast(&self.mem[self.head]), number, .big);
-        self.head += @sizeOf(u64);
+    pub fn writeU64(wire_buffer: *WireBuffer, number: u64) void {
+        std.mem.writeInt(u64, @ptrCast(&wire_buffer.mem[wire_buffer.head]), number, .big);
+        wire_buffer.head += @sizeOf(u64);
     }
 
-    pub fn readBool(self: *Self) bool {
-        const r = self.readU8();
+    pub fn readBool(wire_buffer: *WireBuffer) bool {
+        const r = wire_buffer.readU8();
         if (r == 0) return false;
         return true;
     }
 
-    pub fn writeBool(self: *Self, boolean: bool) void {
-        self.writeU8(if (boolean) 1 else 0);
+    pub fn writeBool(wire_buffer: *WireBuffer, boolean: bool) void {
+        wire_buffer.writeU8(if (boolean) 1 else 0);
     }
 
-    pub fn readShortString(self: *Self) []u8 {
-        const length = self.readU8();
-        const array = self.mem[self.head .. self.head + length];
-        self.head += length;
+    pub fn readShortString(wire_buffer: *WireBuffer) []u8 {
+        const length = wire_buffer.readU8();
+        const array = wire_buffer.mem[wire_buffer.head .. wire_buffer.head + length];
+        wire_buffer.head += length;
         return array;
     }
 
-    pub fn writeShortString(self: *Self, string: []const u8) void {
-        self.writeU8(@intCast(string.len));
-        std.mem.copyForwards(u8, self.mem[self.head..], string);
-        self.head += string.len;
+    pub fn writeShortString(wire_buffer: *WireBuffer, string: []const u8) void {
+        wire_buffer.writeU8(@intCast(string.len));
+        std.mem.copyForwards(u8, wire_buffer.mem[wire_buffer.head..], string);
+        wire_buffer.head += string.len;
     }
 
-    pub fn readLongString(self: *Self) []u8 {
-        const length = self.readU32();
-        const array = self.mem[self.head .. self.head + length];
-        self.head += length;
+    pub fn readLongString(wire_buffer: *WireBuffer) []u8 {
+        const length = wire_buffer.readU32();
+        const array = wire_buffer.mem[wire_buffer.head .. wire_buffer.head + length];
+        wire_buffer.head += length;
         return array;
     }
 
-    pub fn writeLongString(self: *Self, string: []const u8) void {
-        self.writeU32(@intCast(string.len));
-        std.mem.copyForwards(u8, self.mem[self.head..], string);
-        self.head += string.len;
+    pub fn writeLongString(wire_buffer: *WireBuffer, string: []const u8) void {
+        wire_buffer.writeU32(@intCast(string.len));
+        std.mem.copyForwards(u8, wire_buffer.mem[wire_buffer.head..], string);
+        wire_buffer.head += string.len;
     }
 
     // 1. Save the current read head
@@ -266,33 +264,33 @@ pub const WireBuffer = struct {
     //      3a. Read a table key
     //      3b. Read the value type for the key
     //      3c. Read that type
-    pub fn readTable(self: *Self) Table {
-        const table_start = self.head;
-        const length = self.readU32();
+    pub fn readTable(wire_buffer: *WireBuffer) Table {
+        const table_start = wire_buffer.head;
+        const length = wire_buffer.readU32();
 
-        while (self.head - table_start < (length + @sizeOf(u32))) {
-            _ = self.readShortString();
-            const t = self.readU8();
+        while (wire_buffer.head - table_start < (length + @sizeOf(u32))) {
+            _ = wire_buffer.readShortString();
+            const t = wire_buffer.readU8();
 
             switch (t) {
                 'F' => {
-                    _ = self.readTable();
+                    _ = wire_buffer.readTable();
                 },
                 't' => {
-                    _ = self.readBool();
+                    _ = wire_buffer.readBool();
                 },
                 's' => {
-                    _ = self.readShortString();
+                    _ = wire_buffer.readShortString();
                 },
                 'S' => {
-                    _ = self.readLongString();
+                    _ = wire_buffer.readLongString();
                 },
                 else => continue,
             }
         }
 
         return Table{
-            .buf = WireBuffer.init(self.mem[table_start..self.head]),
+            .buf = WireBuffer.init(wire_buffer.mem[table_start..wire_buffer.head]),
         };
     }
 
@@ -305,13 +303,13 @@ pub const WireBuffer = struct {
     //       table. We would simply chekc that length first, and
     //       if it's zeroe, manually write the 0 length, otherwise
     //       do the mem.copy
-    pub fn writeTable(self: *Self, table: ?*Table) void {
+    pub fn writeTable(wire_buffer: *WireBuffer, table: ?*Table) void {
         if (table) |t| {
             const table_bytes = t.buf.extent();
-            std.mem.copyForwards(u8, self.mem[self.head..], table_bytes);
-            self.head += table_bytes.len;
+            std.mem.copyForwards(u8, wire_buffer.mem[wire_buffer.head..], table_bytes);
+            wire_buffer.head += table_bytes.len;
         } else {
-            self.writeU32(0);
+            wire_buffer.writeU32(0);
         }
     }
 };

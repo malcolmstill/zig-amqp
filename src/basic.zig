@@ -15,11 +15,10 @@ pub const Basic = struct {
     pub const Consumer = struct {
         connector: Connector,
 
-        const Self = @This();
-        pub fn next(self: *Self) !Message {
-            _ = try proto.Basic.awaitDeliver(&self.connector);
-            const header = try self.connector.awaitHeader();
-            const body = try self.connector.awaitBody();
+        pub fn next(consumer: *Consumer) !Message {
+            _ = try proto.Basic.awaitDeliver(&consumer.connector);
+            const header = try consumer.connector.awaitHeader();
+            const body = try consumer.connector.awaitBody();
 
             // TODO: a body may come in more than one part
             return Message{

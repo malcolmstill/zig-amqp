@@ -44,14 +44,14 @@ pub const Connection = struct {
         mechanisms: []const u8,
         locales: []const u8,
 
-        pub fn read(conn: *Connector) !Start {
-            const version_major = conn.rx_buffer.readU8();
-            const version_minor = conn.rx_buffer.readU8();
-            const server_properties = conn.rx_buffer.readTable();
-            const mechanisms = conn.rx_buffer.readLongString();
-            const locales = conn.rx_buffer.readLongString();
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Connection@{any}.Start", .{conn.channel});
+        pub fn read(connector: *Connector) !Start {
+            const version_major = connector.rx_buffer.readU8();
+            const version_minor = connector.rx_buffer.readU8();
+            const server_properties = connector.rx_buffer.readTable();
+            const mechanisms = connector.rx_buffer.readLongString();
+            const locales = connector.rx_buffer.readLongString();
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Connection@{any}.Start", .{connector.channel});
             return Start{
                 .version_major = version_major,
                 .version_minor = version_minor,
@@ -63,31 +63,31 @@ pub const Connection = struct {
     };
     pub const START_METHOD = 10;
     pub fn startSync(
-        conn: *Connector,
+        connector: *Connector,
         version_major: u8,
         version_minor: u8,
         server_properties: ?*Table,
         mechanisms: []const u8,
         locales: []const u8,
     ) !StartOk {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, START_METHOD);
-        conn.tx_buffer.writeU8(version_major);
-        conn.tx_buffer.writeU8(version_minor);
-        conn.tx_buffer.writeTable(server_properties);
-        conn.tx_buffer.writeLongString(mechanisms);
-        conn.tx_buffer.writeLongString(locales);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(CONNECTION_CLASS, START_METHOD);
+        connector.tx_buffer.writeU8(version_major);
+        connector.tx_buffer.writeU8(version_minor);
+        connector.tx_buffer.writeTable(server_properties);
+        connector.tx_buffer.writeLongString(mechanisms);
+        connector.tx_buffer.writeLongString(locales);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Connection@{any}.Start ->", .{conn.channel});
-        return awaitStartOk(conn);
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Connection@{any}.Start ->", .{connector.channel});
+        return awaitStartOk(connector);
     }
 
     // start
-    pub fn awaitStart(conn: *Connector) !Start {
-        return conn.awaitMethod(Start);
+    pub fn awaitStart(connector: *Connector) !Start {
+        return connector.awaitMethod(Start);
     }
 
     // start-ok
@@ -101,13 +101,13 @@ pub const Connection = struct {
         response: []const u8,
         locale: []const u8,
 
-        pub fn read(conn: *Connector) !StartOk {
-            const client_properties = conn.rx_buffer.readTable();
-            const mechanism = conn.rx_buffer.readShortString();
-            const response = conn.rx_buffer.readLongString();
-            const locale = conn.rx_buffer.readShortString();
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Connection@{any}.Start_ok", .{conn.channel});
+        pub fn read(connector: *Connector) !StartOk {
+            const client_properties = connector.rx_buffer.readTable();
+            const mechanism = connector.rx_buffer.readShortString();
+            const response = connector.rx_buffer.readLongString();
+            const locale = connector.rx_buffer.readShortString();
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Connection@{any}.Start_ok", .{connector.channel});
             return StartOk{
                 .client_properties = client_properties,
                 .mechanism = mechanism,
@@ -118,28 +118,28 @@ pub const Connection = struct {
     };
     pub const START_OK_METHOD = 11;
     pub fn startOkAsync(
-        conn: *Connector,
+        connector: *Connector,
         client_properties: ?*Table,
         mechanism: []const u8,
         response: []const u8,
         locale: []const u8,
     ) !void {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.START_OK_METHOD);
-        conn.tx_buffer.writeTable(client_properties);
-        conn.tx_buffer.writeShortString(mechanism);
-        conn.tx_buffer.writeLongString(response);
-        conn.tx_buffer.writeShortString(locale);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.START_OK_METHOD);
+        connector.tx_buffer.writeTable(client_properties);
+        connector.tx_buffer.writeShortString(mechanism);
+        connector.tx_buffer.writeLongString(response);
+        connector.tx_buffer.writeShortString(locale);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Connection@{any}.Start_ok ->", .{conn.channel});
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Connection@{any}.Start_ok ->", .{connector.channel});
     }
 
     // start_ok
-    pub fn awaitStartOk(conn: *Connector) !StartOk {
-        return conn.awaitMethod(StartOk);
+    pub fn awaitStartOk(connector: *Connector) !StartOk {
+        return connector.awaitMethod(StartOk);
     }
 
     // secure
@@ -150,10 +150,10 @@ pub const Connection = struct {
 
         challenge: []const u8,
 
-        pub fn read(conn: *Connector) !Secure {
-            const challenge = conn.rx_buffer.readLongString();
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Connection@{any}.Secure", .{conn.channel});
+        pub fn read(connector: *Connector) !Secure {
+            const challenge = connector.rx_buffer.readLongString();
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Connection@{any}.Secure", .{connector.channel});
             return Secure{
                 .challenge = challenge,
             };
@@ -161,23 +161,23 @@ pub const Connection = struct {
     };
     pub const SECURE_METHOD = 20;
     pub fn secureSync(
-        conn: *Connector,
+        connector: *Connector,
         challenge: []const u8,
     ) !SecureOk {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, SECURE_METHOD);
-        conn.tx_buffer.writeLongString(challenge);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(CONNECTION_CLASS, SECURE_METHOD);
+        connector.tx_buffer.writeLongString(challenge);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Connection@{any}.Secure ->", .{conn.channel});
-        return awaitSecureOk(conn);
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Connection@{any}.Secure ->", .{connector.channel});
+        return awaitSecureOk(connector);
     }
 
     // secure
-    pub fn awaitSecure(conn: *Connector) !Secure {
-        return conn.awaitMethod(Secure);
+    pub fn awaitSecure(connector: *Connector) !Secure {
+        return connector.awaitMethod(Secure);
     }
 
     // secure-ok
@@ -188,10 +188,10 @@ pub const Connection = struct {
 
         response: []const u8,
 
-        pub fn read(conn: *Connector) !SecureOk {
-            const response = conn.rx_buffer.readLongString();
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Connection@{any}.Secure_ok", .{conn.channel});
+        pub fn read(connector: *Connector) !SecureOk {
+            const response = connector.rx_buffer.readLongString();
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Connection@{any}.Secure_ok", .{connector.channel});
             return SecureOk{
                 .response = response,
             };
@@ -199,22 +199,22 @@ pub const Connection = struct {
     };
     pub const SECURE_OK_METHOD = 21;
     pub fn secureOkAsync(
-        conn: *Connector,
+        connector: *Connector,
         response: []const u8,
     ) !void {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.SECURE_OK_METHOD);
-        conn.tx_buffer.writeLongString(response);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.SECURE_OK_METHOD);
+        connector.tx_buffer.writeLongString(response);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Connection@{any}.Secure_ok ->", .{conn.channel});
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Connection@{any}.Secure_ok ->", .{connector.channel});
     }
 
     // secure_ok
-    pub fn awaitSecureOk(conn: *Connector) !SecureOk {
-        return conn.awaitMethod(SecureOk);
+    pub fn awaitSecureOk(connector: *Connector) !SecureOk {
+        return connector.awaitMethod(SecureOk);
     }
 
     // tune
@@ -227,12 +227,12 @@ pub const Connection = struct {
         frame_max: u32,
         heartbeat: u16,
 
-        pub fn read(conn: *Connector) !Tune {
-            const channel_max = conn.rx_buffer.readU16();
-            const frame_max = conn.rx_buffer.readU32();
-            const heartbeat = conn.rx_buffer.readU16();
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Connection@{any}.Tune", .{conn.channel});
+        pub fn read(connector: *Connector) !Tune {
+            const channel_max = connector.rx_buffer.readU16();
+            const frame_max = connector.rx_buffer.readU32();
+            const heartbeat = connector.rx_buffer.readU16();
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Connection@{any}.Tune", .{connector.channel});
             return Tune{
                 .channel_max = channel_max,
                 .frame_max = frame_max,
@@ -242,27 +242,27 @@ pub const Connection = struct {
     };
     pub const TUNE_METHOD = 30;
     pub fn tuneSync(
-        conn: *Connector,
+        connector: *Connector,
         channel_max: u16,
         frame_max: u32,
         heartbeat: u16,
     ) !TuneOk {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, TUNE_METHOD);
-        conn.tx_buffer.writeU16(channel_max);
-        conn.tx_buffer.writeU32(frame_max);
-        conn.tx_buffer.writeU16(heartbeat);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(CONNECTION_CLASS, TUNE_METHOD);
+        connector.tx_buffer.writeU16(channel_max);
+        connector.tx_buffer.writeU32(frame_max);
+        connector.tx_buffer.writeU16(heartbeat);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Connection@{any}.Tune ->", .{conn.channel});
-        return awaitTuneOk(conn);
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Connection@{any}.Tune ->", .{connector.channel});
+        return awaitTuneOk(connector);
     }
 
     // tune
-    pub fn awaitTune(conn: *Connector) !Tune {
-        return conn.awaitMethod(Tune);
+    pub fn awaitTune(connector: *Connector) !Tune {
+        return connector.awaitMethod(Tune);
     }
 
     // tune-ok
@@ -275,12 +275,12 @@ pub const Connection = struct {
         frame_max: u32,
         heartbeat: u16,
 
-        pub fn read(conn: *Connector) !TuneOk {
-            const channel_max = conn.rx_buffer.readU16();
-            const frame_max = conn.rx_buffer.readU32();
-            const heartbeat = conn.rx_buffer.readU16();
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Connection@{any}.Tune_ok", .{conn.channel});
+        pub fn read(connector: *Connector) !TuneOk {
+            const channel_max = connector.rx_buffer.readU16();
+            const frame_max = connector.rx_buffer.readU32();
+            const heartbeat = connector.rx_buffer.readU16();
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Connection@{any}.Tune_ok", .{connector.channel});
             return TuneOk{
                 .channel_max = channel_max,
                 .frame_max = frame_max,
@@ -290,26 +290,26 @@ pub const Connection = struct {
     };
     pub const TUNE_OK_METHOD = 31;
     pub fn tuneOkAsync(
-        conn: *Connector,
+        connector: *Connector,
         channel_max: u16,
         frame_max: u32,
         heartbeat: u16,
     ) !void {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.TUNE_OK_METHOD);
-        conn.tx_buffer.writeU16(channel_max);
-        conn.tx_buffer.writeU32(frame_max);
-        conn.tx_buffer.writeU16(heartbeat);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.TUNE_OK_METHOD);
+        connector.tx_buffer.writeU16(channel_max);
+        connector.tx_buffer.writeU32(frame_max);
+        connector.tx_buffer.writeU16(heartbeat);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Connection@{any}.Tune_ok ->", .{conn.channel});
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Connection@{any}.Tune_ok ->", .{connector.channel});
     }
 
     // tune_ok
-    pub fn awaitTuneOk(conn: *Connector) !TuneOk {
-        return conn.awaitMethod(TuneOk);
+    pub fn awaitTuneOk(connector: *Connector) !TuneOk {
+        return connector.awaitMethod(TuneOk);
     }
 
     // open
@@ -322,13 +322,13 @@ pub const Connection = struct {
         reserved_1: []const u8,
         reserved_2: bool,
 
-        pub fn read(conn: *Connector) !Open {
-            const virtual_host = conn.rx_buffer.readShortString();
-            const reserved_1 = conn.rx_buffer.readShortString();
-            const bitset0 = conn.rx_buffer.readU8();
+        pub fn read(connector: *Connector) !Open {
+            const virtual_host = connector.rx_buffer.readShortString();
+            const reserved_1 = connector.rx_buffer.readShortString();
+            const bitset0 = connector.rx_buffer.readU8();
             const reserved_2 = if (bitset0 & (1 << 0) == 0) true else false;
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Connection@{any}.Open", .{conn.channel});
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Connection@{any}.Open", .{connector.channel});
             return Open{
                 .virtual_host = virtual_host,
                 .reserved_1 = reserved_1,
@@ -338,30 +338,30 @@ pub const Connection = struct {
     };
     pub const OPEN_METHOD = 40;
     pub fn openSync(
-        conn: *Connector,
+        connector: *Connector,
         virtual_host: []const u8,
     ) !OpenOk {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, OPEN_METHOD);
-        conn.tx_buffer.writeShortString(virtual_host);
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(CONNECTION_CLASS, OPEN_METHOD);
+        connector.tx_buffer.writeShortString(virtual_host);
         const reserved_1 = "";
-        conn.tx_buffer.writeShortString(reserved_1);
+        connector.tx_buffer.writeShortString(reserved_1);
         const reserved_2 = false;
         var bitset0: u8 = 0;
         const _bit: u8 = 1;
         if (reserved_2) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
-        conn.tx_buffer.writeU8(bitset0);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeU8(bitset0);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Connection@{any}.Open ->", .{conn.channel});
-        return awaitOpenOk(conn);
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Connection@{any}.Open ->", .{connector.channel});
+        return awaitOpenOk(connector);
     }
 
     // open
-    pub fn awaitOpen(conn: *Connector) !Open {
-        return conn.awaitMethod(Open);
+    pub fn awaitOpen(connector: *Connector) !Open {
+        return connector.awaitMethod(Open);
     }
 
     // open-ok
@@ -372,10 +372,10 @@ pub const Connection = struct {
 
         reserved_1: []const u8,
 
-        pub fn read(conn: *Connector) !OpenOk {
-            const reserved_1 = conn.rx_buffer.readShortString();
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Connection@{any}.Open_ok", .{conn.channel});
+        pub fn read(connector: *Connector) !OpenOk {
+            const reserved_1 = connector.rx_buffer.readShortString();
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Connection@{any}.Open_ok", .{connector.channel});
             return OpenOk{
                 .reserved_1 = reserved_1,
             };
@@ -383,22 +383,22 @@ pub const Connection = struct {
     };
     pub const OPEN_OK_METHOD = 41;
     pub fn openOkAsync(
-        conn: *Connector,
+        connector: *Connector,
     ) !void {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.OPEN_OK_METHOD);
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.OPEN_OK_METHOD);
         const reserved_1 = "";
-        conn.tx_buffer.writeShortString(reserved_1);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeShortString(reserved_1);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Connection@{any}.Open_ok ->", .{conn.channel});
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Connection@{any}.Open_ok ->", .{connector.channel});
     }
 
     // open_ok
-    pub fn awaitOpenOk(conn: *Connector) !OpenOk {
-        return conn.awaitMethod(OpenOk);
+    pub fn awaitOpenOk(connector: *Connector) !OpenOk {
+        return connector.awaitMethod(OpenOk);
     }
 
     // close
@@ -412,13 +412,13 @@ pub const Connection = struct {
         class_id: u16,
         method_id: u16,
 
-        pub fn read(conn: *Connector) !Close {
-            const reply_code = conn.rx_buffer.readU16();
-            const reply_text = conn.rx_buffer.readShortString();
-            const class_id = conn.rx_buffer.readU16();
-            const method_id = conn.rx_buffer.readU16();
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Connection@{any}.Close", .{conn.channel});
+        pub fn read(connector: *Connector) !Close {
+            const reply_code = connector.rx_buffer.readU16();
+            const reply_text = connector.rx_buffer.readShortString();
+            const class_id = connector.rx_buffer.readU16();
+            const method_id = connector.rx_buffer.readU16();
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Connection@{any}.Close", .{connector.channel});
             return Close{
                 .reply_code = reply_code,
                 .reply_text = reply_text,
@@ -429,29 +429,29 @@ pub const Connection = struct {
     };
     pub const CLOSE_METHOD = 50;
     pub fn closeSync(
-        conn: *Connector,
+        connector: *Connector,
         reply_code: u16,
         reply_text: []const u8,
         class_id: u16,
         method_id: u16,
     ) !CloseOk {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, CLOSE_METHOD);
-        conn.tx_buffer.writeU16(reply_code);
-        conn.tx_buffer.writeShortString(reply_text);
-        conn.tx_buffer.writeU16(class_id);
-        conn.tx_buffer.writeU16(method_id);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(CONNECTION_CLASS, CLOSE_METHOD);
+        connector.tx_buffer.writeU16(reply_code);
+        connector.tx_buffer.writeShortString(reply_text);
+        connector.tx_buffer.writeU16(class_id);
+        connector.tx_buffer.writeU16(method_id);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Connection@{any}.Close ->", .{conn.channel});
-        return awaitCloseOk(conn);
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Connection@{any}.Close ->", .{connector.channel});
+        return awaitCloseOk(connector);
     }
 
     // close
-    pub fn awaitClose(conn: *Connector) !Close {
-        return conn.awaitMethod(Close);
+    pub fn awaitClose(connector: *Connector) !Close {
+        return connector.awaitMethod(Close);
     }
 
     // close-ok
@@ -460,28 +460,28 @@ pub const Connection = struct {
         pub const CLASS = 10;
         pub const METHOD = 51;
 
-        pub fn read(conn: *Connector) !CloseOk {
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Connection@{any}.Close_ok", .{conn.channel});
+        pub fn read(connector: *Connector) !CloseOk {
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Connection@{any}.Close_ok", .{connector.channel});
             return CloseOk{};
         }
     };
     pub const CLOSE_OK_METHOD = 51;
     pub fn closeOkAsync(
-        conn: *Connector,
+        connector: *Connector,
     ) !void {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.CLOSE_OK_METHOD);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.CLOSE_OK_METHOD);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Connection@{any}.Close_ok ->", .{conn.channel});
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Connection@{any}.Close_ok ->", .{connector.channel});
     }
 
     // close_ok
-    pub fn awaitCloseOk(conn: *Connector) !CloseOk {
-        return conn.awaitMethod(CloseOk);
+    pub fn awaitCloseOk(connector: *Connector) !CloseOk {
+        return connector.awaitMethod(CloseOk);
     }
 
     // blocked
@@ -492,10 +492,10 @@ pub const Connection = struct {
 
         reason: []const u8,
 
-        pub fn read(conn: *Connector) !Blocked {
-            const reason = conn.rx_buffer.readShortString();
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Connection@{any}.Blocked", .{conn.channel});
+        pub fn read(connector: *Connector) !Blocked {
+            const reason = connector.rx_buffer.readShortString();
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Connection@{any}.Blocked", .{connector.channel});
             return Blocked{
                 .reason = reason,
             };
@@ -503,22 +503,22 @@ pub const Connection = struct {
     };
     pub const BLOCKED_METHOD = 60;
     pub fn blockedAsync(
-        conn: *Connector,
+        connector: *Connector,
         reason: []const u8,
     ) !void {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.BLOCKED_METHOD);
-        conn.tx_buffer.writeShortString(reason);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.BLOCKED_METHOD);
+        connector.tx_buffer.writeShortString(reason);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Connection@{any}.Blocked ->", .{conn.channel});
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Connection@{any}.Blocked ->", .{connector.channel});
     }
 
     // blocked
-    pub fn awaitBlocked(conn: *Connector) !Blocked {
-        return conn.awaitMethod(Blocked);
+    pub fn awaitBlocked(connector: *Connector) !Blocked {
+        return connector.awaitMethod(Blocked);
     }
 
     // unblocked
@@ -527,28 +527,28 @@ pub const Connection = struct {
         pub const CLASS = 10;
         pub const METHOD = 61;
 
-        pub fn read(conn: *Connector) !Unblocked {
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Connection@{any}.Unblocked", .{conn.channel});
+        pub fn read(connector: *Connector) !Unblocked {
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Connection@{any}.Unblocked", .{connector.channel});
             return Unblocked{};
         }
     };
     pub const UNBLOCKED_METHOD = 61;
     pub fn unblockedAsync(
-        conn: *Connector,
+        connector: *Connector,
     ) !void {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.UNBLOCKED_METHOD);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(CONNECTION_CLASS, Connection.UNBLOCKED_METHOD);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Connection@{any}.Unblocked ->", .{conn.channel});
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Connection@{any}.Unblocked ->", .{connector.channel});
     }
 
     // unblocked
-    pub fn awaitUnblocked(conn: *Connector) !Unblocked {
-        return conn.awaitMethod(Unblocked);
+    pub fn awaitUnblocked(connector: *Connector) !Unblocked {
+        return connector.awaitMethod(Unblocked);
     }
 };
 
@@ -564,10 +564,10 @@ pub const Channel = struct {
 
         reserved_1: []const u8,
 
-        pub fn read(conn: *Connector) !Open {
-            const reserved_1 = conn.rx_buffer.readShortString();
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Channel@{any}.Open", .{conn.channel});
+        pub fn read(connector: *Connector) !Open {
+            const reserved_1 = connector.rx_buffer.readShortString();
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Channel@{any}.Open", .{connector.channel});
             return Open{
                 .reserved_1 = reserved_1,
             };
@@ -575,23 +575,23 @@ pub const Channel = struct {
     };
     pub const OPEN_METHOD = 10;
     pub fn openSync(
-        conn: *Connector,
+        connector: *Connector,
     ) !OpenOk {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(CHANNEL_CLASS, OPEN_METHOD);
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(CHANNEL_CLASS, OPEN_METHOD);
         const reserved_1 = "";
-        conn.tx_buffer.writeShortString(reserved_1);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeShortString(reserved_1);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Channel@{any}.Open ->", .{conn.channel});
-        return awaitOpenOk(conn);
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Channel@{any}.Open ->", .{connector.channel});
+        return awaitOpenOk(connector);
     }
 
     // open
-    pub fn awaitOpen(conn: *Connector) !Open {
-        return conn.awaitMethod(Open);
+    pub fn awaitOpen(connector: *Connector) !Open {
+        return connector.awaitMethod(Open);
     }
 
     // open-ok
@@ -602,10 +602,10 @@ pub const Channel = struct {
 
         reserved_1: []const u8,
 
-        pub fn read(conn: *Connector) !OpenOk {
-            const reserved_1 = conn.rx_buffer.readLongString();
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Channel@{any}.Open_ok", .{conn.channel});
+        pub fn read(connector: *Connector) !OpenOk {
+            const reserved_1 = connector.rx_buffer.readLongString();
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Channel@{any}.Open_ok", .{connector.channel});
             return OpenOk{
                 .reserved_1 = reserved_1,
             };
@@ -613,22 +613,22 @@ pub const Channel = struct {
     };
     pub const OPEN_OK_METHOD = 11;
     pub fn openOkAsync(
-        conn: *Connector,
+        connector: *Connector,
     ) !void {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(CHANNEL_CLASS, Channel.OPEN_OK_METHOD);
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(CHANNEL_CLASS, Channel.OPEN_OK_METHOD);
         const reserved_1 = "";
-        conn.tx_buffer.writeLongString(reserved_1);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeLongString(reserved_1);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Channel@{any}.Open_ok ->", .{conn.channel});
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Channel@{any}.Open_ok ->", .{connector.channel});
     }
 
     // open_ok
-    pub fn awaitOpenOk(conn: *Connector) !OpenOk {
-        return conn.awaitMethod(OpenOk);
+    pub fn awaitOpenOk(connector: *Connector) !OpenOk {
+        return connector.awaitMethod(OpenOk);
     }
 
     // flow
@@ -639,11 +639,11 @@ pub const Channel = struct {
 
         active: bool,
 
-        pub fn read(conn: *Connector) !Flow {
-            const bitset0 = conn.rx_buffer.readU8();
+        pub fn read(connector: *Connector) !Flow {
+            const bitset0 = connector.rx_buffer.readU8();
             const active = if (bitset0 & (1 << 0) == 0) true else false;
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Channel@{any}.Flow", .{conn.channel});
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Channel@{any}.Flow", .{connector.channel});
             return Flow{
                 .active = active,
             };
@@ -651,26 +651,26 @@ pub const Channel = struct {
     };
     pub const FLOW_METHOD = 20;
     pub fn flowSync(
-        conn: *Connector,
+        connector: *Connector,
         active: bool,
     ) !FlowOk {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(CHANNEL_CLASS, FLOW_METHOD);
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(CHANNEL_CLASS, FLOW_METHOD);
         var bitset0: u8 = 0;
         const _bit: u8 = 1;
         if (active) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
-        conn.tx_buffer.writeU8(bitset0);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeU8(bitset0);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Channel@{any}.Flow ->", .{conn.channel});
-        return awaitFlowOk(conn);
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Channel@{any}.Flow ->", .{connector.channel});
+        return awaitFlowOk(connector);
     }
 
     // flow
-    pub fn awaitFlow(conn: *Connector) !Flow {
-        return conn.awaitMethod(Flow);
+    pub fn awaitFlow(connector: *Connector) !Flow {
+        return connector.awaitMethod(Flow);
     }
 
     // flow-ok
@@ -681,11 +681,11 @@ pub const Channel = struct {
 
         active: bool,
 
-        pub fn read(conn: *Connector) !FlowOk {
-            const bitset0 = conn.rx_buffer.readU8();
+        pub fn read(connector: *Connector) !FlowOk {
+            const bitset0 = connector.rx_buffer.readU8();
             const active = if (bitset0 & (1 << 0) == 0) true else false;
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Channel@{any}.Flow_ok", .{conn.channel});
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Channel@{any}.Flow_ok", .{connector.channel});
             return FlowOk{
                 .active = active,
             };
@@ -693,25 +693,25 @@ pub const Channel = struct {
     };
     pub const FLOW_OK_METHOD = 21;
     pub fn flowOkAsync(
-        conn: *Connector,
+        connector: *Connector,
         active: bool,
     ) !void {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(CHANNEL_CLASS, Channel.FLOW_OK_METHOD);
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(CHANNEL_CLASS, Channel.FLOW_OK_METHOD);
         var bitset0: u8 = 0;
         const _bit: u8 = 1;
         if (active) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
-        conn.tx_buffer.writeU8(bitset0);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeU8(bitset0);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Channel@{any}.Flow_ok ->", .{conn.channel});
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Channel@{any}.Flow_ok ->", .{connector.channel});
     }
 
     // flow_ok
-    pub fn awaitFlowOk(conn: *Connector) !FlowOk {
-        return conn.awaitMethod(FlowOk);
+    pub fn awaitFlowOk(connector: *Connector) !FlowOk {
+        return connector.awaitMethod(FlowOk);
     }
 
     // close
@@ -725,13 +725,13 @@ pub const Channel = struct {
         class_id: u16,
         method_id: u16,
 
-        pub fn read(conn: *Connector) !Close {
-            const reply_code = conn.rx_buffer.readU16();
-            const reply_text = conn.rx_buffer.readShortString();
-            const class_id = conn.rx_buffer.readU16();
-            const method_id = conn.rx_buffer.readU16();
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Channel@{any}.Close", .{conn.channel});
+        pub fn read(connector: *Connector) !Close {
+            const reply_code = connector.rx_buffer.readU16();
+            const reply_text = connector.rx_buffer.readShortString();
+            const class_id = connector.rx_buffer.readU16();
+            const method_id = connector.rx_buffer.readU16();
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Channel@{any}.Close", .{connector.channel});
             return Close{
                 .reply_code = reply_code,
                 .reply_text = reply_text,
@@ -742,29 +742,29 @@ pub const Channel = struct {
     };
     pub const CLOSE_METHOD = 40;
     pub fn closeSync(
-        conn: *Connector,
+        connector: *Connector,
         reply_code: u16,
         reply_text: []const u8,
         class_id: u16,
         method_id: u16,
     ) !CloseOk {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(CHANNEL_CLASS, CLOSE_METHOD);
-        conn.tx_buffer.writeU16(reply_code);
-        conn.tx_buffer.writeShortString(reply_text);
-        conn.tx_buffer.writeU16(class_id);
-        conn.tx_buffer.writeU16(method_id);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(CHANNEL_CLASS, CLOSE_METHOD);
+        connector.tx_buffer.writeU16(reply_code);
+        connector.tx_buffer.writeShortString(reply_text);
+        connector.tx_buffer.writeU16(class_id);
+        connector.tx_buffer.writeU16(method_id);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Channel@{any}.Close ->", .{conn.channel});
-        return awaitCloseOk(conn);
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Channel@{any}.Close ->", .{connector.channel});
+        return awaitCloseOk(connector);
     }
 
     // close
-    pub fn awaitClose(conn: *Connector) !Close {
-        return conn.awaitMethod(Close);
+    pub fn awaitClose(connector: *Connector) !Close {
+        return connector.awaitMethod(Close);
     }
 
     // close-ok
@@ -773,28 +773,28 @@ pub const Channel = struct {
         pub const CLASS = 20;
         pub const METHOD = 41;
 
-        pub fn read(conn: *Connector) !CloseOk {
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Channel@{any}.Close_ok", .{conn.channel});
+        pub fn read(connector: *Connector) !CloseOk {
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Channel@{any}.Close_ok", .{connector.channel});
             return CloseOk{};
         }
     };
     pub const CLOSE_OK_METHOD = 41;
     pub fn closeOkAsync(
-        conn: *Connector,
+        connector: *Connector,
     ) !void {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(CHANNEL_CLASS, Channel.CLOSE_OK_METHOD);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(CHANNEL_CLASS, Channel.CLOSE_OK_METHOD);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Channel@{any}.Close_ok ->", .{conn.channel});
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Channel@{any}.Close_ok ->", .{connector.channel});
     }
 
     // close_ok
-    pub fn awaitCloseOk(conn: *Connector) !CloseOk {
-        return conn.awaitMethod(CloseOk);
+    pub fn awaitCloseOk(connector: *Connector) !CloseOk {
+        return connector.awaitMethod(CloseOk);
     }
 };
 
@@ -818,19 +818,19 @@ pub const Exchange = struct {
         no_wait: bool,
         arguments: Table,
 
-        pub fn read(conn: *Connector) !Declare {
-            const reserved_1 = conn.rx_buffer.readU16();
-            const exchange = conn.rx_buffer.readShortString();
-            const tipe = conn.rx_buffer.readShortString();
-            const bitset0 = conn.rx_buffer.readU8();
+        pub fn read(connector: *Connector) !Declare {
+            const reserved_1 = connector.rx_buffer.readU16();
+            const exchange = connector.rx_buffer.readShortString();
+            const tipe = connector.rx_buffer.readShortString();
+            const bitset0 = connector.rx_buffer.readU8();
             const passive = if (bitset0 & (1 << 0) == 0) true else false;
             const durable = if (bitset0 & (1 << 1) == 0) true else false;
             const reserved_2 = if (bitset0 & (1 << 2) == 0) true else false;
             const reserved_3 = if (bitset0 & (1 << 3) == 0) true else false;
             const no_wait = if (bitset0 & (1 << 4) == 0) true else false;
-            const arguments = conn.rx_buffer.readTable();
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Exchange@{any}.Declare", .{conn.channel});
+            const arguments = connector.rx_buffer.readTable();
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Exchange@{any}.Declare", .{connector.channel});
             return Declare{
                 .reserved_1 = reserved_1,
                 .exchange = exchange,
@@ -846,7 +846,7 @@ pub const Exchange = struct {
     };
     pub const DECLARE_METHOD = 10;
     pub fn declareSync(
-        conn: *Connector,
+        connector: *Connector,
         exchange: []const u8,
         tipe: []const u8,
         passive: bool,
@@ -854,12 +854,12 @@ pub const Exchange = struct {
         no_wait: bool,
         arguments: ?*Table,
     ) !DeclareOk {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(EXCHANGE_CLASS, DECLARE_METHOD);
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(EXCHANGE_CLASS, DECLARE_METHOD);
         const reserved_1 = 0;
-        conn.tx_buffer.writeU16(reserved_1);
-        conn.tx_buffer.writeShortString(exchange);
-        conn.tx_buffer.writeShortString(tipe);
+        connector.tx_buffer.writeU16(reserved_1);
+        connector.tx_buffer.writeShortString(exchange);
+        connector.tx_buffer.writeShortString(tipe);
         var bitset0: u8 = 0;
         const _bit: u8 = 1;
         if (passive) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
@@ -869,19 +869,19 @@ pub const Exchange = struct {
         const reserved_3 = false;
         if (reserved_3) bitset0 |= (_bit << 3) else bitset0 &= ~(_bit << 3);
         if (no_wait) bitset0 |= (_bit << 4) else bitset0 &= ~(_bit << 4);
-        conn.tx_buffer.writeU8(bitset0);
-        conn.tx_buffer.writeTable(arguments);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeU8(bitset0);
+        connector.tx_buffer.writeTable(arguments);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Exchange@{any}.Declare ->", .{conn.channel});
-        return awaitDeclareOk(conn);
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Exchange@{any}.Declare ->", .{connector.channel});
+        return awaitDeclareOk(connector);
     }
 
     // declare
-    pub fn awaitDeclare(conn: *Connector) !Declare {
-        return conn.awaitMethod(Declare);
+    pub fn awaitDeclare(connector: *Connector) !Declare {
+        return connector.awaitMethod(Declare);
     }
 
     // declare-ok
@@ -890,28 +890,28 @@ pub const Exchange = struct {
         pub const CLASS = 40;
         pub const METHOD = 11;
 
-        pub fn read(conn: *Connector) !DeclareOk {
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Exchange@{any}.Declare_ok", .{conn.channel});
+        pub fn read(connector: *Connector) !DeclareOk {
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Exchange@{any}.Declare_ok", .{connector.channel});
             return DeclareOk{};
         }
     };
     pub const DECLARE_OK_METHOD = 11;
     pub fn declareOkAsync(
-        conn: *Connector,
+        connector: *Connector,
     ) !void {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(EXCHANGE_CLASS, Exchange.DECLARE_OK_METHOD);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(EXCHANGE_CLASS, Exchange.DECLARE_OK_METHOD);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Exchange@{any}.Declare_ok ->", .{conn.channel});
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Exchange@{any}.Declare_ok ->", .{connector.channel});
     }
 
     // declare_ok
-    pub fn awaitDeclareOk(conn: *Connector) !DeclareOk {
-        return conn.awaitMethod(DeclareOk);
+    pub fn awaitDeclareOk(connector: *Connector) !DeclareOk {
+        return connector.awaitMethod(DeclareOk);
     }
 
     // delete
@@ -925,14 +925,14 @@ pub const Exchange = struct {
         if_unused: bool,
         no_wait: bool,
 
-        pub fn read(conn: *Connector) !Delete {
-            const reserved_1 = conn.rx_buffer.readU16();
-            const exchange = conn.rx_buffer.readShortString();
-            const bitset0 = conn.rx_buffer.readU8();
+        pub fn read(connector: *Connector) !Delete {
+            const reserved_1 = connector.rx_buffer.readU16();
+            const exchange = connector.rx_buffer.readShortString();
+            const bitset0 = connector.rx_buffer.readU8();
             const if_unused = if (bitset0 & (1 << 0) == 0) true else false;
             const no_wait = if (bitset0 & (1 << 1) == 0) true else false;
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Exchange@{any}.Delete", .{conn.channel});
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Exchange@{any}.Delete", .{connector.channel});
             return Delete{
                 .reserved_1 = reserved_1,
                 .exchange = exchange,
@@ -943,32 +943,32 @@ pub const Exchange = struct {
     };
     pub const DELETE_METHOD = 20;
     pub fn deleteSync(
-        conn: *Connector,
+        connector: *Connector,
         exchange: []const u8,
         if_unused: bool,
         no_wait: bool,
     ) !DeleteOk {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(EXCHANGE_CLASS, DELETE_METHOD);
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(EXCHANGE_CLASS, DELETE_METHOD);
         const reserved_1 = 0;
-        conn.tx_buffer.writeU16(reserved_1);
-        conn.tx_buffer.writeShortString(exchange);
+        connector.tx_buffer.writeU16(reserved_1);
+        connector.tx_buffer.writeShortString(exchange);
         var bitset0: u8 = 0;
         const _bit: u8 = 1;
         if (if_unused) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
         if (no_wait) bitset0 |= (_bit << 1) else bitset0 &= ~(_bit << 1);
-        conn.tx_buffer.writeU8(bitset0);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeU8(bitset0);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Exchange@{any}.Delete ->", .{conn.channel});
-        return awaitDeleteOk(conn);
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Exchange@{any}.Delete ->", .{connector.channel});
+        return awaitDeleteOk(connector);
     }
 
     // delete
-    pub fn awaitDelete(conn: *Connector) !Delete {
-        return conn.awaitMethod(Delete);
+    pub fn awaitDelete(connector: *Connector) !Delete {
+        return connector.awaitMethod(Delete);
     }
 
     // delete-ok
@@ -977,28 +977,28 @@ pub const Exchange = struct {
         pub const CLASS = 40;
         pub const METHOD = 21;
 
-        pub fn read(conn: *Connector) !DeleteOk {
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Exchange@{any}.Delete_ok", .{conn.channel});
+        pub fn read(connector: *Connector) !DeleteOk {
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Exchange@{any}.Delete_ok", .{connector.channel});
             return DeleteOk{};
         }
     };
     pub const DELETE_OK_METHOD = 21;
     pub fn deleteOkAsync(
-        conn: *Connector,
+        connector: *Connector,
     ) !void {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(EXCHANGE_CLASS, Exchange.DELETE_OK_METHOD);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(EXCHANGE_CLASS, Exchange.DELETE_OK_METHOD);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Exchange@{any}.Delete_ok ->", .{conn.channel});
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Exchange@{any}.Delete_ok ->", .{connector.channel});
     }
 
     // delete_ok
-    pub fn awaitDeleteOk(conn: *Connector) !DeleteOk {
-        return conn.awaitMethod(DeleteOk);
+    pub fn awaitDeleteOk(connector: *Connector) !DeleteOk {
+        return connector.awaitMethod(DeleteOk);
     }
 };
 
@@ -1021,18 +1021,18 @@ pub const Queue = struct {
         no_wait: bool,
         arguments: Table,
 
-        pub fn read(conn: *Connector) !Declare {
-            const reserved_1 = conn.rx_buffer.readU16();
-            const queue = conn.rx_buffer.readShortString();
-            const bitset0 = conn.rx_buffer.readU8();
+        pub fn read(connector: *Connector) !Declare {
+            const reserved_1 = connector.rx_buffer.readU16();
+            const queue = connector.rx_buffer.readShortString();
+            const bitset0 = connector.rx_buffer.readU8();
             const passive = if (bitset0 & (1 << 0) == 0) true else false;
             const durable = if (bitset0 & (1 << 1) == 0) true else false;
             const exclusive = if (bitset0 & (1 << 2) == 0) true else false;
             const auto_delete = if (bitset0 & (1 << 3) == 0) true else false;
             const no_wait = if (bitset0 & (1 << 4) == 0) true else false;
-            const arguments = conn.rx_buffer.readTable();
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Queue@{any}.Declare", .{conn.channel});
+            const arguments = connector.rx_buffer.readTable();
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Queue@{any}.Declare", .{connector.channel});
             return Declare{
                 .reserved_1 = reserved_1,
                 .queue = queue,
@@ -1047,7 +1047,7 @@ pub const Queue = struct {
     };
     pub const DECLARE_METHOD = 10;
     pub fn declareSync(
-        conn: *Connector,
+        connector: *Connector,
         queue: []const u8,
         passive: bool,
         durable: bool,
@@ -1056,11 +1056,11 @@ pub const Queue = struct {
         no_wait: bool,
         arguments: ?*Table,
     ) !DeclareOk {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, DECLARE_METHOD);
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(QUEUE_CLASS, DECLARE_METHOD);
         const reserved_1 = 0;
-        conn.tx_buffer.writeU16(reserved_1);
-        conn.tx_buffer.writeShortString(queue);
+        connector.tx_buffer.writeU16(reserved_1);
+        connector.tx_buffer.writeShortString(queue);
         var bitset0: u8 = 0;
         const _bit: u8 = 1;
         if (passive) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
@@ -1068,19 +1068,19 @@ pub const Queue = struct {
         if (exclusive) bitset0 |= (_bit << 2) else bitset0 &= ~(_bit << 2);
         if (auto_delete) bitset0 |= (_bit << 3) else bitset0 &= ~(_bit << 3);
         if (no_wait) bitset0 |= (_bit << 4) else bitset0 &= ~(_bit << 4);
-        conn.tx_buffer.writeU8(bitset0);
-        conn.tx_buffer.writeTable(arguments);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeU8(bitset0);
+        connector.tx_buffer.writeTable(arguments);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Queue@{any}.Declare ->", .{conn.channel});
-        return awaitDeclareOk(conn);
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Queue@{any}.Declare ->", .{connector.channel});
+        return awaitDeclareOk(connector);
     }
 
     // declare
-    pub fn awaitDeclare(conn: *Connector) !Declare {
-        return conn.awaitMethod(Declare);
+    pub fn awaitDeclare(connector: *Connector) !Declare {
+        return connector.awaitMethod(Declare);
     }
 
     // declare-ok
@@ -1093,12 +1093,12 @@ pub const Queue = struct {
         message_count: u32,
         consumer_count: u32,
 
-        pub fn read(conn: *Connector) !DeclareOk {
-            const queue = conn.rx_buffer.readShortString();
-            const message_count = conn.rx_buffer.readU32();
-            const consumer_count = conn.rx_buffer.readU32();
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Queue@{any}.Declare_ok", .{conn.channel});
+        pub fn read(connector: *Connector) !DeclareOk {
+            const queue = connector.rx_buffer.readShortString();
+            const message_count = connector.rx_buffer.readU32();
+            const consumer_count = connector.rx_buffer.readU32();
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Queue@{any}.Declare_ok", .{connector.channel});
             return DeclareOk{
                 .queue = queue,
                 .message_count = message_count,
@@ -1108,26 +1108,26 @@ pub const Queue = struct {
     };
     pub const DECLARE_OK_METHOD = 11;
     pub fn declareOkAsync(
-        conn: *Connector,
+        connector: *Connector,
         queue: []const u8,
         message_count: u32,
         consumer_count: u32,
     ) !void {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.DECLARE_OK_METHOD);
-        conn.tx_buffer.writeShortString(queue);
-        conn.tx_buffer.writeU32(message_count);
-        conn.tx_buffer.writeU32(consumer_count);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.DECLARE_OK_METHOD);
+        connector.tx_buffer.writeShortString(queue);
+        connector.tx_buffer.writeU32(message_count);
+        connector.tx_buffer.writeU32(consumer_count);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Queue@{any}.Declare_ok ->", .{conn.channel});
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Queue@{any}.Declare_ok ->", .{connector.channel});
     }
 
     // declare_ok
-    pub fn awaitDeclareOk(conn: *Connector) !DeclareOk {
-        return conn.awaitMethod(DeclareOk);
+    pub fn awaitDeclareOk(connector: *Connector) !DeclareOk {
+        return connector.awaitMethod(DeclareOk);
     }
 
     // bind
@@ -1143,16 +1143,16 @@ pub const Queue = struct {
         no_wait: bool,
         arguments: Table,
 
-        pub fn read(conn: *Connector) !Bind {
-            const reserved_1 = conn.rx_buffer.readU16();
-            const queue = conn.rx_buffer.readShortString();
-            const exchange = conn.rx_buffer.readShortString();
-            const routing_key = conn.rx_buffer.readShortString();
-            const bitset0 = conn.rx_buffer.readU8();
+        pub fn read(connector: *Connector) !Bind {
+            const reserved_1 = connector.rx_buffer.readU16();
+            const queue = connector.rx_buffer.readShortString();
+            const exchange = connector.rx_buffer.readShortString();
+            const routing_key = connector.rx_buffer.readShortString();
+            const bitset0 = connector.rx_buffer.readU8();
             const no_wait = if (bitset0 & (1 << 0) == 0) true else false;
-            const arguments = conn.rx_buffer.readTable();
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Queue@{any}.Bind", .{conn.channel});
+            const arguments = connector.rx_buffer.readTable();
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Queue@{any}.Bind", .{connector.channel});
             return Bind{
                 .reserved_1 = reserved_1,
                 .queue = queue,
@@ -1165,36 +1165,36 @@ pub const Queue = struct {
     };
     pub const BIND_METHOD = 20;
     pub fn bindSync(
-        conn: *Connector,
+        connector: *Connector,
         queue: []const u8,
         exchange: []const u8,
         routing_key: []const u8,
         no_wait: bool,
         arguments: ?*Table,
     ) !BindOk {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, BIND_METHOD);
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(QUEUE_CLASS, BIND_METHOD);
         const reserved_1 = 0;
-        conn.tx_buffer.writeU16(reserved_1);
-        conn.tx_buffer.writeShortString(queue);
-        conn.tx_buffer.writeShortString(exchange);
-        conn.tx_buffer.writeShortString(routing_key);
+        connector.tx_buffer.writeU16(reserved_1);
+        connector.tx_buffer.writeShortString(queue);
+        connector.tx_buffer.writeShortString(exchange);
+        connector.tx_buffer.writeShortString(routing_key);
         var bitset0: u8 = 0;
         const _bit: u8 = 1;
         if (no_wait) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
-        conn.tx_buffer.writeU8(bitset0);
-        conn.tx_buffer.writeTable(arguments);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeU8(bitset0);
+        connector.tx_buffer.writeTable(arguments);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Queue@{any}.Bind ->", .{conn.channel});
-        return awaitBindOk(conn);
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Queue@{any}.Bind ->", .{connector.channel});
+        return awaitBindOk(connector);
     }
 
     // bind
-    pub fn awaitBind(conn: *Connector) !Bind {
-        return conn.awaitMethod(Bind);
+    pub fn awaitBind(connector: *Connector) !Bind {
+        return connector.awaitMethod(Bind);
     }
 
     // bind-ok
@@ -1203,28 +1203,28 @@ pub const Queue = struct {
         pub const CLASS = 50;
         pub const METHOD = 21;
 
-        pub fn read(conn: *Connector) !BindOk {
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Queue@{any}.Bind_ok", .{conn.channel});
+        pub fn read(connector: *Connector) !BindOk {
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Queue@{any}.Bind_ok", .{connector.channel});
             return BindOk{};
         }
     };
     pub const BIND_OK_METHOD = 21;
     pub fn bindOkAsync(
-        conn: *Connector,
+        connector: *Connector,
     ) !void {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.BIND_OK_METHOD);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.BIND_OK_METHOD);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Queue@{any}.Bind_ok ->", .{conn.channel});
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Queue@{any}.Bind_ok ->", .{connector.channel});
     }
 
     // bind_ok
-    pub fn awaitBindOk(conn: *Connector) !BindOk {
-        return conn.awaitMethod(BindOk);
+    pub fn awaitBindOk(connector: *Connector) !BindOk {
+        return connector.awaitMethod(BindOk);
     }
 
     // unbind
@@ -1239,14 +1239,14 @@ pub const Queue = struct {
         routing_key: []const u8,
         arguments: Table,
 
-        pub fn read(conn: *Connector) !Unbind {
-            const reserved_1 = conn.rx_buffer.readU16();
-            const queue = conn.rx_buffer.readShortString();
-            const exchange = conn.rx_buffer.readShortString();
-            const routing_key = conn.rx_buffer.readShortString();
-            const arguments = conn.rx_buffer.readTable();
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Queue@{any}.Unbind", .{conn.channel});
+        pub fn read(connector: *Connector) !Unbind {
+            const reserved_1 = connector.rx_buffer.readU16();
+            const queue = connector.rx_buffer.readShortString();
+            const exchange = connector.rx_buffer.readShortString();
+            const routing_key = connector.rx_buffer.readShortString();
+            const arguments = connector.rx_buffer.readTable();
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Queue@{any}.Unbind", .{connector.channel});
             return Unbind{
                 .reserved_1 = reserved_1,
                 .queue = queue,
@@ -1258,31 +1258,31 @@ pub const Queue = struct {
     };
     pub const UNBIND_METHOD = 50;
     pub fn unbindSync(
-        conn: *Connector,
+        connector: *Connector,
         queue: []const u8,
         exchange: []const u8,
         routing_key: []const u8,
         arguments: ?*Table,
     ) !UnbindOk {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, UNBIND_METHOD);
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(QUEUE_CLASS, UNBIND_METHOD);
         const reserved_1 = 0;
-        conn.tx_buffer.writeU16(reserved_1);
-        conn.tx_buffer.writeShortString(queue);
-        conn.tx_buffer.writeShortString(exchange);
-        conn.tx_buffer.writeShortString(routing_key);
-        conn.tx_buffer.writeTable(arguments);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeU16(reserved_1);
+        connector.tx_buffer.writeShortString(queue);
+        connector.tx_buffer.writeShortString(exchange);
+        connector.tx_buffer.writeShortString(routing_key);
+        connector.tx_buffer.writeTable(arguments);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Queue@{any}.Unbind ->", .{conn.channel});
-        return awaitUnbindOk(conn);
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Queue@{any}.Unbind ->", .{connector.channel});
+        return awaitUnbindOk(connector);
     }
 
     // unbind
-    pub fn awaitUnbind(conn: *Connector) !Unbind {
-        return conn.awaitMethod(Unbind);
+    pub fn awaitUnbind(connector: *Connector) !Unbind {
+        return connector.awaitMethod(Unbind);
     }
 
     // unbind-ok
@@ -1291,28 +1291,28 @@ pub const Queue = struct {
         pub const CLASS = 50;
         pub const METHOD = 51;
 
-        pub fn read(conn: *Connector) !UnbindOk {
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Queue@{any}.Unbind_ok", .{conn.channel});
+        pub fn read(connector: *Connector) !UnbindOk {
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Queue@{any}.Unbind_ok", .{connector.channel});
             return UnbindOk{};
         }
     };
     pub const UNBIND_OK_METHOD = 51;
     pub fn unbindOkAsync(
-        conn: *Connector,
+        connector: *Connector,
     ) !void {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.UNBIND_OK_METHOD);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.UNBIND_OK_METHOD);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Queue@{any}.Unbind_ok ->", .{conn.channel});
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Queue@{any}.Unbind_ok ->", .{connector.channel});
     }
 
     // unbind_ok
-    pub fn awaitUnbindOk(conn: *Connector) !UnbindOk {
-        return conn.awaitMethod(UnbindOk);
+    pub fn awaitUnbindOk(connector: *Connector) !UnbindOk {
+        return connector.awaitMethod(UnbindOk);
     }
 
     // purge
@@ -1325,13 +1325,13 @@ pub const Queue = struct {
         queue: []const u8,
         no_wait: bool,
 
-        pub fn read(conn: *Connector) !Purge {
-            const reserved_1 = conn.rx_buffer.readU16();
-            const queue = conn.rx_buffer.readShortString();
-            const bitset0 = conn.rx_buffer.readU8();
+        pub fn read(connector: *Connector) !Purge {
+            const reserved_1 = connector.rx_buffer.readU16();
+            const queue = connector.rx_buffer.readShortString();
+            const bitset0 = connector.rx_buffer.readU8();
             const no_wait = if (bitset0 & (1 << 0) == 0) true else false;
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Queue@{any}.Purge", .{conn.channel});
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Queue@{any}.Purge", .{connector.channel});
             return Purge{
                 .reserved_1 = reserved_1,
                 .queue = queue,
@@ -1341,30 +1341,30 @@ pub const Queue = struct {
     };
     pub const PURGE_METHOD = 30;
     pub fn purgeSync(
-        conn: *Connector,
+        connector: *Connector,
         queue: []const u8,
         no_wait: bool,
     ) !PurgeOk {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, PURGE_METHOD);
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(QUEUE_CLASS, PURGE_METHOD);
         const reserved_1 = 0;
-        conn.tx_buffer.writeU16(reserved_1);
-        conn.tx_buffer.writeShortString(queue);
+        connector.tx_buffer.writeU16(reserved_1);
+        connector.tx_buffer.writeShortString(queue);
         var bitset0: u8 = 0;
         const _bit: u8 = 1;
         if (no_wait) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
-        conn.tx_buffer.writeU8(bitset0);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeU8(bitset0);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Queue@{any}.Purge ->", .{conn.channel});
-        return awaitPurgeOk(conn);
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Queue@{any}.Purge ->", .{connector.channel});
+        return awaitPurgeOk(connector);
     }
 
     // purge
-    pub fn awaitPurge(conn: *Connector) !Purge {
-        return conn.awaitMethod(Purge);
+    pub fn awaitPurge(connector: *Connector) !Purge {
+        return connector.awaitMethod(Purge);
     }
 
     // purge-ok
@@ -1375,10 +1375,10 @@ pub const Queue = struct {
 
         message_count: u32,
 
-        pub fn read(conn: *Connector) !PurgeOk {
-            const message_count = conn.rx_buffer.readU32();
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Queue@{any}.Purge_ok", .{conn.channel});
+        pub fn read(connector: *Connector) !PurgeOk {
+            const message_count = connector.rx_buffer.readU32();
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Queue@{any}.Purge_ok", .{connector.channel});
             return PurgeOk{
                 .message_count = message_count,
             };
@@ -1386,22 +1386,22 @@ pub const Queue = struct {
     };
     pub const PURGE_OK_METHOD = 31;
     pub fn purgeOkAsync(
-        conn: *Connector,
+        connector: *Connector,
         message_count: u32,
     ) !void {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.PURGE_OK_METHOD);
-        conn.tx_buffer.writeU32(message_count);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.PURGE_OK_METHOD);
+        connector.tx_buffer.writeU32(message_count);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Queue@{any}.Purge_ok ->", .{conn.channel});
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Queue@{any}.Purge_ok ->", .{connector.channel});
     }
 
     // purge_ok
-    pub fn awaitPurgeOk(conn: *Connector) !PurgeOk {
-        return conn.awaitMethod(PurgeOk);
+    pub fn awaitPurgeOk(connector: *Connector) !PurgeOk {
+        return connector.awaitMethod(PurgeOk);
     }
 
     // delete
@@ -1416,15 +1416,15 @@ pub const Queue = struct {
         if_empty: bool,
         no_wait: bool,
 
-        pub fn read(conn: *Connector) !Delete {
-            const reserved_1 = conn.rx_buffer.readU16();
-            const queue = conn.rx_buffer.readShortString();
-            const bitset0 = conn.rx_buffer.readU8();
+        pub fn read(connector: *Connector) !Delete {
+            const reserved_1 = connector.rx_buffer.readU16();
+            const queue = connector.rx_buffer.readShortString();
+            const bitset0 = connector.rx_buffer.readU8();
             const if_unused = if (bitset0 & (1 << 0) == 0) true else false;
             const if_empty = if (bitset0 & (1 << 1) == 0) true else false;
             const no_wait = if (bitset0 & (1 << 2) == 0) true else false;
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Queue@{any}.Delete", .{conn.channel});
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Queue@{any}.Delete", .{connector.channel});
             return Delete{
                 .reserved_1 = reserved_1,
                 .queue = queue,
@@ -1436,34 +1436,34 @@ pub const Queue = struct {
     };
     pub const DELETE_METHOD = 40;
     pub fn deleteSync(
-        conn: *Connector,
+        connector: *Connector,
         queue: []const u8,
         if_unused: bool,
         if_empty: bool,
         no_wait: bool,
     ) !DeleteOk {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, DELETE_METHOD);
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(QUEUE_CLASS, DELETE_METHOD);
         const reserved_1 = 0;
-        conn.tx_buffer.writeU16(reserved_1);
-        conn.tx_buffer.writeShortString(queue);
+        connector.tx_buffer.writeU16(reserved_1);
+        connector.tx_buffer.writeShortString(queue);
         var bitset0: u8 = 0;
         const _bit: u8 = 1;
         if (if_unused) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
         if (if_empty) bitset0 |= (_bit << 1) else bitset0 &= ~(_bit << 1);
         if (no_wait) bitset0 |= (_bit << 2) else bitset0 &= ~(_bit << 2);
-        conn.tx_buffer.writeU8(bitset0);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeU8(bitset0);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Queue@{any}.Delete ->", .{conn.channel});
-        return awaitDeleteOk(conn);
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Queue@{any}.Delete ->", .{connector.channel});
+        return awaitDeleteOk(connector);
     }
 
     // delete
-    pub fn awaitDelete(conn: *Connector) !Delete {
-        return conn.awaitMethod(Delete);
+    pub fn awaitDelete(connector: *Connector) !Delete {
+        return connector.awaitMethod(Delete);
     }
 
     // delete-ok
@@ -1474,10 +1474,10 @@ pub const Queue = struct {
 
         message_count: u32,
 
-        pub fn read(conn: *Connector) !DeleteOk {
-            const message_count = conn.rx_buffer.readU32();
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Queue@{any}.Delete_ok", .{conn.channel});
+        pub fn read(connector: *Connector) !DeleteOk {
+            const message_count = connector.rx_buffer.readU32();
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Queue@{any}.Delete_ok", .{connector.channel});
             return DeleteOk{
                 .message_count = message_count,
             };
@@ -1485,22 +1485,22 @@ pub const Queue = struct {
     };
     pub const DELETE_OK_METHOD = 41;
     pub fn deleteOkAsync(
-        conn: *Connector,
+        connector: *Connector,
         message_count: u32,
     ) !void {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.DELETE_OK_METHOD);
-        conn.tx_buffer.writeU32(message_count);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(QUEUE_CLASS, Queue.DELETE_OK_METHOD);
+        connector.tx_buffer.writeU32(message_count);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Queue@{any}.Delete_ok ->", .{conn.channel});
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Queue@{any}.Delete_ok ->", .{connector.channel});
     }
 
     // delete_ok
-    pub fn awaitDeleteOk(conn: *Connector) !DeleteOk {
-        return conn.awaitMethod(DeleteOk);
+    pub fn awaitDeleteOk(connector: *Connector) !DeleteOk {
+        return connector.awaitMethod(DeleteOk);
     }
 };
 
@@ -1518,13 +1518,13 @@ pub const Basic = struct {
         prefetch_count: u16,
         global: bool,
 
-        pub fn read(conn: *Connector) !Qos {
-            const prefetch_size = conn.rx_buffer.readU32();
-            const prefetch_count = conn.rx_buffer.readU16();
-            const bitset0 = conn.rx_buffer.readU8();
+        pub fn read(connector: *Connector) !Qos {
+            const prefetch_size = connector.rx_buffer.readU32();
+            const prefetch_count = connector.rx_buffer.readU16();
+            const bitset0 = connector.rx_buffer.readU8();
             const global = if (bitset0 & (1 << 0) == 0) true else false;
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Basic@{any}.Qos", .{conn.channel});
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Basic@{any}.Qos", .{connector.channel});
             return Qos{
                 .prefetch_size = prefetch_size,
                 .prefetch_count = prefetch_count,
@@ -1534,30 +1534,30 @@ pub const Basic = struct {
     };
     pub const QOS_METHOD = 10;
     pub fn qosSync(
-        conn: *Connector,
+        connector: *Connector,
         prefetch_size: u32,
         prefetch_count: u16,
         global: bool,
     ) !QosOk {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, QOS_METHOD);
-        conn.tx_buffer.writeU32(prefetch_size);
-        conn.tx_buffer.writeU16(prefetch_count);
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(BASIC_CLASS, QOS_METHOD);
+        connector.tx_buffer.writeU32(prefetch_size);
+        connector.tx_buffer.writeU16(prefetch_count);
         var bitset0: u8 = 0;
         const _bit: u8 = 1;
         if (global) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
-        conn.tx_buffer.writeU8(bitset0);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeU8(bitset0);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Basic@{any}.Qos ->", .{conn.channel});
-        return awaitQosOk(conn);
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Basic@{any}.Qos ->", .{connector.channel});
+        return awaitQosOk(connector);
     }
 
     // qos
-    pub fn awaitQos(conn: *Connector) !Qos {
-        return conn.awaitMethod(Qos);
+    pub fn awaitQos(connector: *Connector) !Qos {
+        return connector.awaitMethod(Qos);
     }
 
     // qos-ok
@@ -1566,28 +1566,28 @@ pub const Basic = struct {
         pub const CLASS = 60;
         pub const METHOD = 11;
 
-        pub fn read(conn: *Connector) !QosOk {
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Basic@{any}.Qos_ok", .{conn.channel});
+        pub fn read(connector: *Connector) !QosOk {
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Basic@{any}.Qos_ok", .{connector.channel});
             return QosOk{};
         }
     };
     pub const QOS_OK_METHOD = 11;
     pub fn qosOkAsync(
-        conn: *Connector,
+        connector: *Connector,
     ) !void {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.QOS_OK_METHOD);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.QOS_OK_METHOD);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Basic@{any}.Qos_ok ->", .{conn.channel});
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Basic@{any}.Qos_ok ->", .{connector.channel});
     }
 
     // qos_ok
-    pub fn awaitQosOk(conn: *Connector) !QosOk {
-        return conn.awaitMethod(QosOk);
+    pub fn awaitQosOk(connector: *Connector) !QosOk {
+        return connector.awaitMethod(QosOk);
     }
 
     // consume
@@ -1605,18 +1605,18 @@ pub const Basic = struct {
         no_wait: bool,
         arguments: Table,
 
-        pub fn read(conn: *Connector) !Consume {
-            const reserved_1 = conn.rx_buffer.readU16();
-            const queue = conn.rx_buffer.readShortString();
-            const consumer_tag = conn.rx_buffer.readShortString();
-            const bitset0 = conn.rx_buffer.readU8();
+        pub fn read(connector: *Connector) !Consume {
+            const reserved_1 = connector.rx_buffer.readU16();
+            const queue = connector.rx_buffer.readShortString();
+            const consumer_tag = connector.rx_buffer.readShortString();
+            const bitset0 = connector.rx_buffer.readU8();
             const no_local = if (bitset0 & (1 << 0) == 0) true else false;
             const no_ack = if (bitset0 & (1 << 1) == 0) true else false;
             const exclusive = if (bitset0 & (1 << 2) == 0) true else false;
             const no_wait = if (bitset0 & (1 << 3) == 0) true else false;
-            const arguments = conn.rx_buffer.readTable();
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Basic@{any}.Consume", .{conn.channel});
+            const arguments = connector.rx_buffer.readTable();
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Basic@{any}.Consume", .{connector.channel});
             return Consume{
                 .reserved_1 = reserved_1,
                 .queue = queue,
@@ -1631,7 +1631,7 @@ pub const Basic = struct {
     };
     pub const CONSUME_METHOD = 20;
     pub fn consumeSync(
-        conn: *Connector,
+        connector: *Connector,
         queue: []const u8,
         consumer_tag: []const u8,
         no_local: bool,
@@ -1640,31 +1640,31 @@ pub const Basic = struct {
         no_wait: bool,
         arguments: ?*Table,
     ) !ConsumeOk {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, CONSUME_METHOD);
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(BASIC_CLASS, CONSUME_METHOD);
         const reserved_1 = 0;
-        conn.tx_buffer.writeU16(reserved_1);
-        conn.tx_buffer.writeShortString(queue);
-        conn.tx_buffer.writeShortString(consumer_tag);
+        connector.tx_buffer.writeU16(reserved_1);
+        connector.tx_buffer.writeShortString(queue);
+        connector.tx_buffer.writeShortString(consumer_tag);
         var bitset0: u8 = 0;
         const _bit: u8 = 1;
         if (no_local) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
         if (no_ack) bitset0 |= (_bit << 1) else bitset0 &= ~(_bit << 1);
         if (exclusive) bitset0 |= (_bit << 2) else bitset0 &= ~(_bit << 2);
         if (no_wait) bitset0 |= (_bit << 3) else bitset0 &= ~(_bit << 3);
-        conn.tx_buffer.writeU8(bitset0);
-        conn.tx_buffer.writeTable(arguments);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeU8(bitset0);
+        connector.tx_buffer.writeTable(arguments);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Basic@{any}.Consume ->", .{conn.channel});
-        return awaitConsumeOk(conn);
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Basic@{any}.Consume ->", .{connector.channel});
+        return awaitConsumeOk(connector);
     }
 
     // consume
-    pub fn awaitConsume(conn: *Connector) !Consume {
-        return conn.awaitMethod(Consume);
+    pub fn awaitConsume(connector: *Connector) !Consume {
+        return connector.awaitMethod(Consume);
     }
 
     // consume-ok
@@ -1675,10 +1675,10 @@ pub const Basic = struct {
 
         consumer_tag: []const u8,
 
-        pub fn read(conn: *Connector) !ConsumeOk {
-            const consumer_tag = conn.rx_buffer.readShortString();
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Basic@{any}.Consume_ok", .{conn.channel});
+        pub fn read(connector: *Connector) !ConsumeOk {
+            const consumer_tag = connector.rx_buffer.readShortString();
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Basic@{any}.Consume_ok", .{connector.channel});
             return ConsumeOk{
                 .consumer_tag = consumer_tag,
             };
@@ -1686,22 +1686,22 @@ pub const Basic = struct {
     };
     pub const CONSUME_OK_METHOD = 21;
     pub fn consumeOkAsync(
-        conn: *Connector,
+        connector: *Connector,
         consumer_tag: []const u8,
     ) !void {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.CONSUME_OK_METHOD);
-        conn.tx_buffer.writeShortString(consumer_tag);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.CONSUME_OK_METHOD);
+        connector.tx_buffer.writeShortString(consumer_tag);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Basic@{any}.Consume_ok ->", .{conn.channel});
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Basic@{any}.Consume_ok ->", .{connector.channel});
     }
 
     // consume_ok
-    pub fn awaitConsumeOk(conn: *Connector) !ConsumeOk {
-        return conn.awaitMethod(ConsumeOk);
+    pub fn awaitConsumeOk(connector: *Connector) !ConsumeOk {
+        return connector.awaitMethod(ConsumeOk);
     }
 
     // cancel
@@ -1713,12 +1713,12 @@ pub const Basic = struct {
         consumer_tag: []const u8,
         no_wait: bool,
 
-        pub fn read(conn: *Connector) !Cancel {
-            const consumer_tag = conn.rx_buffer.readShortString();
-            const bitset0 = conn.rx_buffer.readU8();
+        pub fn read(connector: *Connector) !Cancel {
+            const consumer_tag = connector.rx_buffer.readShortString();
+            const bitset0 = connector.rx_buffer.readU8();
             const no_wait = if (bitset0 & (1 << 0) == 0) true else false;
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Basic@{any}.Cancel", .{conn.channel});
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Basic@{any}.Cancel", .{connector.channel});
             return Cancel{
                 .consumer_tag = consumer_tag,
                 .no_wait = no_wait,
@@ -1727,28 +1727,28 @@ pub const Basic = struct {
     };
     pub const CANCEL_METHOD = 30;
     pub fn cancelSync(
-        conn: *Connector,
+        connector: *Connector,
         consumer_tag: []const u8,
         no_wait: bool,
     ) !CancelOk {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, CANCEL_METHOD);
-        conn.tx_buffer.writeShortString(consumer_tag);
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(BASIC_CLASS, CANCEL_METHOD);
+        connector.tx_buffer.writeShortString(consumer_tag);
         var bitset0: u8 = 0;
         const _bit: u8 = 1;
         if (no_wait) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
-        conn.tx_buffer.writeU8(bitset0);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeU8(bitset0);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Basic@{any}.Cancel ->", .{conn.channel});
-        return awaitCancelOk(conn);
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Basic@{any}.Cancel ->", .{connector.channel});
+        return awaitCancelOk(connector);
     }
 
     // cancel
-    pub fn awaitCancel(conn: *Connector) !Cancel {
-        return conn.awaitMethod(Cancel);
+    pub fn awaitCancel(connector: *Connector) !Cancel {
+        return connector.awaitMethod(Cancel);
     }
 
     // cancel-ok
@@ -1759,10 +1759,10 @@ pub const Basic = struct {
 
         consumer_tag: []const u8,
 
-        pub fn read(conn: *Connector) !CancelOk {
-            const consumer_tag = conn.rx_buffer.readShortString();
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Basic@{any}.Cancel_ok", .{conn.channel});
+        pub fn read(connector: *Connector) !CancelOk {
+            const consumer_tag = connector.rx_buffer.readShortString();
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Basic@{any}.Cancel_ok", .{connector.channel});
             return CancelOk{
                 .consumer_tag = consumer_tag,
             };
@@ -1770,22 +1770,22 @@ pub const Basic = struct {
     };
     pub const CANCEL_OK_METHOD = 31;
     pub fn cancelOkAsync(
-        conn: *Connector,
+        connector: *Connector,
         consumer_tag: []const u8,
     ) !void {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.CANCEL_OK_METHOD);
-        conn.tx_buffer.writeShortString(consumer_tag);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.CANCEL_OK_METHOD);
+        connector.tx_buffer.writeShortString(consumer_tag);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Basic@{any}.Cancel_ok ->", .{conn.channel});
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Basic@{any}.Cancel_ok ->", .{connector.channel});
     }
 
     // cancel_ok
-    pub fn awaitCancelOk(conn: *Connector) !CancelOk {
-        return conn.awaitMethod(CancelOk);
+    pub fn awaitCancelOk(connector: *Connector) !CancelOk {
+        return connector.awaitMethod(CancelOk);
     }
 
     // publish
@@ -1800,15 +1800,15 @@ pub const Basic = struct {
         mandatory: bool,
         immediate: bool,
 
-        pub fn read(conn: *Connector) !Publish {
-            const reserved_1 = conn.rx_buffer.readU16();
-            const exchange = conn.rx_buffer.readShortString();
-            const routing_key = conn.rx_buffer.readShortString();
-            const bitset0 = conn.rx_buffer.readU8();
+        pub fn read(connector: *Connector) !Publish {
+            const reserved_1 = connector.rx_buffer.readU16();
+            const exchange = connector.rx_buffer.readShortString();
+            const routing_key = connector.rx_buffer.readShortString();
+            const bitset0 = connector.rx_buffer.readU8();
             const mandatory = if (bitset0 & (1 << 0) == 0) true else false;
             const immediate = if (bitset0 & (1 << 1) == 0) true else false;
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Basic@{any}.Publish", .{conn.channel});
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Basic@{any}.Publish", .{connector.channel});
             return Publish{
                 .reserved_1 = reserved_1,
                 .exchange = exchange,
@@ -1820,33 +1820,33 @@ pub const Basic = struct {
     };
     pub const PUBLISH_METHOD = 40;
     pub fn publishAsync(
-        conn: *Connector,
+        connector: *Connector,
         exchange: []const u8,
         routing_key: []const u8,
         mandatory: bool,
         immediate: bool,
     ) !void {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.PUBLISH_METHOD);
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.PUBLISH_METHOD);
         const reserved_1 = 0;
-        conn.tx_buffer.writeU16(reserved_1);
-        conn.tx_buffer.writeShortString(exchange);
-        conn.tx_buffer.writeShortString(routing_key);
+        connector.tx_buffer.writeU16(reserved_1);
+        connector.tx_buffer.writeShortString(exchange);
+        connector.tx_buffer.writeShortString(routing_key);
         var bitset0: u8 = 0;
         const _bit: u8 = 1;
         if (mandatory) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
         if (immediate) bitset0 |= (_bit << 1) else bitset0 &= ~(_bit << 1);
-        conn.tx_buffer.writeU8(bitset0);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeU8(bitset0);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Basic@{any}.Publish ->", .{conn.channel});
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Basic@{any}.Publish ->", .{connector.channel});
     }
 
     // publish
-    pub fn awaitPublish(conn: *Connector) !Publish {
-        return conn.awaitMethod(Publish);
+    pub fn awaitPublish(connector: *Connector) !Publish {
+        return connector.awaitMethod(Publish);
     }
 
     // return
@@ -1860,13 +1860,13 @@ pub const Basic = struct {
         exchange: []const u8,
         routing_key: []const u8,
 
-        pub fn read(conn: *Connector) !Return {
-            const reply_code = conn.rx_buffer.readU16();
-            const reply_text = conn.rx_buffer.readShortString();
-            const exchange = conn.rx_buffer.readShortString();
-            const routing_key = conn.rx_buffer.readShortString();
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Basic@{any}.Return", .{conn.channel});
+        pub fn read(connector: *Connector) !Return {
+            const reply_code = connector.rx_buffer.readU16();
+            const reply_text = connector.rx_buffer.readShortString();
+            const exchange = connector.rx_buffer.readShortString();
+            const routing_key = connector.rx_buffer.readShortString();
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Basic@{any}.Return", .{connector.channel});
             return Return{
                 .reply_code = reply_code,
                 .reply_text = reply_text,
@@ -1877,28 +1877,28 @@ pub const Basic = struct {
     };
     pub const RETURN_METHOD = 50;
     pub fn returnAsync(
-        conn: *Connector,
+        connector: *Connector,
         reply_code: u16,
         reply_text: []const u8,
         exchange: []const u8,
         routing_key: []const u8,
     ) !void {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.RETURN_METHOD);
-        conn.tx_buffer.writeU16(reply_code);
-        conn.tx_buffer.writeShortString(reply_text);
-        conn.tx_buffer.writeShortString(exchange);
-        conn.tx_buffer.writeShortString(routing_key);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.RETURN_METHOD);
+        connector.tx_buffer.writeU16(reply_code);
+        connector.tx_buffer.writeShortString(reply_text);
+        connector.tx_buffer.writeShortString(exchange);
+        connector.tx_buffer.writeShortString(routing_key);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Basic@{any}.Return ->", .{conn.channel});
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Basic@{any}.Return ->", .{connector.channel});
     }
 
     // @"return"
-    pub fn awaitReturn(conn: *Connector) !Return {
-        return conn.awaitMethod(Return);
+    pub fn awaitReturn(connector: *Connector) !Return {
+        return connector.awaitMethod(Return);
     }
 
     // deliver
@@ -1913,15 +1913,15 @@ pub const Basic = struct {
         exchange: []const u8,
         routing_key: []const u8,
 
-        pub fn read(conn: *Connector) !Deliver {
-            const consumer_tag = conn.rx_buffer.readShortString();
-            const delivery_tag = conn.rx_buffer.readU64();
-            const bitset0 = conn.rx_buffer.readU8();
+        pub fn read(connector: *Connector) !Deliver {
+            const consumer_tag = connector.rx_buffer.readShortString();
+            const delivery_tag = connector.rx_buffer.readU64();
+            const bitset0 = connector.rx_buffer.readU8();
             const redelivered = if (bitset0 & (1 << 0) == 0) true else false;
-            const exchange = conn.rx_buffer.readShortString();
-            const routing_key = conn.rx_buffer.readShortString();
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Basic@{any}.Deliver", .{conn.channel});
+            const exchange = connector.rx_buffer.readShortString();
+            const routing_key = connector.rx_buffer.readShortString();
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Basic@{any}.Deliver", .{connector.channel});
             return Deliver{
                 .consumer_tag = consumer_tag,
                 .delivery_tag = delivery_tag,
@@ -1933,33 +1933,33 @@ pub const Basic = struct {
     };
     pub const DELIVER_METHOD = 60;
     pub fn deliverAsync(
-        conn: *Connector,
+        connector: *Connector,
         consumer_tag: []const u8,
         delivery_tag: u64,
         redelivered: bool,
         exchange: []const u8,
         routing_key: []const u8,
     ) !void {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.DELIVER_METHOD);
-        conn.tx_buffer.writeShortString(consumer_tag);
-        conn.tx_buffer.writeU64(delivery_tag);
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.DELIVER_METHOD);
+        connector.tx_buffer.writeShortString(consumer_tag);
+        connector.tx_buffer.writeU64(delivery_tag);
         var bitset0: u8 = 0;
         const _bit: u8 = 1;
         if (redelivered) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
-        conn.tx_buffer.writeU8(bitset0);
-        conn.tx_buffer.writeShortString(exchange);
-        conn.tx_buffer.writeShortString(routing_key);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeU8(bitset0);
+        connector.tx_buffer.writeShortString(exchange);
+        connector.tx_buffer.writeShortString(routing_key);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Basic@{any}.Deliver ->", .{conn.channel});
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Basic@{any}.Deliver ->", .{connector.channel});
     }
 
     // deliver
-    pub fn awaitDeliver(conn: *Connector) !Deliver {
-        return conn.awaitMethod(Deliver);
+    pub fn awaitDeliver(connector: *Connector) !Deliver {
+        return connector.awaitMethod(Deliver);
     }
 
     // get
@@ -1972,13 +1972,13 @@ pub const Basic = struct {
         queue: []const u8,
         no_ack: bool,
 
-        pub fn read(conn: *Connector) !Get {
-            const reserved_1 = conn.rx_buffer.readU16();
-            const queue = conn.rx_buffer.readShortString();
-            const bitset0 = conn.rx_buffer.readU8();
+        pub fn read(connector: *Connector) !Get {
+            const reserved_1 = connector.rx_buffer.readU16();
+            const queue = connector.rx_buffer.readShortString();
+            const bitset0 = connector.rx_buffer.readU8();
             const no_ack = if (bitset0 & (1 << 0) == 0) true else false;
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Basic@{any}.Get", .{conn.channel});
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Basic@{any}.Get", .{connector.channel});
             return Get{
                 .reserved_1 = reserved_1,
                 .queue = queue,
@@ -1988,30 +1988,30 @@ pub const Basic = struct {
     };
     pub const GET_METHOD = 70;
     pub fn getSync(
-        conn: *Connector,
+        connector: *Connector,
         queue: []const u8,
         no_ack: bool,
     ) !GetEmpty {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, GET_METHOD);
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(BASIC_CLASS, GET_METHOD);
         const reserved_1 = 0;
-        conn.tx_buffer.writeU16(reserved_1);
-        conn.tx_buffer.writeShortString(queue);
+        connector.tx_buffer.writeU16(reserved_1);
+        connector.tx_buffer.writeShortString(queue);
         var bitset0: u8 = 0;
         const _bit: u8 = 1;
         if (no_ack) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
-        conn.tx_buffer.writeU8(bitset0);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeU8(bitset0);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Basic@{any}.Get ->", .{conn.channel});
-        return awaitGetEmpty(conn);
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Basic@{any}.Get ->", .{connector.channel});
+        return awaitGetEmpty(connector);
     }
 
     // get
-    pub fn awaitGet(conn: *Connector) !Get {
-        return conn.awaitMethod(Get);
+    pub fn awaitGet(connector: *Connector) !Get {
+        return connector.awaitMethod(Get);
     }
 
     // get-ok
@@ -2026,15 +2026,15 @@ pub const Basic = struct {
         routing_key: []const u8,
         message_count: u32,
 
-        pub fn read(conn: *Connector) !GetOk {
-            const delivery_tag = conn.rx_buffer.readU64();
-            const bitset0 = conn.rx_buffer.readU8();
+        pub fn read(connector: *Connector) !GetOk {
+            const delivery_tag = connector.rx_buffer.readU64();
+            const bitset0 = connector.rx_buffer.readU8();
             const redelivered = if (bitset0 & (1 << 0) == 0) true else false;
-            const exchange = conn.rx_buffer.readShortString();
-            const routing_key = conn.rx_buffer.readShortString();
-            const message_count = conn.rx_buffer.readU32();
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Basic@{any}.Get_ok", .{conn.channel});
+            const exchange = connector.rx_buffer.readShortString();
+            const routing_key = connector.rx_buffer.readShortString();
+            const message_count = connector.rx_buffer.readU32();
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Basic@{any}.Get_ok", .{connector.channel});
             return GetOk{
                 .delivery_tag = delivery_tag,
                 .redelivered = redelivered,
@@ -2046,33 +2046,33 @@ pub const Basic = struct {
     };
     pub const GET_OK_METHOD = 71;
     pub fn getOkAsync(
-        conn: *Connector,
+        connector: *Connector,
         delivery_tag: u64,
         redelivered: bool,
         exchange: []const u8,
         routing_key: []const u8,
         message_count: u32,
     ) !void {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.GET_OK_METHOD);
-        conn.tx_buffer.writeU64(delivery_tag);
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.GET_OK_METHOD);
+        connector.tx_buffer.writeU64(delivery_tag);
         var bitset0: u8 = 0;
         const _bit: u8 = 1;
         if (redelivered) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
-        conn.tx_buffer.writeU8(bitset0);
-        conn.tx_buffer.writeShortString(exchange);
-        conn.tx_buffer.writeShortString(routing_key);
-        conn.tx_buffer.writeU32(message_count);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeU8(bitset0);
+        connector.tx_buffer.writeShortString(exchange);
+        connector.tx_buffer.writeShortString(routing_key);
+        connector.tx_buffer.writeU32(message_count);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Basic@{any}.Get_ok ->", .{conn.channel});
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Basic@{any}.Get_ok ->", .{connector.channel});
     }
 
     // get_ok
-    pub fn awaitGetOk(conn: *Connector) !GetOk {
-        return conn.awaitMethod(GetOk);
+    pub fn awaitGetOk(connector: *Connector) !GetOk {
+        return connector.awaitMethod(GetOk);
     }
 
     // get-empty
@@ -2083,10 +2083,10 @@ pub const Basic = struct {
 
         reserved_1: []const u8,
 
-        pub fn read(conn: *Connector) !GetEmpty {
-            const reserved_1 = conn.rx_buffer.readShortString();
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Basic@{any}.Get_empty", .{conn.channel});
+        pub fn read(connector: *Connector) !GetEmpty {
+            const reserved_1 = connector.rx_buffer.readShortString();
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Basic@{any}.Get_empty", .{connector.channel});
             return GetEmpty{
                 .reserved_1 = reserved_1,
             };
@@ -2094,22 +2094,22 @@ pub const Basic = struct {
     };
     pub const GET_EMPTY_METHOD = 72;
     pub fn getEmptyAsync(
-        conn: *Connector,
+        connector: *Connector,
     ) !void {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.GET_EMPTY_METHOD);
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.GET_EMPTY_METHOD);
         const reserved_1 = "";
-        conn.tx_buffer.writeShortString(reserved_1);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeShortString(reserved_1);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Basic@{any}.Get_empty ->", .{conn.channel});
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Basic@{any}.Get_empty ->", .{connector.channel});
     }
 
     // get_empty
-    pub fn awaitGetEmpty(conn: *Connector) !GetEmpty {
-        return conn.awaitMethod(GetEmpty);
+    pub fn awaitGetEmpty(connector: *Connector) !GetEmpty {
+        return connector.awaitMethod(GetEmpty);
     }
 
     // ack
@@ -2121,12 +2121,12 @@ pub const Basic = struct {
         delivery_tag: u64,
         multiple: bool,
 
-        pub fn read(conn: *Connector) !Ack {
-            const delivery_tag = conn.rx_buffer.readU64();
-            const bitset0 = conn.rx_buffer.readU8();
+        pub fn read(connector: *Connector) !Ack {
+            const delivery_tag = connector.rx_buffer.readU64();
+            const bitset0 = connector.rx_buffer.readU8();
             const multiple = if (bitset0 & (1 << 0) == 0) true else false;
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Basic@{any}.Ack", .{conn.channel});
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Basic@{any}.Ack", .{connector.channel});
             return Ack{
                 .delivery_tag = delivery_tag,
                 .multiple = multiple,
@@ -2135,27 +2135,27 @@ pub const Basic = struct {
     };
     pub const ACK_METHOD = 80;
     pub fn ackAsync(
-        conn: *Connector,
+        connector: *Connector,
         delivery_tag: u64,
         multiple: bool,
     ) !void {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.ACK_METHOD);
-        conn.tx_buffer.writeU64(delivery_tag);
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.ACK_METHOD);
+        connector.tx_buffer.writeU64(delivery_tag);
         var bitset0: u8 = 0;
         const _bit: u8 = 1;
         if (multiple) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
-        conn.tx_buffer.writeU8(bitset0);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeU8(bitset0);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Basic@{any}.Ack ->", .{conn.channel});
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Basic@{any}.Ack ->", .{connector.channel});
     }
 
     // ack
-    pub fn awaitAck(conn: *Connector) !Ack {
-        return conn.awaitMethod(Ack);
+    pub fn awaitAck(connector: *Connector) !Ack {
+        return connector.awaitMethod(Ack);
     }
 
     // reject
@@ -2167,12 +2167,12 @@ pub const Basic = struct {
         delivery_tag: u64,
         requeue: bool,
 
-        pub fn read(conn: *Connector) !Reject {
-            const delivery_tag = conn.rx_buffer.readU64();
-            const bitset0 = conn.rx_buffer.readU8();
+        pub fn read(connector: *Connector) !Reject {
+            const delivery_tag = connector.rx_buffer.readU64();
+            const bitset0 = connector.rx_buffer.readU8();
             const requeue = if (bitset0 & (1 << 0) == 0) true else false;
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Basic@{any}.Reject", .{conn.channel});
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Basic@{any}.Reject", .{connector.channel});
             return Reject{
                 .delivery_tag = delivery_tag,
                 .requeue = requeue,
@@ -2181,27 +2181,27 @@ pub const Basic = struct {
     };
     pub const REJECT_METHOD = 90;
     pub fn rejectAsync(
-        conn: *Connector,
+        connector: *Connector,
         delivery_tag: u64,
         requeue: bool,
     ) !void {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.REJECT_METHOD);
-        conn.tx_buffer.writeU64(delivery_tag);
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.REJECT_METHOD);
+        connector.tx_buffer.writeU64(delivery_tag);
         var bitset0: u8 = 0;
         const _bit: u8 = 1;
         if (requeue) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
-        conn.tx_buffer.writeU8(bitset0);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeU8(bitset0);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Basic@{any}.Reject ->", .{conn.channel});
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Basic@{any}.Reject ->", .{connector.channel});
     }
 
     // reject
-    pub fn awaitReject(conn: *Connector) !Reject {
-        return conn.awaitMethod(Reject);
+    pub fn awaitReject(connector: *Connector) !Reject {
+        return connector.awaitMethod(Reject);
     }
 
     // recover-async
@@ -2212,11 +2212,11 @@ pub const Basic = struct {
 
         requeue: bool,
 
-        pub fn read(conn: *Connector) !RecoverAsync {
-            const bitset0 = conn.rx_buffer.readU8();
+        pub fn read(connector: *Connector) !RecoverAsync {
+            const bitset0 = connector.rx_buffer.readU8();
             const requeue = if (bitset0 & (1 << 0) == 0) true else false;
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Basic@{any}.Recover_async", .{conn.channel});
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Basic@{any}.Recover_async", .{connector.channel});
             return RecoverAsync{
                 .requeue = requeue,
             };
@@ -2224,25 +2224,25 @@ pub const Basic = struct {
     };
     pub const RECOVER_ASYNC_METHOD = 100;
     pub fn recoverAsyncAsync(
-        conn: *Connector,
+        connector: *Connector,
         requeue: bool,
     ) !void {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.RECOVER_ASYNC_METHOD);
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.RECOVER_ASYNC_METHOD);
         var bitset0: u8 = 0;
         const _bit: u8 = 1;
         if (requeue) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
-        conn.tx_buffer.writeU8(bitset0);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeU8(bitset0);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Basic@{any}.Recover_async ->", .{conn.channel});
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Basic@{any}.Recover_async ->", .{connector.channel});
     }
 
     // recover_async
-    pub fn awaitRecoverAsync(conn: *Connector) !RecoverAsync {
-        return conn.awaitMethod(RecoverAsync);
+    pub fn awaitRecoverAsync(connector: *Connector) !RecoverAsync {
+        return connector.awaitMethod(RecoverAsync);
     }
 
     // recover
@@ -2253,11 +2253,11 @@ pub const Basic = struct {
 
         requeue: bool,
 
-        pub fn read(conn: *Connector) !Recover {
-            const bitset0 = conn.rx_buffer.readU8();
+        pub fn read(connector: *Connector) !Recover {
+            const bitset0 = connector.rx_buffer.readU8();
             const requeue = if (bitset0 & (1 << 0) == 0) true else false;
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Basic@{any}.Recover", .{conn.channel});
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Basic@{any}.Recover", .{connector.channel});
             return Recover{
                 .requeue = requeue,
             };
@@ -2265,25 +2265,25 @@ pub const Basic = struct {
     };
     pub const RECOVER_METHOD = 110;
     pub fn recoverAsync(
-        conn: *Connector,
+        connector: *Connector,
         requeue: bool,
     ) !void {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.RECOVER_METHOD);
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.RECOVER_METHOD);
         var bitset0: u8 = 0;
         const _bit: u8 = 1;
         if (requeue) bitset0 |= (_bit << 0) else bitset0 &= ~(_bit << 0);
-        conn.tx_buffer.writeU8(bitset0);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeU8(bitset0);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Basic@{any}.Recover ->", .{conn.channel});
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Basic@{any}.Recover ->", .{connector.channel});
     }
 
     // recover
-    pub fn awaitRecover(conn: *Connector) !Recover {
-        return conn.awaitMethod(Recover);
+    pub fn awaitRecover(connector: *Connector) !Recover {
+        return connector.awaitMethod(Recover);
     }
 
     // recover-ok
@@ -2292,28 +2292,28 @@ pub const Basic = struct {
         pub const CLASS = 60;
         pub const METHOD = 111;
 
-        pub fn read(conn: *Connector) !RecoverOk {
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Basic@{any}.Recover_ok", .{conn.channel});
+        pub fn read(connector: *Connector) !RecoverOk {
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Basic@{any}.Recover_ok", .{connector.channel});
             return RecoverOk{};
         }
     };
     pub const RECOVER_OK_METHOD = 111;
     pub fn recoverOkAsync(
-        conn: *Connector,
+        connector: *Connector,
     ) !void {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.RECOVER_OK_METHOD);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(BASIC_CLASS, Basic.RECOVER_OK_METHOD);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Basic@{any}.Recover_ok ->", .{conn.channel});
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Basic@{any}.Recover_ok ->", .{connector.channel});
     }
 
     // recover_ok
-    pub fn awaitRecoverOk(conn: *Connector) !RecoverOk {
-        return conn.awaitMethod(RecoverOk);
+    pub fn awaitRecoverOk(connector: *Connector) !RecoverOk {
+        return connector.awaitMethod(RecoverOk);
     }
 };
 
@@ -2327,29 +2327,29 @@ pub const Tx = struct {
         pub const CLASS = 90;
         pub const METHOD = 10;
 
-        pub fn read(conn: *Connector) !Select {
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Tx@{any}.Select", .{conn.channel});
+        pub fn read(connector: *Connector) !Select {
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Tx@{any}.Select", .{connector.channel});
             return Select{};
         }
     };
     pub const SELECT_METHOD = 10;
     pub fn selectSync(
-        conn: *Connector,
+        connector: *Connector,
     ) !SelectOk {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(TX_CLASS, SELECT_METHOD);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(TX_CLASS, SELECT_METHOD);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Tx@{any}.Select ->", .{conn.channel});
-        return awaitSelectOk(conn);
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Tx@{any}.Select ->", .{connector.channel});
+        return awaitSelectOk(connector);
     }
 
     // select
-    pub fn awaitSelect(conn: *Connector) !Select {
-        return conn.awaitMethod(Select);
+    pub fn awaitSelect(connector: *Connector) !Select {
+        return connector.awaitMethod(Select);
     }
 
     // select-ok
@@ -2358,28 +2358,28 @@ pub const Tx = struct {
         pub const CLASS = 90;
         pub const METHOD = 11;
 
-        pub fn read(conn: *Connector) !SelectOk {
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Tx@{any}.Select_ok", .{conn.channel});
+        pub fn read(connector: *Connector) !SelectOk {
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Tx@{any}.Select_ok", .{connector.channel});
             return SelectOk{};
         }
     };
     pub const SELECT_OK_METHOD = 11;
     pub fn selectOkAsync(
-        conn: *Connector,
+        connector: *Connector,
     ) !void {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(TX_CLASS, Tx.SELECT_OK_METHOD);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(TX_CLASS, Tx.SELECT_OK_METHOD);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Tx@{any}.Select_ok ->", .{conn.channel});
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Tx@{any}.Select_ok ->", .{connector.channel});
     }
 
     // select_ok
-    pub fn awaitSelectOk(conn: *Connector) !SelectOk {
-        return conn.awaitMethod(SelectOk);
+    pub fn awaitSelectOk(connector: *Connector) !SelectOk {
+        return connector.awaitMethod(SelectOk);
     }
 
     // commit
@@ -2388,29 +2388,29 @@ pub const Tx = struct {
         pub const CLASS = 90;
         pub const METHOD = 20;
 
-        pub fn read(conn: *Connector) !Commit {
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Tx@{any}.Commit", .{conn.channel});
+        pub fn read(connector: *Connector) !Commit {
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Tx@{any}.Commit", .{connector.channel});
             return Commit{};
         }
     };
     pub const COMMIT_METHOD = 20;
     pub fn commitSync(
-        conn: *Connector,
+        connector: *Connector,
     ) !CommitOk {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(TX_CLASS, COMMIT_METHOD);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(TX_CLASS, COMMIT_METHOD);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Tx@{any}.Commit ->", .{conn.channel});
-        return awaitCommitOk(conn);
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Tx@{any}.Commit ->", .{connector.channel});
+        return awaitCommitOk(connector);
     }
 
     // commit
-    pub fn awaitCommit(conn: *Connector) !Commit {
-        return conn.awaitMethod(Commit);
+    pub fn awaitCommit(connector: *Connector) !Commit {
+        return connector.awaitMethod(Commit);
     }
 
     // commit-ok
@@ -2419,28 +2419,28 @@ pub const Tx = struct {
         pub const CLASS = 90;
         pub const METHOD = 21;
 
-        pub fn read(conn: *Connector) !CommitOk {
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Tx@{any}.Commit_ok", .{conn.channel});
+        pub fn read(connector: *Connector) !CommitOk {
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Tx@{any}.Commit_ok", .{connector.channel});
             return CommitOk{};
         }
     };
     pub const COMMIT_OK_METHOD = 21;
     pub fn commitOkAsync(
-        conn: *Connector,
+        connector: *Connector,
     ) !void {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(TX_CLASS, Tx.COMMIT_OK_METHOD);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(TX_CLASS, Tx.COMMIT_OK_METHOD);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Tx@{any}.Commit_ok ->", .{conn.channel});
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Tx@{any}.Commit_ok ->", .{connector.channel});
     }
 
     // commit_ok
-    pub fn awaitCommitOk(conn: *Connector) !CommitOk {
-        return conn.awaitMethod(CommitOk);
+    pub fn awaitCommitOk(connector: *Connector) !CommitOk {
+        return connector.awaitMethod(CommitOk);
     }
 
     // rollback
@@ -2449,29 +2449,29 @@ pub const Tx = struct {
         pub const CLASS = 90;
         pub const METHOD = 30;
 
-        pub fn read(conn: *Connector) !Rollback {
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Tx@{any}.Rollback", .{conn.channel});
+        pub fn read(connector: *Connector) !Rollback {
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Tx@{any}.Rollback", .{connector.channel});
             return Rollback{};
         }
     };
     pub const ROLLBACK_METHOD = 30;
     pub fn rollbackSync(
-        conn: *Connector,
+        connector: *Connector,
     ) !RollbackOk {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(TX_CLASS, ROLLBACK_METHOD);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(TX_CLASS, ROLLBACK_METHOD);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Tx@{any}.Rollback ->", .{conn.channel});
-        return awaitRollbackOk(conn);
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Tx@{any}.Rollback ->", .{connector.channel});
+        return awaitRollbackOk(connector);
     }
 
     // rollback
-    pub fn awaitRollback(conn: *Connector) !Rollback {
-        return conn.awaitMethod(Rollback);
+    pub fn awaitRollback(connector: *Connector) !Rollback {
+        return connector.awaitMethod(Rollback);
     }
 
     // rollback-ok
@@ -2480,27 +2480,27 @@ pub const Tx = struct {
         pub const CLASS = 90;
         pub const METHOD = 31;
 
-        pub fn read(conn: *Connector) !RollbackOk {
-            try conn.rx_buffer.readEOF();
-            std.log.debug("\t<- Tx@{any}.Rollback_ok", .{conn.channel});
+        pub fn read(connector: *Connector) !RollbackOk {
+            try connector.rx_buffer.readEOF();
+            std.log.debug("\t<- Tx@{any}.Rollback_ok", .{connector.channel});
             return RollbackOk{};
         }
     };
     pub const ROLLBACK_OK_METHOD = 31;
     pub fn rollbackOkAsync(
-        conn: *Connector,
+        connector: *Connector,
     ) !void {
-        conn.tx_buffer.writeFrameHeader(.Method, conn.channel, 0);
-        conn.tx_buffer.writeMethodHeader(TX_CLASS, Tx.ROLLBACK_OK_METHOD);
-        conn.tx_buffer.updateFrameLength();
+        connector.tx_buffer.writeFrameHeader(.Method, connector.channel, 0);
+        connector.tx_buffer.writeMethodHeader(TX_CLASS, Tx.ROLLBACK_OK_METHOD);
+        connector.tx_buffer.updateFrameLength();
         // TODO: do we need to retry write (if n isn't as high as we expect)?
-        _ = try std.posix.write(conn.file.handle, conn.tx_buffer.extent());
-        conn.tx_buffer.reset();
-        std.log.debug("Tx@{any}.Rollback_ok ->", .{conn.channel});
+        _ = try std.posix.write(connector.file.handle, connector.tx_buffer.extent());
+        connector.tx_buffer.reset();
+        std.log.debug("Tx@{any}.Rollback_ok ->", .{connector.channel});
     }
 
     // rollback_ok
-    pub fn awaitRollbackOk(conn: *Connector) !RollbackOk {
-        return conn.awaitMethod(RollbackOk);
+    pub fn awaitRollbackOk(connector: *Connector) !RollbackOk {
+        return connector.awaitMethod(RollbackOk);
     }
 };
