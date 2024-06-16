@@ -5,8 +5,6 @@ const Channel = @import("channel.zig").Channel;
 pub const Queue = struct {
     connector: Connector,
 
-    const Self = @This();
-
     pub const Options = struct {
         passive: bool = false,
         durable: bool = false,

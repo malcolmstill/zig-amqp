@@ -10,8 +10,6 @@ pub const Channel = struct {
     connector: Connector,
     channel_id: u16,
 
-    const Self = @This();
-
     pub fn init(id: u16, connection: *Connection) Channel {
         var ch = Channel{
             .connector = connection.connector,
@@ -23,9 +21,9 @@ pub const Channel = struct {
         return ch;
     }
 
-    pub fn queueDeclare(self: *Self, name: []const u8, options: Queue.Options, args: ?*Table) !Queue {
+    pub fn queueDeclare(channel: *Channel, name: []const u8, options: Queue.Options, args: ?*Table) !Queue {
         _ = try proto.Queue.declareSync(
-            &self.connector,
+            &channel.connector,
             name,
             options.passive,
             options.durable,
@@ -35,25 +33,25 @@ pub const Channel = struct {
             args,
         );
 
-        return Queue.init(self);
+        return Queue.init(channel);
     }
 
-    pub fn basicPublish(self: *Self, exchange_name: []const u8, routing_key: []const u8, body: []const u8, options: Basic.Publish.Options) !void {
+    pub fn basicPublish(channel: *Channel, exchange_name: []const u8, routing_key: []const u8, body: []const u8, options: Basic.Publish.Options) !void {
         try proto.Basic.publishAsync(
-            &self.connector,
+            &channel.connector,
             exchange_name,
             routing_key,
             options.mandatory,
             options.immediate,
         );
 
-        try self.connector.sendHeader(body.len, proto.Basic.BASIC_CLASS);
-        try self.connector.sendBody(body);
+        try channel.connector.sendHeader(body.len, proto.Basic.BASIC_CLASS);
+        try channel.connector.sendBody(body);
     }
 
-    pub fn basicConsume(self: *Self, name: []const u8, options: Basic.Consume.Options, args: ?*Table) !Basic.Consumer {
+    pub fn basicConsume(channel: *Channel, name: []const u8, options: Basic.Consume.Options, args: ?*Table) !Basic.Consumer {
         _ = try proto.Basic.consumeSync(
-            &self.connector,
+            &channel.connector,
             name,
             "",
             options.no_local,
@@ -64,7 +62,7 @@ pub const Channel = struct {
         );
 
         return Basic.Consumer{
-            .connector = self.connector,
+            .connector = channel.connector,
         };
     }
 };
