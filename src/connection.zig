@@ -84,7 +84,7 @@ pub const Connection = struct {
     }
 
     pub fn deinit(connection: *Connection) void {
-        connection.file.close();
+        connection.connector.file.close();
     }
 
     pub fn channel(connection: *Connection) !Channel {
