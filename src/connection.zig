@@ -114,7 +114,7 @@ pub const Connection = struct {
         if (channel_id >= @bitSizeOf(u2048)) return; // Look it's late okay...
         const bit: u2048 = 1;
         connection.in_use_channels &= ~(bit << @intCast(channel_id));
-        if (std.builtin.mode == .Debug) std.debug.print("Freed channel {any}, in_use_channels: {any}\n", .{ channel_id, @popCount(connection.in_use_channels) });
+        if (std.builtin.Mode == .Debug) std.debug.print("Freed channel {any}, in_use_channels: {any}\n", .{ channel_id, @popCount(connection.in_use_channels) });
     }
 };
 
