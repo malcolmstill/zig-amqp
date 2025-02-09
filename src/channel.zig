@@ -63,6 +63,32 @@ pub const Channel = struct {
 
         return Basic.Consumer{
             .connector = channel.connector,
+            .delivery = undefined,
+        };
+    }
+
+    pub fn qosConsume(channel: *Channel, name: []const u8, qos_options: Basic.Consume.Qos, options: Basic.Consume.Options, args: ?*Table) !Basic.Consumer {
+        _ = try proto.Basic.qosSync(
+            &channel.connector,
+            qos_options.prefetch_size,
+            qos_options.prefetch_count,
+            qos_options.global,
+        );
+
+        _ = try proto.Basic.consumeSync(
+            &channel.connector,
+            name,
+            "",
+            options.no_local,
+            options.no_ack,
+            options.exclusive,
+            options.no_wait,
+            args,
+        );
+
+        return Basic.Consumer{
+            .connector = channel.connector,
+            .delivery = undefined,
         };
     }
 };

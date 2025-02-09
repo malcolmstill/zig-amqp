@@ -33,6 +33,35 @@ pub fn main() !void {
 }
 ```
 
+qos consumer with prefetch_count=1 and message no_ack=false:
+
+```zig
+const std = @import("std");
+const amqp = @import("amqp");
+
+var rx_memory: [4096]u8 = undefined;
+var tx_memory: [4096]u8 = undefined;
+
+pub fn main() !void {
+    var conn = amqp.init(rx_memory[0..], tx_memory[0..]);
+    const addr = try std.net.Address.parseIp4("127.0.0.1", 5672);
+    var i: usize = 0;
+    try conn.connect(addr);
+
+    var ch = try conn.channel();
+    _ = try ch.queueDeclare("qos_consumer", .{}, null);
+
+    var couchdb_consumer = try ch.qosConsume("qos_consumer", .{ .prefetch_count = 1 }, .{ .no_ack = false }, null);
+
+    while (true) : (i += 1) {
+        const message = try couchdb_consumer.next();
+        _ = message.header;
+        const body = message.body;
+        // ...do something with the message
+        try couchdb_consumer.ack(false);
+}
+```
+
 ## Status
 
 The project is alpha with only basic functionality working and almost certainly is not
@@ -53,10 +82,10 @@ require.
 - None...and the binaries are small (other than a server to speak to)
 
 ```
-➜  zig-amqp git:(master) ✗ zig build-exe src/example.zig -O ReleaseSafe --strip 
-➜  zig-amqp git:(master) ✗ ldd example                                        
+➜  zig-amqp git:(master) ✗ zig build-exe src/example.zig -O ReleaseSafe --strip
+➜  zig-amqp git:(master) ✗ ldd example
         not a dynamic executable
-➜  zig-amqp git:(master) ✗ ls -l example                                      
+➜  zig-amqp git:(master) ✗ ls -l example
 -rwxr-xr-x. 1 malcolm malcolm 44872 Dec 20 04:26 example
 ```
 
